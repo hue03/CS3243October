@@ -94,6 +94,7 @@ void *createProducer(void *param) {
 		sem_wait(&empty);
 		pthread_mutex_lock(&bufferMutex);
 		
+		cout << "Producer is no longer a lazy bum and is doing something productive." << endl;
 		srand(pthread_self() * log(seed)); //log op on seed will generate new random numbers without having it become too large over time
 		seed++;
 		item = rand();
@@ -157,9 +158,11 @@ void *createConsumer(void *param) {
 	do 
 	{
 		//printStuff(pthread_self());
+		sleep(timer);
 		sem_wait(&full);
 		pthread_mutex_lock(&bufferMutex);
 		
+		cout << "Consumer is being fat." << endl;
 		//srand(pthread_self() * log(seed));
 		//seed++;
 		//item = rand();
