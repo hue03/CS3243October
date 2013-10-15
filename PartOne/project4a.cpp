@@ -21,6 +21,7 @@ buffer_item item;
 pthread_mutex_t bufferMutex; // mutex lock
 sem_t empty; // semaphore consumer increments producer decrements
 sem_t full; // semaphore producer increments consumer decrements
+uint timer; //sleep timer
 int seed; //use to help seed random number
 buffer_item *element; //pointer to the location of an element
 int index; //use for selecting which element to remove
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
 	element = &(buffer[index]);
 	
 	seed = 2;
-	int sleep = atoi(argv[1]);
+	timer = atoi(argv[1]);
 	int numProducer = atoi(argv[2]);
 	int numConsumer = atoi(argv[3]);
 
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
 	
 	for (int j = 0; j < numProducer; j++)
 	{
-		pthread_create(&producerThread[j], NULL, createProducer, 0);
+		pthread_create(&producerThread[j], NULL, createProducer, (void*)((intptr_t) j));
 	}
 
 	/* wait for the thread to exit */
@@ -89,6 +90,7 @@ void *createProducer(void *param) {
 	do 
 	{
 		//printStuff(pthread_self());
+		sleep(timer);
 		sem_wait(&empty);
 		pthread_mutex_lock(&bufferMutex);
 		
@@ -110,7 +112,7 @@ void *createProducer(void *param) {
 		
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&full);
-	} while(seed < BUFFER_SIZE * 2);
+	} while(true);
 
 	/*for (int i = 0; i < BUFFER_SIZE; i++)
 	{
@@ -186,7 +188,7 @@ void *createConsumer(void *param) {
 		
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&empty);
-	} while(index < BUFFER_SIZE * 2 - 2);
+	} while(true);
 
 	/*for (int i = 0; i < BUFFER_SIZE; i++)
 	{
