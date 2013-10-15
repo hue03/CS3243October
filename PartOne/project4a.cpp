@@ -10,19 +10,23 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdio.h>
+#include <math.h>
 #include "buffer.h"
 
 using namespace std;
 
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
-
-pthread_mutex_t bufferMutex = PTHREAD_MUTEX_INITIALIZER; // mutex lock
+buffer_item item;
+pthread_mutex_t bufferMutex; // mutex lock
 sem_t empty; // semaphore consumer increments producer decrements
 sem_t full; // semaphore producer increments consumer decrements
+int seed; //use to help seed random number
 
 void *createProducer(void *param); /* threads call this function */
 void *createConsumer(void *param); /* threads call this function */
+int insert_item(buffer_item);
+int remove_item(buffer_item *);
 void printStuff(int);
 
 int main(int argc, char *argv[]) {
@@ -30,10 +34,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "usage: a.out <sleep> <numProducer> <numConsumer>");
 		return -1;
 	}
-
+	seed = 2;
 	int sleep = atoi(argv[1]);
 	int numProducer = atoi(argv[2]);
 	int numConsumer = atoi(argv[3]);
+
+	pthread_mutex_init(&bufferMutex, NULL);
+	sem_init(&empty, 0, BUFFER_SIZE);
+	sem_init(&full, 0, 0);
 
 	pthread_t consumerThread[numConsumer]; /*create array of threads using the sum of the arguments*/
 	pthread_t producerThread[ numProducer]; /*create array of threads using the sum of the arguments*/
@@ -58,9 +66,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	// TODO These aren't in the right place.
-	pthread_mutex_init(&bufferMutex, NULL);
-	sem_init(&empty, 0, BUFFER_SIZE);
-	sem_init(&full, 0, 0);
+	//pthread_mutex_init(&bufferMutex, NULL);
+	//sem_init(&empty, 0, BUFFER_SIZE);
+	//sem_init(&full, 0, 0);
 
 	/* 2. Initialize buffer */
 	/* 5. Sleep */
@@ -68,6 +76,26 @@ int main(int argc, char *argv[]) {
 }
 
 void *createProducer(void *param) {
+	do 
+	{
+		//printStuff(pthread_self());
+		sem_wait(&empty);
+		pthread_mutex_lock(&bufferMutex);
+		
+		srand(pthread_self() * log(seed));
+		seed++;
+		item = rand();
+		cout << "Inserting " << item << endl;
+		insert_item(item);
+		
+		pthread_mutex_unlock(&bufferMutex);
+		sem_post(&full);
+	} while(seed < BUFFER_SIZE);
+
+	for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		cout << buffer[i] << endl;
+	}	
 //	do {
 //		//. . .
 //		/* produce an item in next produced */
@@ -98,7 +126,7 @@ void *createProducer(void *param) {
 //			printf("producer produced %d\n", item);
 //	}
 
-	cout << pthread_self() << endl;
+	//cout << pthread_self() << endl;
 
 	pthread_exit(NULL);
 }
@@ -132,27 +160,37 @@ void *createConsumer(void *param) {
 //			printf("consumer consumed %d\n", item);
 //	}
 
-	cout << pthread_self() << endl;
+	//cout << pthread_self() << endl;
 
 	pthread_exit(NULL);
 }
 
-int insert_item(buffer_item item) {
+int insert_item(buffer_item it) {
 	/* insert item into buffer
 	 return 0 if successful, otherwise
 	 return -1 indicating an error condition */
+	for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		if (buffer[i] == 0)
+		{
+			buffer[i] = it;
+			return 0;
+		}
+	}
+	return -1;
 }
 
-int remove_item(buffer_item item) {
+int remove_item(buffer_item *it) {
 	/* remove an object from buffer
 	 placing it in item
 	 return 0 if successful, otherwise
 	 return -1 indicating an error condition */
+	return 0;
 }
 
 void printStuff(int tid)
 {
-	pthread_mutex_unlock(&bufferMutex);
+	pthread_mutex_lock(&bufferMutex);
 	cout <<"Thread: " << tid << endl;
 	pthread_mutex_unlock(&bufferMutex);
 }
