@@ -15,9 +15,13 @@
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
 
-pthread_mutex_t mutex;
 sem_t empty;
 sem_t full;
+
+pthread_mutex_t bufferMutex = PTHREAD_MUTEX_INITIALIZER; //mutex lock
+
+void *createProducer(void *param); /* threads call this function */
+void *createConsumer(void *param); /* threads call this function */
 
 int main(int argc, char *argv[]) {
 	int sleep, numProducer, numConsumer;
@@ -25,13 +29,32 @@ int main(int argc, char *argv[]) {
 	if (argc != 4) {
 		fprintf(stderr, "usage: a.out <sleep> <numProducer> <numConsumer>");
 		return -1;
-	} else {
-		sleep = atoi(argv[1]);
-		numProducer = atoi(argv[2]);
-		numConsumer = atoi(argv[3]);
 	}
 
-	pthread_mutex_init(&mutex,NULL);
+	sleep = atoi(argv[1]);
+	numProducer = atoi(argv[2]);
+	numConsumer = atoi(argv[3]);
+	pthread_t tid[numConsumer + numProducer]; /*create array of threads using the sum of the arguments*/
+	for (int i = 0; i < numConsumer; i++)
+	{
+		pthread_create(&tid[i], NULL, createConsumer, 0);
+	}
+	for (int j = 0; j < numProducer; j++)
+	{
+		pthread_create(&tid[j], NULL, createProducer, 0);
+	}
+
+	/* wait for the thread to exit */
+	for (int i = 0; i < numConsumer; i++)
+	{
+		pthread_join(tid[i], NULL);
+	}
+	for (int j = 0; j < numConsumer; j++)
+	{
+		pthread_join(tid[j], NULL);
+	}
+
+	pthread_mutex_init(&bufferMutex,NULL);
 	sem_init(&empty, 0, BUFFER_SIZE);
 	sem_init(&full, 0, 0);
 
@@ -40,6 +63,17 @@ int main(int argc, char *argv[]) {
 	/* 4. Create consumer thread(s) */
 	/* 5. Sleep */
 	/* 6. Exit */
+}
+
+void *createProducer(void *param)
+{
+	pthread_exit(NULL);
+}
+
+
+void *createConsumer(void *param)
+{
+	pthread_exit(NULL);
 }
 
 int insert_item(buffer_item item) {
@@ -86,6 +120,8 @@ int remove_item(buffer_item item) {
  */
 
 //int sum; /* this data is shared by the thread(s) */
+//semaphore empty = n; //semaphore consumer increments producer decrements
+//semaphore full = 0 //semaphore producer increments consumer decrements
 //void *runner(void *param); /* threads call this function */
 //
 //int main(int argc, char *argv[])
@@ -153,4 +189,6 @@ int remove_item(buffer_item item) {
 ///* critical section */
 //
 ///* release the semaphore */
+//sem post(&sem);
+
 //sem_post(&sem);
