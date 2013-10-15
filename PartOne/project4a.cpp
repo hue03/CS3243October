@@ -11,6 +11,7 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include "buffer.h"
+using namespace std;
 
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
@@ -23,6 +24,7 @@ pthread_mutex_t bufferMutex = PTHREAD_MUTEX_INITIALIZER; //mutex lock
 
 void *createProducer(void *param); /* threads call this function */
 void *createConsumer(void *param); /* threads call this function */
+void printStuff(int);
 
 int main(int argc, char *argv[]) {
 	int sleep, numProducer, numConsumer;
@@ -37,24 +39,25 @@ int main(int argc, char *argv[]) {
 		sleep = atoi(argv[1]);
 		numProducer = atoi(argv[2]);
 		numConsumer = atoi(argv[3]);
-		pthread_t tid[numConsumer + numProducer]; /*create array of threads using the sum of the arguments*/
+		pthread_t consumerThread[numConsumer]; /*create array of threads using the sum of the arguments*/
+		pthread_t producerThread[ numProducer]; /*create array of threads using the sum of the arguments*/
 		for (int i = 0; i < numConsumer; i++)
 		{
-			pthread_create(&tid[i], NULL, createConsumer, 0);
+			pthread_create(&consumerThread[i], NULL, createConsumer, 0);
 		}
 		for (int j = 0; j < numProducer; j++)
 		{
-			pthread_create(&tid[j], NULL, createProducer, 0);
+			pthread_create(&producerThread[j], NULL, createProducer, 0);
 		}	
 
 		/* wait for the thread to exit */
 		for (int i = 0; i < numConsumer; i++)
 		{
-			pthread_join(tid[i], NULL);
+			pthread_join(consumerThread[i], NULL);
 		}
-		for (int j = 0; j < numConsumer; j++)
+		for (int j = 0; j < numProducer; j++)
 		{
-			pthread_join(tid[j], NULL);
+			pthread_join(producerThread[j], NULL);
 		}
 	}
 	/* 2. Initialize buffer */
@@ -66,12 +69,14 @@ int main(int argc, char *argv[]) {
 
 void *createProducer(void *param)
 {
+	cout << pthread_self() << endl;
 	pthread_exit(NULL);
 }
 
 
 void *createConsumer(void *param)
 {
+	cout << pthread_self() << endl;
 	pthread_exit(NULL);
 }
 
@@ -114,6 +119,12 @@ int remove_item(buffer_item item) {
 	//} while (true);
 }
 
+void printStuff(int tid)
+{
+	pthread_mutex_unlock(&bufferMutex);
+	cout <<"Thread: " << tid << endl;
+	pthread_mutex_unlock(&bufferMutex);
+}
 /*
  * Code from Section 4.4.1 - Pthreads
  */
