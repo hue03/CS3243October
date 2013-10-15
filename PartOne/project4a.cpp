@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include "buffer.h"
 
+using namespace std;
+
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
 
@@ -21,6 +23,7 @@ sem_t full; // semaphore producer increments consumer decrements
 
 void *createProducer(void *param); /* threads call this function */
 void *createConsumer(void *param); /* threads call this function */
+void printStuff(int);
 
 int main(int argc, char *argv[]) {
 	if (argc != 4) {
@@ -32,23 +35,29 @@ int main(int argc, char *argv[]) {
 	int numProducer = atoi(argv[2]);
 	int numConsumer = atoi(argv[3]);
 
-	pthread_t tid[numConsumer + numProducer]; // create array of threads using the sum of the arguments
+	pthread_t consumerThread[numConsumer]; /*create array of threads using the sum of the arguments*/
+	pthread_t producerThread[ numProducer]; /*create array of threads using the sum of the arguments*/
 
-	for (int i = 0; i < numConsumer; i++) {
-		pthread_create(&tid[i], NULL, createConsumer, 0);
+	for (int i = 0; i < numConsumer; i++)
+	{
+		pthread_create(&consumerThread[i], NULL, createConsumer, 0);
 	}
-	for (int j = 0; j < numProducer; j++) {
-		pthread_create(&tid[j], NULL, createProducer, 0);
+	for (int j = 0; j < numProducer; j++)
+	{
+		pthread_create(&producerThread[j], NULL, createProducer, 0);
 	}
 
 	/* wait for the thread to exit */
-	for (int i = 0; i < numConsumer; i++) {
-		pthread_join(tid[i], NULL);
+	for (int i = 0; i < numConsumer; i++)
+	{
+		pthread_join(consumerThread[i], NULL);
 	}
-	for (int j = 0; j < numConsumer; j++) {
-		pthread_join(tid[j], NULL);
+	for (int j = 0; j < numProducer; j++)
+	{
+		pthread_join(producerThread[j], NULL);
 	}
 
+	// TODO These aren't in the right place.
 	pthread_mutex_init(&bufferMutex, NULL);
 	sem_init(&empty, 0, BUFFER_SIZE);
 	sem_init(&full, 0, 0);
@@ -88,6 +97,9 @@ void *createProducer(void *param) {
 //		else
 //			printf("producer produced %d\n", item);
 //	}
+
+	cout << pthread_self() << endl;
+
 	pthread_exit(NULL);
 }
 
@@ -119,6 +131,9 @@ void *createConsumer(void *param) {
 //		else
 //			printf("consumer consumed %d\n", item);
 //	}
+
+	cout << pthread_self() << endl;
+
 	pthread_exit(NULL);
 }
 
@@ -135,6 +150,12 @@ int remove_item(buffer_item item) {
 	 return -1 indicating an error condition */
 }
 
+void printStuff(int tid)
+{
+	pthread_mutex_unlock(&bufferMutex);
+	cout <<"Thread: " << tid << endl;
+	pthread_mutex_unlock(&bufferMutex);
+}
 /*
  * Code from Section 4.4.1 - Pthreads
  */
