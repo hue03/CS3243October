@@ -109,16 +109,17 @@ void *createConsumer(void *param) {
 	 * Windows API Implementation
 	 */
 
-	//	buffer_item item;
-	//
-	//	while (true) {
-	//		/* sleep for a random period of time */
-	//		sleep(...);
-	//		if (remove_item(item))
-	//			printf("report error condition");
-	//		else
-	//			printf("consumer consumed %d\n", item);
-	//	}
+//	buffer_item item;
+//
+//	while (true) {
+//		/* sleep for a random period of time */
+//		sleep(...);
+//		if (remove_item(item))
+//			printf("report error condition");
+//		else
+//			printf("consumer consumed %d\n", item);
+//	}
+
 	pthread_exit(NULL);
 }
 
