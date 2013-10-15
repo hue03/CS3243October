@@ -5,12 +5,12 @@
 // Date: 10/14/2013
 // File: project4a.cpp
 
-#include "buffer.h"
-#include <semaphore.h>
-#include <stdio.h>
+#include <cstdlib>
 #include <iostream>
 #include <pthread.h>
-#include <cstdlib>
+#include <semaphore.h>
+#include <stdio.h>
+#include "buffer.h"
 
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
@@ -20,40 +20,20 @@ sem_t mutex /*= 1*/;
 sem_t empty /*= n*/;
 sem_t full /*= 0*/;
 
-int insert_item(buffer_item item) {
-	/* insert item into buffer
-	return 0 if successful, otherwise
-	return -1 indicating an error condition */
-}
-
-int remove_item(buffer_item item) {
-	/* remove an object from buffer
-	placing it in item
-	return 0 if successful, otherwise
-	return -1 indicating an error condition */
-}
-
-//1. How long to sleep before terminating
-//2. The number of producer threads
-//3. The number of consumer threads
-
 int main(int argc, char *argv[]) {
 	int sleep, numProducer, numConsumer;
 
+	//	if (argc != 2) {
+	//		fprintf(stderr,"usage: a.out <integer value>\n");
+	//		return -1;
+	//	}
 	if (argc != 4) {
-		std::cout << "You entered the wrong number of command-line arguments."
-				<< "How long should main sleep before terminating?\n";
-		std::cin >> sleep;
-		std::cout << "How many producer threads are there?\n";
-		std::cin >> numProducer;
-		std::cout << "How many consumer threads are there?\n";
-		std::cin >> numConsumer;
+		fprintf(stderr, "usage: a.out <sleep> <numProducer> <numConsumer>");
 	} else {
 		sleep = atoi(argv[1]);
 		numProducer = atoi(argv[2]);
 		numConsumer = atoi(argv[3]);
 	}
-	/* 1. Get command line arguments argv[1],argv[2],argv[3] */
 	/* 2. Initialize buffer */
 	/* 3. Create producer thread(s) */
 	/* 4. Create consumer thread(s) */
@@ -61,55 +41,52 @@ int main(int argc, char *argv[]) {
 	/* 6. Exit */
 }
 
-/*
- * Code from Section 5.7.1 - The Bounded Buffer Problem
- */
+int insert_item(buffer_item item) {
+	/* insert item into buffer
+	return 0 if successful, otherwise
+	return -1 indicating an error condition */
 
-/*
- * Data structures shared by the producer and consumer processes.
- */
+	//do {
+	//	//. . .
+	//	/* produce an item in next produced */
+	//	//. . .
+	//	sem_wait(&empty);
+	//	sem_wait(&mutex);
+	//	//. . .
+	//	/* add next produced to the buffer */
+	//	//. . .
+	//	sem_post(&mutex);
+	//	sem_post(&full);
+	//} while (true);
+}
 
-/*
- * The structure of the producer process.
- */
+int remove_item(buffer_item item) {
+	/* remove an object from buffer
+	placing it in item
+	return 0 if successful, otherwise
+	return -1 indicating an error condition */
 
-//do {
-//	//. . .
-//	/* produce an item in next produced */
-//	//. . .
-//	sem_wait(&empty);
-//	sem_wait(&mutex);
-//	//. . .
-//	/* add next produced to the buffer */
-//	//. . .
-//	sem_post(&mutex);
-//	sem_post(&full);
-//} while (true);
-
-/*
- * The structure of the consumer process.
- */
-
-//do {
-//	sem_wait(&full);
-//	sem_wait(&mutex);
-//	//. . .
-//	/* remove an item from buffer to next consumed */
-//	//. . .
-//	sem_post(&mutex);
-//	sem_post(&empty);
-//	//. . .
-//	/* consume the item in next consumed */
-//	. . .
-//} while (true);
+	//do {
+	//	sem_wait(&full);
+	//	sem_wait(&mutex);
+	//	//. . .
+	//	/* remove an item from buffer to next consumed */
+	//	//. . .
+	//	sem_post(&mutex);
+	//	sem_post(&empty);
+	//	//. . .
+	//	/* consume the item in next consumed */
+	//	. . .
+	//} while (true);
+}
 
 /*
  * Code from Section 4.4.1 - Pthreads
  */
 
-int sum; /* this data is shared by the thread(s) */
-void *runner(void *param); /* threads call this function */
-
+//int sum; /* this data is shared by the thread(s) */
+//void *runner(void *param); /* threads call this function */
+//
 //int main(int argc, char *argv[])
 //{
 //	pthread_t tid; /* the thread identifier */
@@ -133,18 +110,18 @@ void *runner(void *param); /* threads call this function */
 //
 //	printf("sum = %d\n",sum);
 //}
-
-/* The thread will begin control in this function */
-void *runner(void *param)
-{
-	int i, upper = atoi((char*)param);
-	sum = 0;
-
-	for (i = 1; i <= upper; i++)
-		sum += i;
-
-	pthread_exit(0);
-}
+//
+///* The thread will begin control in this function */
+//void *runner(void *param)
+//{
+//	int i, upper = atoi((char*)param);
+//	sum = 0;
+//
+//	for (i = 1; i <= upper; i++)
+//		sum += i;
+//
+//	pthread_exit(0);
+//}
 
 /*
  * Joining multiple threads.
