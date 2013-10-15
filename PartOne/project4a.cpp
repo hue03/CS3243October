@@ -7,10 +7,10 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <math.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdio.h>
+#include <math.h>
 #include <unistd.h>
 #include "buffer.h"
 
@@ -20,12 +20,10 @@ using namespace std;
 Buffer buffer;
 //buffer_item buffer[BUFFER_SIZE];
 size_t a;
-buffer_item item;// TODO This scope is too large.  It should probably be declared inside the producers and consumers.
-
+buffer_item item;
 pthread_mutex_t bufferMutex; // mutex lock
 sem_t empty; // semaphore consumer increments producer decrements
 sem_t full; // semaphore producer increments consumer decrements
-
 uint timer; //sleep timer
 int seed; //use to help seed random number
 buffer_item *element; //pointer to the location of an element
@@ -46,7 +44,6 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Format your arguments as follow: [output file] <integer # for sleep> <integer # for amount of producer threads> <integer # for amount of consumer threads>");
 		return -1;
 	}
-
 	//initialize index to 0 and have element point to the memory address of the element at that index
 	index = 0;
 	element = &(buffer[index]);
@@ -56,7 +53,6 @@ int main(int argc, char *argv[]) {
 	int sleepTime = atoi(argv[1]);
 
 	timer = atoi(argv[1]);
-
 	int numProducer = atoi(argv[2]);
 	int numConsumer = atoi(argv[3]);
 
@@ -66,18 +62,20 @@ int main(int argc, char *argv[]) {
 	sem_init(&empty, 0, BUFFER_SIZE);
 	sem_init(&full, 0, 0);
 
-	pthread_t producerThread[numProducer]; /*create array of producer threads*/
 	pthread_t consumerThread[numConsumer]; /*create array of consumer threads*/
+	pthread_t producerThread[numProducer]; /*create array of producer threads*/
 	
 	//create threads
-//	for (int j = 0; j < numProducer; j++) {
-//		pthread_create(&producerThread[j], NULL, createProducer, (void*)((intptr_t) j));
-//	}
-
 	for (int i = 0; i < numConsumer; i++)
 	{
 		pthread_create(&consumerThread[i], NULL, createConsumer, (void*)((intptr_t) i));
 	}
+	
+	for (int j = 0; j < numProducer; j++)
+	{
+		pthread_create(&producerThread[j], NULL, createProducer, (void*)((intptr_t) j));
+	}
+
 
 //	int n;
 //
@@ -102,12 +100,24 @@ int main(int argc, char *argv[]) {
 	sleep(sleepTime);
 
 	/* wait for the thread to exit */
-	for (int j = 0; j < numProducer; j++) {
-		pthread_join(producerThread[j], NULL);
+	for (int i = 0; i < numProducer; i++)
+	{
+		pthread_join(producerThread[i], NULL);
 	}
-	for (int i = 0; i < numConsumer; i++) {
-		pthread_join(consumerThread[i], NULL);
+	
+	for (int j = 0; j < numConsumer; j++)
+	{
+		pthread_join(consumerThread[j], NULL);
 	}
+
+	// TODO These aren't in the right place.
+	//pthread_mutex_init(&bufferMutex, NULL);
+	//sem_init(&empty, 0, BUFFER_SIZE);
+	//sem_init(&full, 0, 0);
+
+	/* 2. Initialize buffer */
+	/* 5. Sleep */
+	/* 6. Exit */
 }
 
 void insert() {
@@ -153,7 +163,8 @@ void insert() {
 }
 
 void *createProducer(void *param) {
-	do {
+	do 
+	{
 		//printStuff(pthread_self());
 		sleep(timer);
 		sem_wait(&empty);
@@ -166,7 +177,6 @@ void *createProducer(void *param) {
 		//int id = *((int*)(&param));
 		//cout << "Thread: " << id <<" Is Inserting " << item << endl;
 		cout << "Inserting " << item << endl;
-
 		if (insert_item(item) == 0)
 		{
 			cout << "Insertion Successful!" << endl;
@@ -176,14 +186,15 @@ void *createProducer(void *param) {
 		{
 			cout << "Insertion Unsuccessful." << endl;
 		}
+		
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&full);
-	} while (seed < BUFFER_SIZE);
+	} while(true);
 
-	for (int i = 0; i < BUFFER_SIZE; i++) {
-		buffer[i];
+	/*for (int i = 0; i < BUFFER_SIZE; i++)
+	{
 		cout << buffer[i] << endl;
-	}
+	}*/	
 //	do {
 //		//. . .
 //		/* produce an item in next produced */
@@ -213,7 +224,9 @@ void *createProducer(void *param) {
 //		else
 //			printf("producer produced %d\n", item);
 //	}
+
 	//cout << pthread_self() << endl;
+
 	pthread_exit(NULL);
 }
 
@@ -288,7 +301,7 @@ void *createConsumer(void *param) {
 //
 //		if (buffer.remove_item(&item)) {
 //			printf("report error condition");
-//		} else {
+//		else
 //			printf("Consumer %u consumed %d\n", pthread_self(), item);
 //		}
 //
@@ -296,13 +309,30 @@ void *createConsumer(void *param) {
 //		sem_post(&empty);
 //	}
 
+	/*
+	 * Windows API Implementation
+	 */
+
+//	buffer_item item;
+//
+//	while (true) {
+//		/* sleep for a random period of time */
+//		sleep(...);
+//		if (remove_item(item))
+//			printf("report error condition");
+//		else
+//			printf("consumer consumed %d\n", item);
+//	}
+
+	//cout << pthread_self() << endl;
+
 	pthread_exit(NULL);
 }
 
+/* insert item into buffer.
+return 0 if successful, otherwise
+ return -1 indicating an error condition.*/
 int insert_item(buffer_item it) {
-	/* insert item into buffer
-	 return 0 if successful, otherwise
-	 return -1 indicating an error condition */
 	for (int i = 0; i < BUFFER_SIZE; i++)
 	{
 		if (buffer[i] == 0)
@@ -333,9 +363,10 @@ int remove_item(buffer_item *it) {
 	return -1;
 }
 
-void printStuff(int tid) {
+void printStuff(int tid)
+{
 	pthread_mutex_lock(&bufferMutex);
-	cout << "Thread: " << tid << endl;
+	cout <<"Thread: " << tid << endl;
 	pthread_mutex_unlock(&bufferMutex);
 }
 /*
