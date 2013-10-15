@@ -26,7 +26,10 @@ pthread_mutex_t bufferMutex; // mutex lock
 sem_t empty; // semaphore consumer increments producer decrements
 sem_t full; // semaphore producer increments consumer decrements
 
+uint timer; //sleep timer
 int seed; //use to help seed random number
+buffer_item *element; //pointer to the location of an element
+int index; //use for selecting which element to remove
 
 void *createProducer(void *param); /* threads call this function */
 void *createConsumer(void *param); /* threads call this function */
@@ -38,13 +41,22 @@ void insert();
 
 int main(int argc, char *argv[]) {
 	if (argc != 4) {
-		fprintf(stderr, "usage: a.out <sleepTime> <numProducer> <numConsumer>");
+//		fprintf(stderr, "usage: a.out <sleepTime> <numProducer> <numConsumer>");
+		cout << "!!!Invalid Arguments!!!\n_________________________" << endl;
+		fprintf(stderr, "Format your arguments as follow: [output file] <integer # for sleep> <integer # for amount of producer threads> <integer # for amount of consumer threads>");
 		return -1;
 	}
 
+	//initialize index to 0 and have element point to the memory address of the element at that index
+	index = 0;
+	element = &(buffer[index]);
+	
 	seed = 2;
 
 	int sleepTime = atoi(argv[1]);
+
+	timer = atoi(argv[1]);
+
 	int numProducer = atoi(argv[2]);
 	int numConsumer = atoi(argv[3]);
 
@@ -54,14 +66,17 @@ int main(int argc, char *argv[]) {
 	sem_init(&empty, 0, BUFFER_SIZE);
 	sem_init(&full, 0, 0);
 
-	pthread_t producerThread[numProducer]; /*create array of threads using the sum of the arguments*/
-	pthread_t consumerThread[numConsumer]; /*create array of threads using the sum of the arguments*/
-
+	pthread_t producerThread[numProducer]; /*create array of producer threads*/
+	pthread_t consumerThread[numConsumer]; /*create array of consumer threads*/
+	
+	//create threads
 //	for (int j = 0; j < numProducer; j++) {
-//		pthread_create(&producerThread[j], NULL, createProducer, 0);
+//		pthread_create(&producerThread[j], NULL, createProducer, (void*)((intptr_t) j));
 //	}
-	for (int i = 0; i < numConsumer; i++) {
-		pthread_create(&consumerThread[i], NULL, createConsumer, 0);
+
+	for (int i = 0; i < numConsumer; i++)
+	{
+		pthread_create(&consumerThread[i], NULL, createConsumer, (void*)((intptr_t) i));
 	}
 
 	int n;
@@ -93,8 +108,6 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < numConsumer; i++) {
 		pthread_join(consumerThread[i], NULL);
 	}
-
-	/* 2. Initialize buffer */
 }
 
 void insert() {
@@ -142,15 +155,26 @@ void insert() {
 void *createProducer(void *param) {
 	do {
 		//printStuff(pthread_self());
+		sleep(timer);
 		sem_wait(&empty);
 		pthread_mutex_lock(&bufferMutex);
 
 		srand(pthread_self() * log(seed));
 		seed++;
 		item = rand();
+		//int id = *((int*)(&param));
+		//cout << "Thread: " << id <<" Is Inserting " << item << endl;
 		cout << "Inserting " << item << endl;
-		insert_item(item);
 
+		if (insert_item(item) == 0)
+		{
+			cout << "Insertion Successful!" << endl;
+			cout << "_____________________" << endl;
+		}
+		else
+		{
+			cout << "Insertion Unsuccessful." << endl;
+		}
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&full);
 	} while (seed < BUFFER_SIZE);
@@ -193,29 +217,81 @@ void *createProducer(void *param) {
 }
 
 void *createConsumer(void *param) {
-	for (;;) {
-		sleep(1);
-
-		buffer_item item;
-		int size;
-
-		do {
-			sem_getvalue(&full, &size);
-		} while (BUFFER_SIZE == size);
-
+	do 
+	{
+		//printStuff(pthread_self());
 		sem_wait(&full);
-
 		pthread_mutex_lock(&bufferMutex);
-
-		if (buffer.remove_item(&item)) {
-			printf("report error condition");
-		} else {
-			printf("Consumer %u consumed %d\n", pthread_self(), item);
+		
+		//srand(pthread_self() * log(seed));
+		//seed++;
+		//item = rand();
+		//int id = *((int*)(&param));
+		//cout << "Thread: " << id <<" Is Inserting " << item << endl;
+		if (buffer[index] != 0)
+		{
+			cout << "Removing an item from buffer: " << buffer[index] << endl;
+			if (remove_item(element) == 0)
+			{
+				cout << "Removal Successful!" << endl;
+				cout << "_____________________" << endl;
+			}
+			else
+			{
+				cout << "Removal Unsuccessful." << endl;
+			}
 		}
-
+		else
+		{
+			cout << "Element at " << index << " is empty." << endl;
+			cout << "_____________________" << endl;
+		}
+		index = (index + 1) % BUFFER_SIZE;
+		element = &(buffer[index]);
+		
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&empty);
-	}
+	} while(true);
+
+	/*for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		cout << buffer[i] << endl;
+	}*/
+//	do {
+//		sem_wait(&full);
+//		pthread_mutex_lock(&bufferMutex);
+//		//. . .
+//		/* remove an item from buffer to next consumed */
+//		//. . .
+//		pthread_mutex_unlock(&bufferMutex);
+//		sem_post(&empty);
+//		//. . .
+//		/* consume the item in next consumed */
+//		. . .
+//	} while (true);
+
+//	for (;;) {
+//		sleep(1);
+//		buffer_item item;
+//		int size;
+//
+//		do {
+//			sem_getvalue(&full, &size);
+//		} while (BUFFER_SIZE == size);
+//
+//		sem_wait(&full);
+//
+//		pthread_mutex_lock(&bufferMutex);
+//
+//		if (buffer.remove_item(&item)) {
+//			printf("report error condition");
+//		} else {
+//			printf("Consumer %u consumed %d\n", pthread_self(), item);
+//		}
+//
+//		pthread_mutex_unlock(&bufferMutex);
+//		sem_post(&empty);
+//	}
 
 	pthread_exit(NULL);
 }
@@ -224,8 +300,10 @@ int insert_item(buffer_item it) {
 	/* insert item into buffer
 	 return 0 if successful, otherwise
 	 return -1 indicating an error condition */
-	for (int i = 0; i < BUFFER_SIZE; i++) {
-		if (buffer[i] == 0) {
+	for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		if (buffer[i] == 0)
+		{
 			buffer[i] = it;
 			return 0;
 		}
@@ -233,12 +311,23 @@ int insert_item(buffer_item it) {
 	return -1;
 }
 
+/*Remove an object from buffer
+placing it in item.
+return 0 if successful, otherwise
+return -1 indicating an error condition.*/
 int remove_item(buffer_item *it) {
-	/* remove an object from buffer
-	 placing it in item
-	 return 0 if successful, otherwise
-	 return -1 indicating an error condition */
-	return 0;
+	int temp = *it;
+	for (int i = 0; i < BUFFER_SIZE; i++)
+	{
+		if (buffer[i] == temp)
+		{
+			//buffer[i] = 0;
+			//it = 0;
+			*it = 0;
+			return 0;
+		}	
+	}
+	return -1;
 }
 
 void printStuff(int tid) {
