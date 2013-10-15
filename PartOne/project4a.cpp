@@ -90,12 +90,9 @@ void *producer(void *param) {
 		cout << "Producer " << i << " (ID: " << pthread_self()
 				<< ") produced random number " << Color(buffer.end) << item
 				<< "\033[0m\n";
+
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.full); /* release the semaphore */
-
-		//cout << "Producer " << i << " (ID: " << pthread_self()
-		//		<< ") produced random number " << Color(buffer.end) << item
-		//		<< "\033[0m\n";
 	}
 
 	pthread_exit(NULL);
@@ -119,16 +116,13 @@ void *consumer(void *param) {
 			printf("report error condition");
 		}
 
+		/* consume the item in next consumed */
 		cout << "Consumer " << i << " (ID: " << pthread_self()
 				<< ") consumed random number " << Color(buffer.start) << item
 				<< "\033[0m\n";
+
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
-
-		/* consume the item in next consumed */
-		//cout << "Consumer " << i << " (ID: " << pthread_self()
-		//		<< ") consumed random number " << Color(buffer.start) << item
-		//		<< "\033[0m\n";
 	}
 
 	pthread_exit(NULL);
