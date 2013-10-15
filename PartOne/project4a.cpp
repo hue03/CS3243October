@@ -31,7 +31,8 @@ void printStuff(int);
 
 int main(int argc, char *argv[]) {
 	if (argc != 4) {
-		fprintf(stderr, "usage: a.out <sleep> <numProducer> <numConsumer>");
+		cout << "!!!Invalid Arguments!!!\n_________________________" << endl;
+		fprintf(stderr, "Format your arguments as follow: [output file] <integer # for sleep> <integer # for amount of producer threads> <integer # for amount of consumer threads>");
 		return -1;
 	}
 	seed = 2;
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
 
 	for (int i = 0; i < numConsumer; i++)
 	{
-		pthread_create(&consumerThread[i], NULL, createConsumer, 0);
+		pthread_create(&consumerThread[i], NULL, createConsumer, (void*)((intptr_t) i));
 	}
 	for (int j = 0; j < numProducer; j++)
 	{
@@ -85,17 +86,26 @@ void *createProducer(void *param) {
 		srand(pthread_self() * log(seed));
 		seed++;
 		item = rand();
+		//int id = *((int*)(&param));
+		//cout << "Thread: " << id <<" Is Inserting " << item << endl;
 		cout << "Inserting " << item << endl;
-		insert_item(item);
+		if (insert_item(item) == 0)
+		{
+			cout << "Insertion Successful!" << endl;
+		}
+		else
+		{
+			cout << "Insertion Unsuccessful." << endl;
+		}
 		
 		pthread_mutex_unlock(&bufferMutex);
 		sem_post(&full);
 	} while(seed < BUFFER_SIZE);
 
-	for (int i = 0; i < BUFFER_SIZE; i++)
+	/*for (int i = 0; i < BUFFER_SIZE; i++)
 	{
 		cout << buffer[i] << endl;
-	}	
+	}*/	
 //	do {
 //		//. . .
 //		/* produce an item in next produced */
@@ -165,10 +175,10 @@ void *createConsumer(void *param) {
 	pthread_exit(NULL);
 }
 
+/* insert item into buffer.
+return 0 if successful, otherwise
+ return -1 indicating an error condition.*/
 int insert_item(buffer_item it) {
-	/* insert item into buffer
-	 return 0 if successful, otherwise
-	 return -1 indicating an error condition */
 	for (int i = 0; i < BUFFER_SIZE; i++)
 	{
 		if (buffer[i] == 0)
@@ -180,11 +190,11 @@ int insert_item(buffer_item it) {
 	return -1;
 }
 
+/*Remove an object from buffer
+placing it in item.
+return 0 if successful, otherwise
+return -1 indicating an error condition.*/
 int remove_item(buffer_item *it) {
-	/* remove an object from buffer
-	 placing it in item
-	 return 0 if successful, otherwise
-	 return -1 indicating an error condition */
 	return 0;
 }
 
