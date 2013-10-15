@@ -104,35 +104,56 @@
  * Code from Section 4.4.1 - Pthreads
  */
 
-//#include <pthread.h>
-//#include <stdio.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 //
 //int sum; /* this data is shared by the thread(s) */
-//void *runner(void *param); /* threads call this function */
-//
-//int main(int argc, char *argv[])
-//{
-//	pthread t tid; /* the thread identifier */
-//	pthread attr t attr; /* set of thread attributes */
-//
-//	if (argc != 2) {
-//		fprintf(stderr,"usage: a.out <integer value>\n");
-//		return -1;
-//	}
-//	if (atoi(argv[1]) < 0) {
-//		fprintf(stderr,"%d must be >= 0\n",atoi(argv[1]));
-//		return -1;
-//	}
-//
-//	/* get the default attributes */
-//	pthread attr init(&attr);
-//	/* create the thread */
-//	pthread create(&tid,&attr,runner,argv[1]);
-//	/* wait for the thread to exit */
-//	pthread join(tid,NULL);
-//
+pthread_mutex_t bufferMutex = PTHREAD_MUTEX_INITIALIZER; //mutex lock for the shared buffer
+//semaphore empty = n; //semaphore consumer increments producer decrements
+//semaphore full = 0 //semaphore producer increments consumer decrements
+
+void *createProducer(void *param); /* threads call this function */
+void *createConsumer(void *param); /* threads call this function */
+
+int main(int argc, char *argv[])
+{
+	pthread_t tid[numConsumers + numProducers]; /*create array of threads using the sum of the arguments*/
+	//pthread attr t attr; /* set of thread attributes */
+
+	if (argc != 2) {
+		fprintf(stderr,"usage: a.out <integer value>\n");
+		return -1;
+	}
+	if (atoi(argv[1]) < 0) {
+		fprintf(stderr,"%d must be >= 0\n",atoi(argv[1]));
+		return -1;
+	}
+
+	/* get the default attributes */
+	//pthread attr init(&attr);
+	/* create the thread */
+	for (int i = 0; i < numConsumers; i++)
+	{
+		pthread_create(&tid[i], NULL, createConsumer, void*);
+	}
+	for (int j = 0; j < numProducers; j++)
+	{
+		pthread_create(&tid[j], NULL, createConsumer, void*);
+	}	
+
+	/* wait for the thread to exit */
+	for (int i = 0; i < numConsumers; i++)
+	{
+		pthread_join(tid[i], NULL);
+	}
+	for (int j = 0; j < numConsumers; j++)
+	{
+		pthread_join(tid[j], NULL);
+	}
+
 //	printf("sum = %d\n",sum);
-//}
+}
 //
 ///* The thread will begin control in this function */
 //void *runner(void *param)
@@ -206,3 +227,4 @@
 //
 ///* release the semaphore */
 //sem post(&sem);
+
