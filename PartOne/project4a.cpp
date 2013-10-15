@@ -15,25 +15,26 @@
 /* the buffer */
 buffer_item buffer[BUFFER_SIZE];
 
-int n;
-sem_t mutex /*= 1*/;
-sem_t empty /*= n*/;
-sem_t full /*= 0*/;
+pthread_mutex_t mutex;
+sem_t empty;
+sem_t full;
 
 int main(int argc, char *argv[]) {
 	int sleep, numProducer, numConsumer;
 
-	//	if (argc != 2) {
-	//		fprintf(stderr,"usage: a.out <integer value>\n");
-	//		return -1;
-	//	}
 	if (argc != 4) {
 		fprintf(stderr, "usage: a.out <sleep> <numProducer> <numConsumer>");
+		return -1;
 	} else {
 		sleep = atoi(argv[1]);
 		numProducer = atoi(argv[2]);
 		numConsumer = atoi(argv[3]);
 	}
+
+	pthread_mutex_init(&mutex,NULL);
+	sem_init(&empty, 0, BUFFER_SIZE);
+	sem_init(&full, 0, 0);
+
 	/* 2. Initialize buffer */
 	/* 3. Create producer thread(s) */
 	/* 4. Create consumer thread(s) */
@@ -92,15 +93,6 @@ int remove_item(buffer_item item) {
 //	pthread_t tid; /* the thread identifier */
 //	pthread_attr_t attr; /* set of thread attributes */
 //
-//	if (argc != 2) {
-//		fprintf(stderr,"usage: a.out <integer value>\n");
-//		return -1;
-//	}
-//	if (atoi(argv[1]) < 0) {
-//		fprintf(stderr,"%d must be >= 0\n",atoi(argv[1]));
-//		return -1;
-//	}
-//
 //	/* get the default attributes */
 //	pthread_attr_init(&attr);
 //	/* create the thread */
@@ -140,17 +132,6 @@ int remove_item(buffer_item item) {
  */
 
 /*
- * Creating a mutex.
- */
-
-//#include <pthread.h>
-//
-//pthread_mutex_t mutex;
-//
-///* create the mutex lock */
-//pthread_mutex_init(&mutex,NULL);
-
-/*
  * Protecting a critical section with mutex locks.
  */
 
@@ -161,16 +142,6 @@ int remove_item(buffer_item item) {
 //
 ///* release the mutex lock */
 //pthread_mutex_unlock(&mutex);
-
-/*
- * Creating and initializing an unnamed semaphore.
- */
-
-//#include <semaphore.h>
-//sem_t sem;
-//
-///* Create the semaphore and initialize it to 1 */
-//sem_init(&sem, 0, 1);
 
 /*
  * Protecting a critical section using a semaphore.
