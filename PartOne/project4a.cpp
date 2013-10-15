@@ -79,25 +79,25 @@ int main(int argc, char *argv[]) {
 		pthread_create(&consumerThread[i], NULL, createConsumer, (void*)((intptr_t) i));
 	}
 
-	int n;
-
-	do
-	{
-		n = -1;
-
-		cout << "Enter how many random numbers into the buffer?\n";
-		cin >> n;
-
-		while (n < 0) {
-			cin >> n;
-		}
-
-		n = min(n, BUFFER_SIZE);
-
-		for (int i = 0; i < n; ++i) {
-			insert();
-		}
-	} while (n > 0);
+//	int n;
+//
+//	do
+//	{
+//		n = -1;
+//
+//		cout << "Enter how many random numbers into the buffer?\n";
+//		cin >> n;
+//
+//		while (n < 0) {
+//			cin >> n;
+//		}
+//
+//		n = min(n, BUFFER_SIZE);
+//
+//		for (int i = 0; i < n; ++i) {
+//			insert();
+//		}
+//	} while (n > 0);
 
 	sleep(sleepTime);
 
@@ -158,8 +158,9 @@ void *createProducer(void *param) {
 		sleep(timer);
 		sem_wait(&empty);
 		pthread_mutex_lock(&bufferMutex);
-
-		srand(pthread_self() * log(seed));
+		
+		cout << "Producer is no longer a lazy bum and is doing something productive." << endl;
+		srand(pthread_self() * log(seed)); //log op on seed will generate new random numbers without having it become too large over time
 		seed++;
 		item = rand();
 		//int id = *((int*)(&param));
@@ -220,9 +221,11 @@ void *createConsumer(void *param) {
 	do 
 	{
 		//printStuff(pthread_self());
+		sleep(timer);
 		sem_wait(&full);
 		pthread_mutex_lock(&bufferMutex);
 		
+		cout << "Consumer is being fat." << endl;
 		//srand(pthread_self() * log(seed));
 		//seed++;
 		//item = rand();
