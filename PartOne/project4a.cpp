@@ -119,7 +119,6 @@ void *createConsumer(void *param) {
 //		else
 //			printf("consumer consumed %d\n", item);
 //	}
-
 	pthread_exit(NULL);
 }
 
