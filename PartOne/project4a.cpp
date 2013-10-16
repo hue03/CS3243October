@@ -42,17 +42,21 @@ int main(int argc, char *argv[]) {
 
 	if (argc != 4) {
 		cout << "!!!Invalid Arguments!!!\n_______________________" << endl;
-		fprintf(stderr,
-				"Format your arguments as follow:  [output file] <integer # for sleep> <integer # for amount of producer threads> <integer # for amount of consumer threads>");
+		fprintf(stderr, "Format your arguments as follow:\n  [output file] <positive integer # for sleep time> <positive integer # for amount of producer threads> <positive integer # for amount of consumer threads>");
 		return -1;
 	}
-
+	
 	uint sleepTime = atoi(argv[1]);
 	numProducer = atoi(argv[2]);
 	numConsumer = atoi(argv[3]);
 	producersLeft = numProducer;
 	consumersLeft = numConsumer;
 
+	if ((numProducer < 0) || (numConsumer < 0) || (sleepTime < 0))
+	{
+		cout << "One or more of the arguments is not greater than 0." << endl;
+		return -1;
+	}
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
