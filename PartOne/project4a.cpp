@@ -106,14 +106,8 @@ int main(int argc, char *argv[]) {
 	running = false;
 
 	pthread_mutex_lock(&output);
-	cout << "main() is exiting.";
+	cout << "main() is exiting.  Joining threads.";
 	pthread_mutex_unlock(&output);
-
-	if (buffer.numEmpty() > 0 || buffer.numFull() < BUFFER_SIZE) {
-		pthread_mutex_lock(&output);
-		cout << " There are still threads actively running. FINISH THEM!";
-		pthread_mutex_unlock(&output);
-	}
 
 	cout << endl;
 
@@ -141,9 +135,9 @@ int main(int argc, char *argv[]) {
 }
 
 void *producer(void *param) {
-	int i = *(int*) param + 1;
+	uint i = *(uint*) param + 1;
 
-	while (running || producersLeft < consumersLeft) {
+	while (running || (producersLeft < consumersLeft && i > numProducer - producersLeft)) {
 		/* sleep for a random period of time */
 		sleep(rand() % P_RAND_SLEEP + 1);
 
@@ -187,15 +181,15 @@ void *producer(void *param) {
 		pthread_mutex_unlock(&output);
 	}
 
-	--numProducer;
+	--producersLeft;
 
 	pthread_exit(NULL);
 }
 
 void *consumer(void *param) {
-	int i = *(int*) param + 1;
+	uint i = *(uint*) param + 1;
 
-	while (running || consumersLeft < producersLeft) {
+	while (running || (consumersLeft < producersLeft && i > numConsumer - consumersLeft)) {
 		/* sleep for a random period of time */
 		sleep(rand() % C_RAND_SLEEP + 1);
 
@@ -238,7 +232,7 @@ void *consumer(void *param) {
 		pthread_mutex_unlock(&output);
 	}
 
-	--numConsumer;
+	--consumersLeft;
 
 	pthread_exit(NULL);
 }
