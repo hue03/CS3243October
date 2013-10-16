@@ -31,6 +31,8 @@ uint producersLeft;
 uint consumersLeft;
 
 pthread_mutex_t output;
+pthread_mutex_t mProducersLeft;
+pthread_mutex_t mConsumersLeft;
 
 void *producer(void*); /* threads call this function */
 void *consumer(void*); /* threads call this function */
@@ -137,7 +139,9 @@ int main(int argc, char *argv[]) {
 void *producer(void *param) {
 	uint i = *(uint*) param + 1;
 
-	while (running || (producersLeft < consumersLeft && i > numProducer - producersLeft)) {
+	bool moreProducers;
+
+	do {
 		/* sleep for a random period of time */
 		sleep(rand() % P_RAND_SLEEP + 1);
 
@@ -179,9 +183,15 @@ void *producer(void *param) {
 		cout << "P" << i << "    produced random number " << color(buffer.end)
 				<< item << color(-1) << endl;
 		pthread_mutex_unlock(&output);
-	}
 
+		pthread_mutex_lock(&mProducersLeft);
+		moreProducers = (producersLeft < consumersLeft && i > numProducer - producersLeft);
+		pthread_mutex_unlock(&mProducersLeft);
+	} while (running || moreProducers);
+
+	pthread_mutex_lock(&mProducersLeft);
 	--producersLeft;
+	pthread_mutex_unlock(&mProducersLeft);
 
 	pthread_exit(NULL);
 }
@@ -189,7 +199,9 @@ void *producer(void *param) {
 void *consumer(void *param) {
 	uint i = *(uint*) param + 1;
 
-	while (running || (consumersLeft < producersLeft && i > numConsumer - consumersLeft)) {
+	bool moreConsumers;
+
+	do {
 		/* sleep for a random period of time */
 		sleep(rand() % C_RAND_SLEEP + 1);
 
@@ -230,9 +242,15 @@ void *consumer(void *param) {
 		cout << "   C" << i << " consumed random number " << color(buffer.start)
 				<< item << color(-1) << endl;
 		pthread_mutex_unlock(&output);
-	}
 
+		pthread_mutex_lock(&mConsumersLeft);
+		moreConsumers = consumersLeft < producersLeft && i > numConsumer - consumersLeft;
+		pthread_mutex_unlock(&mConsumersLeft);
+	} while (running || moreConsumers);
+
+	pthread_mutex_lock(&mConsumersLeft);
 	--consumersLeft;
+	pthread_mutex_unlock(&mConsumersLeft);
 
 	pthread_exit(NULL);
 }
