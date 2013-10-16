@@ -84,6 +84,10 @@ struct Buffer {
 
 		return temp;
 	}
+
+	void printCount() {
+		std::cout << "Buffer count = " << count << " | ";
+	}
 };
 
 #endif /* BUFFER_H_ */

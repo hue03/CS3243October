@@ -14,8 +14,8 @@
 #include "buffer.h"
 
 #define SEED time(NULL)
-#define P_RAND_SLEEP 10
-#define C_RAND_SLEEP 10
+#define P_RAND_SLEEP 9
+#define C_RAND_SLEEP 9
 
 using namespace std;
 
@@ -24,10 +24,12 @@ Buffer buffer;
 
 bool running;
 
+pthread_mutex_t output;
+
 void *producer(void*); /* threads call this function */
 void *consumer(void*); /* threads call this function */
 
-string Color(size_t);
+string color(size_t);
 
 int main(int argc, char *argv[]) {
 	/* 1. Get command line arguments argv[1],argv[2],argv[3] */
@@ -46,11 +48,15 @@ int main(int argc, char *argv[]) {
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
-	running = true;
+	vector<pthread_t> threads;
 
 	srand(SEED);
 
-	vector<pthread_t> threads;
+	running = true;
+
+	pthread_mutex_init(&output, NULL);
+
+	cout << color(-1);
 
 	/* 3. Create producer thread(s) */
 	for (uint i = 0; i < numProducer; ++i) {
@@ -58,6 +64,10 @@ int main(int argc, char *argv[]) {
 		int n = i;
 
 		pthread_create(&thread, NULL, producer, &n);
+
+		pthread_mutex_lock(&output);
+		cout << "Producer " << (i + 1) << " thread created." << endl;
+		pthread_mutex_unlock(&output);
 
 		threads.push_back(thread);
 	}
@@ -67,22 +77,34 @@ int main(int argc, char *argv[]) {
 		pthread_t thread;
 		int n = i;
 
+		pthread_mutex_lock(&output);
+		cout << "Consumer " << (i + 1) << " thread created." << endl;
+		pthread_mutex_unlock(&output);
+
 		pthread_create(&thread, NULL, consumer, &n);
 
 		threads.push_back(thread);
 	}
 
 	/* 5. Sleep */
+	pthread_mutex_lock(&output);
+	cout << "main() sleeping." << endl;
+	pthread_mutex_unlock(&output);
+
 	sleep(sleepTime);
 
 	/* 6. Exit */
 
 	running = false;
 
+	pthread_mutex_lock(&output);
 	cout << "main() is exiting.";
+	pthread_mutex_unlock(&output);
 
 	if (buffer.numEmpty() > 0 || buffer.numFull() < BUFFER_SIZE) {
+		pthread_mutex_lock(&output);
 		cout << " There are still threads actively running. FINISH THEM!";
+		pthread_mutex_unlock(&output);
 	}
 
 	cout << endl;
@@ -90,7 +112,9 @@ int main(int argc, char *argv[]) {
 	for (uint i = 0; i < threads.size(); ++i) {
 		pthread_join(threads.at(i), NULL);
 
+		pthread_mutex_lock(&output);
 		cout << "Joining thread " << (i + 1) << endl;
+		pthread_mutex_unlock(&output);
 	}
 
 	return 0;
@@ -109,17 +133,36 @@ void *producer(void *param) {
 		/* generate a random number */
 		buffer_item item = rand();
 
-		sem_wait(&buffer.empty); /* acquire the semaphore */
-		pthread_mutex_lock(&buffer.mutex); /* acquire the mutex lock */
+		if (0 == buffer.numEmpty()) {
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "P" << i << "    waiting for Consumers." << endl;
+			pthread_mutex_unlock(&output);
+		}
 
+		sem_wait(&buffer.empty); /* acquire the semaphore */
+
+		if (pthread_mutex_trylock(&buffer.mutex) != 0) {
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "P" << i << "    waiting for buffer." << endl;
+			pthread_mutex_unlock(&output);
+
+			pthread_mutex_lock(&buffer.mutex); /* acquire the mutex lock */
+		}
+
+		/* critical section */
 		/* add next produced to the buffer */
 		if (buffer.insert_item(item)) {
+			pthread_mutex_lock(&output);
 			printf("report error condition");
+			pthread_mutex_unlock(&output);
 		} else {
-			cout << Color(-1) << "Buffer size = " << buffer.count
-					<< " | Producer " << i << " (ID: " << pthread_self()
-					<< ") produced random number " << Color(buffer.end) << item
-					<< Color(-1) << endl;
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "P" << i << "    produced random number "
+					<< color(buffer.end) << item << color(-1) << endl;
+			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
@@ -142,31 +185,49 @@ void *consumer(void *param) {
 
 		buffer_item item;
 
+		if (0 == buffer.numFull()) {
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "   C" << i << " waiting for Producers." << endl;
+			pthread_mutex_unlock(&output);
+		}
+
 		sem_wait(&buffer.full); /* acquire the semaphore */
-		pthread_mutex_lock(&buffer.mutex); /* acquire the mutex lock */
+
+		if (pthread_mutex_trylock(&buffer.mutex) != 0) {
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "   C" << i << " waiting for buffer." << endl;
+			pthread_mutex_unlock(&output);
+
+			pthread_mutex_lock(&buffer.mutex); /* acquire the mutex lock */
+		}
 
 		/* critical section */
 		/* remove an item from buffer to next consumed */
 		if (buffer.remove_item(&item)) {
+			pthread_mutex_lock(&output);
 			printf("report error condition");
+			pthread_mutex_unlock(&output);
 		} else {
 			/* consume the item in next consumed */
-			cout << Color(-1) << "Buffer size = " << buffer.count
-					<< " | Consumer " << i << " (ID: " << pthread_self()
-					<< ") consumed random number " << Color(buffer.start)
-					<< item << Color(-1) << endl;
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "   C" << i << " consumed random number "
+					<< color(buffer.start) << item << color(-1) << endl;
+			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
 
-		moreProducers = (buffer.numEmpty( ) > BUFFER_SIZE - buffer.numFull());
+		moreProducers = (buffer.numEmpty() > BUFFER_SIZE - buffer.numFull());
 	}
 
 	pthread_exit(NULL);
 }
 
-string Color(size_t n) {
+string color(size_t n) {
 	string result = "";
 
 	switch (n) {
