@@ -48,17 +48,17 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	
+	if (((atoi(argv[1])) <= 0) || ((atoi(argv[2])) <= 0) || ((atoi(argv[3])) <= 0))
+	{
+		cout << "One or more of the arguments need to be greater than 0." << endl;
+		return -1;
+	}
 	uint sleepTime = atoi(argv[1]);
 	numProducer = atoi(argv[2]);
 	numConsumer = atoi(argv[3]);
 	producersLeft = numProducer;
 	consumersLeft = numConsumer;
 
-	if ((numProducer < 0) || (numConsumer < 0) || (sleepTime < 0))
-	{
-		cout << "One or more of the arguments is not greater than 0." << endl;
-		return -1;
-	}
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
