@@ -16,78 +16,30 @@ struct Buffer {
 	size_t end;
 	size_t count;
 	buffer_item buffer[BUFFER_SIZE];
-	pthread_mutex_t mutex;
+	pthread_mutex_t bufferMutex;
 	sem_t empty;
 	sem_t full;
 
-	buffer_item& operator[](int i) {
-		buffer_item& value = buffer[i];
-		return value;
-	}
+	buffer_item& operator[](int);
 
-	Buffer() {
-		start = 0;
-		end = 0;
-		count = 0;
-
-		/* create the mutex lock */
-		pthread_mutex_init(&mutex, NULL);
-
-		/* Create the semaphore and initialize it to BUFFER_SIZE */
-		sem_init(&empty, 0, BUFFER_SIZE);
-
-		/* Create the semaphore and initialize it to 0 */
-		sem_init(&full, 0, 0);
-	}
+	Buffer();
 
 	/* insert item into buffer
 	return 0 if successful, otherwise
 	return -1 indicating an error condition */
-	int insert_item(buffer_item it) {
-		if (BUFFER_SIZE == count) {
-			return -1;
-		}
-
-		buffer[end] = it;
-		end = (end + 1) % BUFFER_SIZE;
-		++count;
-		return 0;
-	}
+	int insert_item(buffer_item);
 
 	/* remove an object from buffer
 	placing it in item
 	return 0 if successful, otherwise
 	return -1 indicating an error condition */
-	int remove_item(buffer_item *it) {
-		if (0 == count) {
-			return -1;
-		}
+	int remove_item(buffer_item*);
 
-		*it = buffer[start];
-		start = (start + 1) % BUFFER_SIZE;
-		--count;
-		return 0;
-	}
+	int numEmpty();
 
-	int numEmpty() {
-		int temp;
+	int numFull();
 
-		sem_getvalue(&empty, &temp);
-
-		return temp;
-	}
-
-	int numFull() {
-		int temp;
-
-		sem_getvalue(&full, &temp);
-
-		return temp;
-	}
-
-	void printCount() {
-		std::cout << "Buffer count = " << count << " | ";
-	}
+	void printCount();
 };
 
 #endif /* BUFFER_H_ */
