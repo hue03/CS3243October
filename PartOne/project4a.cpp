@@ -157,16 +157,16 @@ void *producer(void *param) {
 			pthread_mutex_lock(&output);
 			printf("report error condition");
 			pthread_mutex_unlock(&output);
-		} else {
-			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "P" << i << "    produced random number "
-					<< color(buffer.end) << item << color(-1) << endl;
-			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.full); /* release the semaphore */
+
+		pthread_mutex_lock(&output);
+		buffer.printCount();
+		cout << "P" << i << "    produced random number " << color(buffer.end)
+				<< item << color(-1) << endl;
+		pthread_mutex_unlock(&output);
 
 		moreConsumers = (BUFFER_SIZE - buffer.numFull() > buffer.numEmpty());
 	}
@@ -209,17 +209,17 @@ void *consumer(void *param) {
 			pthread_mutex_lock(&output);
 			printf("report error condition");
 			pthread_mutex_unlock(&output);
-		} else {
-			/* consume the item in next consumed */
-			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "   C" << i << " consumed random number "
-					<< color(buffer.start) << item << color(-1) << endl;
-			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
+
+		/* consume the item in next consumed */
+		pthread_mutex_lock(&output);
+		buffer.printCount();
+		cout << "   C" << i << " consumed random number " << color(buffer.start)
+				<< item << color(-1) << endl;
+		pthread_mutex_unlock(&output);
 
 		moreProducers = (buffer.numEmpty() > BUFFER_SIZE - buffer.numFull());
 	}
