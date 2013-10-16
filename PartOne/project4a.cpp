@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <list>
 #include <semaphore.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -23,6 +24,11 @@ using namespace std;
 Buffer buffer;
 
 bool running;
+
+uint numProducer;
+uint numConsumer;
+uint producersLeft;
+uint consumersLeft;
 
 pthread_mutex_t output;
 
@@ -42,13 +48,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	uint sleepTime = atoi(argv[1]);
-	uint numProducer = atoi(argv[2]);
-	uint numConsumer = atoi(argv[3]);
+	numProducer = atoi(argv[2]);
+	numConsumer = atoi(argv[3]);
+	producersLeft = numProducer;
+	consumersLeft = numConsumer;
 
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
-	vector<pthread_t> threads;
+	list<pthread_t> threads;
 
 	srand(SEED);
 
@@ -109,12 +117,24 @@ int main(int argc, char *argv[]) {
 
 	cout << endl;
 
-	for (uint i = 0; i < threads.size(); ++i) {
-		pthread_join(threads.at(i), NULL);
+	for (uint i = 0; i < numProducer; ++i) {
+		pthread_join(threads.front(), NULL);
 
 		pthread_mutex_lock(&output);
-		cout << "Joining thread " << (i + 1) << endl;
+		cout << "Joining P" << (i + 1) << endl;
 		pthread_mutex_unlock(&output);
+
+		threads.pop_front();
+	}
+
+	for (uint i = 0; i < numConsumer; ++i) {
+		pthread_join(threads.front(), NULL);
+
+		pthread_mutex_lock(&output);
+		cout << "Joining    C" << (i + 1) << endl;
+		pthread_mutex_unlock(&output);
+
+		threads.pop_front();
 	}
 
 	return 0;
@@ -123,9 +143,7 @@ int main(int argc, char *argv[]) {
 void *producer(void *param) {
 	int i = *(int*) param + 1;
 
-	bool moreConsumers;
-
-	while (running || moreConsumers) {
+	while (running || producersLeft < consumersLeft) {
 		/* sleep for a random period of time */
 		sleep(rand() % P_RAND_SLEEP + 1);
 
@@ -167,9 +185,9 @@ void *producer(void *param) {
 		cout << "P" << i << "    produced random number " << color(buffer.end)
 				<< item << color(-1) << endl;
 		pthread_mutex_unlock(&output);
-
-		moreConsumers = (BUFFER_SIZE - buffer.numFull() > buffer.numEmpty());
 	}
+
+	--numProducer;
 
 	pthread_exit(NULL);
 }
@@ -177,9 +195,7 @@ void *producer(void *param) {
 void *consumer(void *param) {
 	int i = *(int*) param + 1;
 
-	bool moreProducers;
-
-	while (running || moreProducers) {
+	while (running || consumersLeft < producersLeft) {
 		/* sleep for a random period of time */
 		sleep(rand() % C_RAND_SLEEP + 1);
 
@@ -220,9 +236,9 @@ void *consumer(void *param) {
 		cout << "   C" << i << " consumed random number " << color(buffer.start)
 				<< item << color(-1) << endl;
 		pthread_mutex_unlock(&output);
-
-		moreProducers = (buffer.numEmpty() > BUFFER_SIZE - buffer.numFull());
 	}
+
+	--numConsumer;
 
 	pthread_exit(NULL);
 }
