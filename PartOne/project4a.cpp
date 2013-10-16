@@ -10,6 +10,7 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <vector>
 #include "buffer.h"
 
 #define SEED time(NULL)
@@ -20,6 +21,8 @@ using namespace std;
 
 /* the buffer */
 Buffer buffer;
+
+bool running;
 
 void *producer(void*); /* threads call this function */
 void *consumer(void*); /* threads call this function */
@@ -43,7 +46,11 @@ int main(int argc, char *argv[]) {
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
+	running = true;
+
 	srand(SEED);
+
+	vector<pthread_t> threads;
 
 	/* 3. Create producer thread(s) */
 	for (uint i = 0; i < numProducer; ++i) {
@@ -51,6 +58,8 @@ int main(int argc, char *argv[]) {
 		int n = i;
 
 		pthread_create(&thread, NULL, producer, &n);
+
+		threads.push_back(thread);
 	}
 
 	/* 4. Create consumer thread(s) */
@@ -59,19 +68,40 @@ int main(int argc, char *argv[]) {
 		int n = i;
 
 		pthread_create(&thread, NULL, consumer, &n);
+
+		threads.push_back(thread);
 	}
 
 	/* 5. Sleep */
 	sleep(sleepTime);
 
 	/* 6. Exit */
+
+	running = false;
+
+	cout << "main() is exiting.";
+
+	if (buffer.numEmpty() > 0 || buffer.numFull() < BUFFER_SIZE) {
+		cout << " There are still threads actively running. FINISH THEM!";
+	}
+
+	cout << endl;
+
+	for (uint i = 0; i < threads.size(); ++i) {
+		pthread_join(threads.at(i), NULL);
+
+		cout << "Joining thread " << (i + 1) << endl;
+	}
+
 	return 0;
 }
 
 void *producer(void *param) {
 	int i = *(int*) param + 1;
 
-	for (;;) {
+	bool moreConsumers;
+
+	while (running || moreConsumers) {
 		/* sleep for a random period of time */
 		sleep(rand() % P_RAND_SLEEP + 1);
 
@@ -85,14 +115,17 @@ void *producer(void *param) {
 		/* add next produced to the buffer */
 		if (buffer.insert_item(item)) {
 			printf("report error condition");
+		} else {
+			cout << Color(-1) << "Buffer size = " << buffer.count
+					<< " | Producer " << i << " (ID: " << pthread_self()
+					<< ") produced random number " << Color(buffer.end) << item
+					<< Color(-1) << endl;
 		}
-
-		cout << "Producer " << i << " (ID: " << pthread_self()
-				<< ") produced random number " << Color(buffer.end) << item
-				<< "\033[0m\n";
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.full); /* release the semaphore */
+
+		moreConsumers = (BUFFER_SIZE - buffer.numFull() > buffer.numEmpty());
 	}
 
 	pthread_exit(NULL);
@@ -101,7 +134,9 @@ void *producer(void *param) {
 void *consumer(void *param) {
 	int i = *(int*) param + 1;
 
-	for (;;) {
+	bool moreProducers;
+
+	while (running || moreProducers) {
 		/* sleep for a random period of time */
 		sleep(rand() % C_RAND_SLEEP + 1);
 
@@ -114,15 +149,18 @@ void *consumer(void *param) {
 		/* remove an item from buffer to next consumed */
 		if (buffer.remove_item(&item)) {
 			printf("report error condition");
+		} else {
+			/* consume the item in next consumed */
+			cout << Color(-1) << "Buffer size = " << buffer.count
+					<< " | Consumer " << i << " (ID: " << pthread_self()
+					<< ") consumed random number " << Color(buffer.start)
+					<< item << Color(-1) << endl;
 		}
-
-		/* consume the item in next consumed */
-		cout << "Consumer " << i << " (ID: " << pthread_self()
-				<< ") consumed random number " << Color(buffer.start) << item
-				<< "\033[0m\n";
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
+
+		moreProducers = (buffer.numEmpty( ) > BUFFER_SIZE - buffer.numFull());
 	}
 
 	pthread_exit(NULL);

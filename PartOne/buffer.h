@@ -68,6 +68,22 @@ struct Buffer {
 		--count;
 		return 0;
 	}
+
+	int numEmpty() {
+		int temp;
+
+		sem_getvalue(&empty, &temp);
+
+		return temp;
+	}
+
+	int numFull() {
+		int temp;
+
+		sem_getvalue(&full, &temp);
+
+		return temp;
+	}
 };
 
 #endif /* BUFFER_H_ */
