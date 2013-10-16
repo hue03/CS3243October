@@ -44,15 +44,15 @@ int main(int argc, char *argv[]) {
 
 	if (argc != 4) {
 		cout << "!!!Invalid Arguments!!!\n_______________________" << endl;
-		fprintf(stderr, "Format your arguments as follow:\n  [output file] <positive integer # for sleep time> <positive integer # for amount of producer threads> <positive integer # for amount of consumer threads>");
+		fprintf(stderr,
+				"Format your arguments as follow:\n  [output file] <positive integer # for sleep time> <positive integer # for amount of producer threads> <positive integer # for amount of consumer threads>\n");
+		return -1;
+	} else if (atoi(argv[1]) <= 0 || atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0) {
+		cout << "One or more of the arguments need to be greater than 0."
+				<< endl;
 		return -1;
 	}
-	
-	if (((atoi(argv[1])) <= 0) || ((atoi(argv[2])) <= 0) || ((atoi(argv[3])) <= 0))
-	{
-		cout << "One or more of the arguments need to be greater than 0." << endl;
-		return -1;
-	}
+
 	uint sleepTime = atoi(argv[1]);
 	numProducer = atoi(argv[2]);
 	numConsumer = atoi(argv[3]);
@@ -177,19 +177,20 @@ void *producer(void *param) {
 			pthread_mutex_lock(&output);
 			printf("report error condition");
 			pthread_mutex_unlock(&output);
+		} else {
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "P" << i << "    produced random number "
+					<< color(buffer.end) << item << color(-1) << endl;
+			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.full); /* release the semaphore */
 
-		pthread_mutex_lock(&output);
-		buffer.printCount();
-		cout << "P" << i << "    produced random number " << color(buffer.end)
-				<< item << color(-1) << endl;
-		pthread_mutex_unlock(&output);
-
 		pthread_mutex_lock(&mProducersLeft);
-		moreProducers = (producersLeft < consumersLeft && i > numProducer - producersLeft);
+		moreProducers = (producersLeft < consumersLeft
+				&& i > numProducer - producersLeft);
 		pthread_mutex_unlock(&mProducersLeft);
 	} while (running || moreProducers);
 
@@ -235,22 +236,23 @@ void *consumer(void *param) {
 			pthread_mutex_lock(&output);
 			printf("report error condition");
 			pthread_mutex_unlock(&output);
+		} else {
+			/* consume the item in next consumed */
+			pthread_mutex_lock(&output);
+			buffer.printCount();
+			cout << "   C" << i << " consumed random number "
+					<< color(buffer.start) << item << color(-1) << endl;
+			pthread_mutex_unlock(&output);
 		}
 
 		pthread_mutex_unlock(&buffer.mutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
 
-		/* consume the item in next consumed */
-		pthread_mutex_lock(&output);
-		buffer.printCount();
-		cout << "   C" << i << " consumed random number " << color(buffer.start)
-				<< item << color(-1) << endl;
-		pthread_mutex_unlock(&output);
-
 		pthread_mutex_lock(&mConsumersLeft);
-		moreConsumers = consumersLeft < producersLeft && i > numConsumer - consumersLeft;
+		moreConsumers = consumersLeft < producersLeft
+				&& i > numConsumer - consumersLeft;
 		pthread_mutex_unlock(&mConsumersLeft);
-	} while (running || moreConsumers);
+	} while (running || (moreConsumers && buffer.count > 0));
 
 	pthread_mutex_lock(&mConsumersLeft);
 	--consumersLeft;
