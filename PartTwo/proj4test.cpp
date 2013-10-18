@@ -30,6 +30,7 @@ pid_t performFork()
 	numChild = 4;
 	//Prepare shared memory
 	arraySize = 24;
+	//arraySize = 16;
 	const int size = (8 * arraySize); //size in bytes of the shared memory segment
 	segment_id = shmget(IPC_PRIVATE, size, S_IRUSR | S_IWUSR); //allocate a chared memory segment
 	memory = (unsigned int *)shmat(segment_id, NULL, 0); //attach shared memory segment
@@ -38,6 +39,32 @@ pid_t performFork()
 	arrayPartition = arraySize / numChild;	
 	//initialize semaphore
 	sem_init(&lock, 0, 1);
+	/*
+	memory[0] = 6;
+	memory[1] = 2;
+	memory[2] = 1;
+	memory[3] = 8;
+	memory[4] = 3;
+	memory[5] = 5;
+	memory[6] = 9;
+	memory[7] = 7;
+	memory[8] = 10;
+	memory[9] = 4;
+	memory[10] = 11;
+	memory[11] = 1;
+	memory[12] = 1;
+	memory[13] = 15;
+	memory[14] = 9;
+	memory[15] = 12;
+	memory[16] = 6;
+	memory[17] = 4;
+	memory[18] = 3;
+	memory[19] = 3;
+	memory[20] = 16;
+	memory[21] = 1;
+	memory[22] = 9;
+	memory[23] = 3;
+	*/
 	cout << "Before forking." << endl;
 	for (int i = 0; i < numChild; i++)
 	{
@@ -64,7 +91,7 @@ pid_t performFork()
 		//sem_post(&lock);
 		fillMemory();
 		sortMemory();
-		//cout << "Child process C" << id << " terminated." << endl;
+		cout << "Child process C" << id << " terminated." << endl;
 		exit(0);
 	}
 	else
@@ -89,11 +116,11 @@ pid_t performFork()
 void fillMemory()
 {
 	srand(getpid());
-	for (int i = range; range >= (range - arraySize / numChild); i--)
+	for (int i = range; i >= (range - arrayPartition); i--)
 	{
-		sem_wait(&lock);
-		memory[i] = rand();
-		sem_post(&lock);
+		//sem_wait(&lock);
+		memory[i] = 1 + (rand() % (int)(24));
+		//sem_post(&lock);
 	}
 	
 }
@@ -116,10 +143,10 @@ void sortMemory()
 		if (minIndex != i)
 		{
 			tmp = memory[i];
-			sem_wait(&lock);
+			//sem_wait(&lock);
 			memory[i] = memory[minIndex];
 			memory[minIndex] = tmp;
-			sem_post(&lock);
+			//sem_post(&lock);
 		}
 	}	
 }
