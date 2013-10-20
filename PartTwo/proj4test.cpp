@@ -8,6 +8,27 @@
 #include <stdlib.h>
 #include <vector>
 #include <semaphore.h>
+#include <fcntl.h>
+#include <fstream>
+#include <sys/mman.h>
+
+// name of file containing unsorted numbers
+#define FILENAME "numbers.txt"
+
+// name of shared memory object of unsorted numbers
+#define UNSORTED "unsorted"
+
+// name of shared memory object of sorted numbers
+#define SORTED "sorted"
+
+// name of shared memory object of index of array of sorted numbers
+#define INDEX "index"
+
+// number of items in "numbers.txt"
+#define SIZE 120
+
+// range of numbers to sort at a time
+#define RANGE 10
 
 using namespace std;
 int counter, child_id, range;
@@ -20,6 +41,28 @@ sem_t lock;
 pid_t performFork();
 void fillMemory();
 void sortMemory();
+
+// read and store numbers from "numbers.txt"
+void readNumbers(void);
+
+// create shared memory object of sorted numbers.
+void createSortedArray(void);
+
+// return pointer to shared memory object of unsorted numbers for use.
+long* mapUnsortedArray(void);
+
+// return pointer to shared memory object of sorted numbers for use.
+long* mapSortedArray(void);
+
+// return pointer to shared memory object of index of array of sorted numbers for use.
+uint* mapSortedArrayIndex(void);
+
+// sort specified array with specified size using selection sort.
+void sort(long*, long);
+
+//
+void childProcess(void);
+
 int main()
 {	
 	performFork();
@@ -34,6 +77,10 @@ pid_t performFork()
 	const int size = (8 * arraySize); //size in bytes of the shared memory segment
 	segment_id = shmget(IPC_PRIVATE, size, S_IRUSR | S_IWUSR); //allocate a chared memory segment
 	memory = (unsigned int *)shmat(segment_id, NULL, 0); //attach shared memory segment
+
+	readNumbers();
+	createSortedArray();
+	child_id = 0;
 
 	pid_t pid;
 	arrayPartition = arraySize / numChild;	
@@ -84,6 +131,8 @@ pid_t performFork()
 	else if (pid == 0)
 	{
 		//child process
+		childProcess();
+
 		//sem_wait(&lock);
 		cout << "Child process with PID: " << child_id << endl;
 		range = child_id * arrayPartition;
@@ -92,6 +141,7 @@ pid_t performFork()
 		fillMemory();
 		sortMemory();
 		cout << "Child process C" << id << " terminated." << endl;
+		return pid;
 		exit(0);
 	}
 	else
@@ -109,6 +159,11 @@ pid_t performFork()
 		{
 			cout << memory[i] << " " << endl;
 		}
+
+		/* remove the shared memory objects */
+		shm_unlink(UNSORTED);
+		shm_unlink(SORTED);
+		shm_unlink(INDEX);
 	}	
 	return pid;
 }
@@ -149,4 +204,141 @@ void sortMemory()
 			//sem_post(&lock);
 		}
 	}	
+}
+
+void readNumbers(void) {
+	int shm_fd;
+	long *unsorted;
+
+	/* open the shared memory object of unsorted numbers */
+	shm_fd = shm_open(UNSORTED, O_CREAT | O_RDWR, 0666);
+	
+	/* configure the size of shared memory object of unsorted numbers */
+	ftruncate(shm_fd, SIZE * sizeof(long));
+	
+	/* memory map shared memory object for unsorted numbers */
+	unsorted = (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+	/* create file input stream */
+	ifstream file(FILENAME);
+	string line;
+
+	// TODO remove
+	int i = 0;
+
+	/* read file and store numbers into shared memory object of unsorted numbers */
+	while (getline(file, line))
+	{
+		*unsorted++ = atol(line.c_str());
+
+		// TODO remove
+		if (++i == SIZE) {
+			break;
+		}
+	}
+}
+
+void createSortedArray(void) {
+	/* open the shared memory object of sorted numbers */
+	int shm_fd = shm_open(SORTED, O_CREAT | O_RDWR, 0666);
+
+	/* configure the size of the shared memory object of sorted numbers */
+	ftruncate(shm_fd, SIZE * sizeof(long));
+	
+	/* open the shared memory object for index in array of sorted numbers */
+	shm_fd = shm_open(INDEX, O_CREAT | O_RDWR, 0666);
+	
+	/* configure the size of the shared memory object for the index in the array of sorted numbers */
+	ftruncate(shm_fd, sizeof(int));
+}
+
+long* mapUnsortedArray(void) {
+	/* open the shared memory object of unsorted numbers */
+	int shm_fd = shm_open(UNSORTED, O_RDONLY, 0666);
+
+	/* return pointer to memory map of shared memory object of unsorted numbers */
+	return (long*)mmap(0, SIZE * sizeof(long), PROT_READ, MAP_SHARED, shm_fd, 0);
+}
+
+long* mapSortedArray(void) {
+	/* open the shared memory object of sorted numbers */
+	int shm_fd = shm_open(SORTED, O_RDWR, 0666);
+
+	/* return pointer to memory map of shared memory object of sorted numbers */
+	return (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+}
+
+uint* mapSortedArrayIndex(void) {
+	/* open shared memory object of index of array of sorted numbers */
+	int shm_fd = shm_open(INDEX, O_RDWR, 0666);
+
+	/* return pointer to memory map of shared memory object of index of array of sorted numbers */
+	return (uint*)mmap(0, sizeof(int), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+}
+
+//Algorithm derived from www.algolist.net/Algorithms/Sorting/Selection_sort
+void sort(long array[], long size)
+{
+	for (uint i = 0; i < size - 1; ++i)
+	{
+		uint minIndex = i;
+
+		for (uint j = i + 1; j < size; ++j)
+		{
+			if (array[j] < array[minIndex])
+				{
+					minIndex = j;
+				}
+		}
+
+		if (minIndex != i)
+		{
+			long tmp = array[i];
+			array[i] = array[minIndex];
+			array[minIndex] = tmp;
+		}
+	}
+}
+
+void childProcess(void) {
+	// array of unsorted numbers
+	long *unsorted = mapUnsortedArray();
+
+	// array of sorted numbers
+	long *sorted = mapSortedArray();
+
+	// current index of array of sorted numbers
+	uint* index = mapSortedArrayIndex();
+
+	// size of child array
+	uint childSize = SIZE / numChild;
+
+	// starting index of child in array of unsorted numbers
+	uint start = (child_id - 1) * childSize;
+
+	// ending index of child in array of unsorted numbers
+	uint end = child_id * childSize;
+
+	// sub array of sorted numbers to be added to main array of sorted numbers
+	long subarray[RANGE];
+
+	// read assigned section of array of unsorted numbers, sort subsections, and append subsections to array of sorted numbers
+	for (uint i = start; i < end; ++i) {
+		uint j = i % RANGE;
+
+		subarray[j] = unsorted[i];
+
+		// if at end of subarray ...
+		if (RANGE - 1 == j) {
+			// sort subarray
+			sort(subarray, RANGE);
+
+			// append subarray to array of sorted numbers, requires synchronization with shared memory
+			sem_wait(&lock);
+			for (int i = 0; i < RANGE; ++i) {
+				sorted[(*index)++] = subarray[i];
+			}
+			sem_post(&lock);
+		}
+	}
 }
