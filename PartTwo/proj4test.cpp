@@ -25,7 +25,7 @@
 #define INDEX "index"
 
 // number of items in "numbers.txt"
-#define SIZE 120
+#define SIZE 10000
 
 // range of numbers to sort at a time
 #define RANGE 10
@@ -45,23 +45,23 @@ void sortMemory();
 // read and store numbers from "numbers.txt"
 void readNumbers(void);
 
-// create shared memory object of sorted numbers.
+// create shared memory object of sorted numbers
 void createSortedArray(void);
 
-// return pointer to shared memory object of unsorted numbers for use.
+// sort a subarray of numbers and appends them to the main array of sorted numbers
+void childProcess(void);
+
+// return pointer to shared memory object of unsorted numbers for use
 long* mapUnsortedArray(void);
 
-// return pointer to shared memory object of sorted numbers for use.
+// return pointer to shared memory object of sorted numbers for use
 long* mapSortedArray(void);
 
-// return pointer to shared memory object of index of array of sorted numbers for use.
+// return pointer to shared memory object of index of array of sorted numbers for use
 uint* mapSortedArrayIndex(void);
 
-// sort specified array with specified size using selection sort.
-void sort(long*, long);
-
-//
-void childProcess(void);
+// sortMemory specified array with specified size using selection sortMemory
+void sortMemory(long*, long);
 
 int main()
 {	
@@ -160,6 +160,19 @@ pid_t performFork()
 			cout << memory[i] << " " << endl;
 		}
 
+		// TODO print the first 100 numbers in array of sorted numbers
+		// TODO currently, array of sorted numbers is sorted in groups of RANGE
+		long *sorted = mapSortedArray();
+		cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Currently sorted in groups of 10." << endl;
+		for (uint i = 0; i < 100; ++i) {
+			if (i % RANGE == 0) {
+				cout << "----------" << endl;
+			}
+
+			cout << "sorted[" << i << "] = " << sorted[i] << endl;
+		}
+		cout << "----------" << endl;
+
 		/* remove the shared memory objects */
 		shm_unlink(UNSORTED);
 		shm_unlink(SORTED);
@@ -223,18 +236,10 @@ void readNumbers(void) {
 	ifstream file(FILENAME);
 	string line;
 
-	// TODO remove
-	int i = 0;
-
 	/* read file and store numbers into shared memory object of unsorted numbers */
 	while (getline(file, line))
 	{
 		*unsorted++ = atol(line.c_str());
-
-		// TODO remove
-		if (++i == SIZE) {
-			break;
-		}
 	}
 }
 
@@ -250,6 +255,49 @@ void createSortedArray(void) {
 	
 	/* configure the size of the shared memory object for the index in the array of sorted numbers */
 	ftruncate(shm_fd, sizeof(int));
+}
+
+void childProcess(void) {
+	// array of unsorted numbers
+	long *unsorted = mapUnsortedArray();
+
+	// array of sorted numbers
+	long *sorted = mapSortedArray();
+
+	// current index of array of sorted numbers
+	uint* index = mapSortedArrayIndex();
+
+	// size of child array
+	uint childSize = SIZE / numChild;
+
+	// starting index of child in array of unsorted numbers
+	uint start = (child_id - 1) * childSize;
+
+	// ending index of child in array of unsorted numbers
+	uint end = child_id * childSize;
+
+	// sub array of sorted numbers to be added to main array of sorted numbers
+	long subarray[RANGE];
+
+	// read assigned section of array of unsorted numbers, sortMemory subsections, and append subsections to array of sorted numbers
+	for (uint i = start; i < end; ++i) {
+		uint j = i % RANGE;
+
+		subarray[j] = unsorted[i];
+
+		// if at end of subarray ...
+		if (RANGE - 1 == j) {
+			// sort subarray
+			sortMemory(subarray, RANGE);
+
+			// append subarray to array of sorted numbers, requires synchronization with shared memory
+			sem_wait(&lock);
+			for (int k = 0; k < RANGE; ++k) {
+				sorted[(*index)++] = subarray[k];
+			}
+			sem_post(&lock);
+		}
+	}
 }
 
 long* mapUnsortedArray(void) {
@@ -277,7 +325,7 @@ uint* mapSortedArrayIndex(void) {
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Selection_sort
-void sort(long array[], long size)
+void sortMemory(long array[], long size)
 {
 	for (uint i = 0; i < size - 1; ++i)
 	{
@@ -296,49 +344,6 @@ void sort(long array[], long size)
 			long tmp = array[i];
 			array[i] = array[minIndex];
 			array[minIndex] = tmp;
-		}
-	}
-}
-
-void childProcess(void) {
-	// array of unsorted numbers
-	long *unsorted = mapUnsortedArray();
-
-	// array of sorted numbers
-	long *sorted = mapSortedArray();
-
-	// current index of array of sorted numbers
-	uint* index = mapSortedArrayIndex();
-
-	// size of child array
-	uint childSize = SIZE / numChild;
-
-	// starting index of child in array of unsorted numbers
-	uint start = (child_id - 1) * childSize;
-
-	// ending index of child in array of unsorted numbers
-	uint end = child_id * childSize;
-
-	// sub array of sorted numbers to be added to main array of sorted numbers
-	long subarray[RANGE];
-
-	// read assigned section of array of unsorted numbers, sort subsections, and append subsections to array of sorted numbers
-	for (uint i = start; i < end; ++i) {
-		uint j = i % RANGE;
-
-		subarray[j] = unsorted[i];
-
-		// if at end of subarray ...
-		if (RANGE - 1 == j) {
-			// sort subarray
-			sort(subarray, RANGE);
-
-			// append subarray to array of sorted numbers, requires synchronization with shared memory
-			sem_wait(&lock);
-			for (int i = 0; i < RANGE; ++i) {
-				sorted[(*index)++] = subarray[i];
-			}
-			sem_post(&lock);
 		}
 	}
 }
