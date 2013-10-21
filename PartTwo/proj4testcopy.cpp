@@ -69,7 +69,7 @@ void sortAll(long*, int, int);
 //
 void parentProcess(void);
 int main()
-{	
+{
 	performFork();
 }
 
@@ -152,7 +152,6 @@ pid_t performFork()
 	else
 	{
 		//parent process
-		
 		//parentProcess();
 		cout << "Parent process with PID: " << id << endl;
 		while (numChild > 0)
@@ -184,6 +183,27 @@ pid_t performFork()
 			cout << "sorted[" << i << "] = " << sorted[i] << endl;
 		}
 		
+		uint *index = mapSortedArrayIndex();
+//		long *sorted = mapSortedArray();
+		int x = 0;
+		string s;
+		while (x < SIZE) {
+			sem_wait(&lock);
+			for (; x < *index; ++x) {
+				if (x % RANGE == 0) {
+					cout << "----------" << endl;
+				}
+
+				if (x % 40 == 0) {
+					cout << "Enter any non-empty, non-space value:";
+					cin >> s;
+				}
+
+				cout << x << "\t" << sorted[x] << endl;
+			}
+			sem_post(&lock);
+		}
+
 		/* remove the shared memory objects */
 		shm_unlink(UNSORTED);
 		shm_unlink(SORTED);
