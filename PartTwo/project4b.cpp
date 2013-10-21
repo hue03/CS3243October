@@ -48,6 +48,8 @@ void readNumbers(void);
 // create shared memory object of sorted numbers
 void createSortedArray(void);
 
+void createSemaphore(void);
+
 // sort a subarray of numbers and appends them to the main array of sorted numbers
 void childProcess(void);
 
