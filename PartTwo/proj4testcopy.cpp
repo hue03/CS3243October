@@ -146,14 +146,14 @@ pid_t performFork()
 		//fillMemory();
 		//sortMemory();
 		cout << "Child process C" << id << " terminated." << endl;
-		return pid;
+		//return pid;
 		exit(0);
 	}
 	else
 	{
 		//parent process
-		
-		//parentProcess();
+		//sleep(3);
+		parentProcess();
 		cout << "Parent process with PID: " << id << endl;
 		while (numChild > 0)
 		{
@@ -162,9 +162,10 @@ pid_t performFork()
 			//cout << "Child process C" << id << " terminated." << endl;
 		}
 		
-		
+		//sleep(20);
 		// TODO print the first 100 numbers in array of sorted numbers
 		// TODO currently, array of sorted numbers is sorted in groups of RANGE
+
 		long *sorted = mapSortedArray();
 		/*cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Currently sorted in groups of 10." << endl;
 		for (uint i = 0; i < 100; ++i) {
@@ -173,17 +174,18 @@ pid_t performFork()
 			}
 
 			cout << "sorted[" << i << "] = " << sorted[i] << endl;
-		}*/
-		sortAll(sorted, 0, 7999);
-		cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Completely sorted." << endl;
-		for (uint i = 0; i < 100; ++i) {
+		}
+		*/
+		//sortAll(unsorted, 0, 100);
+		/*cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Completely sorted." << endl;
+		for (uint i = 7000; i < 8000; ++i) {
 			if (i % RANGE == 0) {
 				cout << "----------" << endl;
 			}
 
 			cout << "sorted[" << i << "] = " << sorted[i] << endl;
 		}
-		
+		*/
 		/* remove the shared memory objects */
 		shm_unlink(UNSORTED);
 		shm_unlink(SORTED);
@@ -361,26 +363,26 @@ void sortMemory(long array[], long size)
 	}
 }
 
-/*
+
 void parentProcess(void) 
 {
         long *sorted = mapSortedArray();
 	counter = 0;
 	prevCounter = 0;
-	do {
+	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
-		//sleep(3);
+		sleep(0.2);
 		cout << "---" << endl;
 		sem_wait(&lock);
 		cout << "Got lock" << endl;
+		cout << "counter " << counter << endl;
 		for (int i = prevCounter; i < SIZE; i++)
 		{
 			//sem_wait(&lock);
 			if (sorted[i] == 0) 
 			{
-				sem_wait(&lock);
 				counter = i - 1;
-				cout << "counter" << endl;
+				cout << "counter " << counter << endl;
 				break;
 			}
 			//sem_post(&lock);
@@ -389,15 +391,15 @@ void parentProcess(void)
 		if (counter == prevCounter)
 		{
 			counter = SIZE - 1;
-			cout << "counter2" << endl;
+			cout << "counter2 " << counter << endl;
 		}	
 		sortAll(sorted, prevCounter, counter);
 		sem_post(&lock);
 		cout << "Let go lock" << endl;
 		prevCounter = counter;
-	} while (prevCounter <= 10);
+	}
 }
-*/
+
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Quicksort
 void sortAll(long *s, int left, int right)
