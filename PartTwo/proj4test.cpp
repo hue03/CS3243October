@@ -147,6 +147,7 @@ pid_t performFork()
         else
         {
                 //parent process
+
         		uint *index = mapSortedArrayIndex();
         		long *sorted = mapSortedArray();
         		int x = 0;
