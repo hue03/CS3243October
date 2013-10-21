@@ -69,7 +69,7 @@ void sortAll(long*, int, int);
 //
 void parentProcess(void);
 int main()
-{	
+{
 	performFork();
 }
 
@@ -154,6 +154,7 @@ pid_t performFork()
 		//parent process
 		//sleep(3);
 		parentProcess();
+		//parentProcess();
 		cout << "Parent process with PID: " << id << endl;
 		while (numChild > 0)
 		{
@@ -184,6 +185,29 @@ pid_t performFork()
 			}
 
 			cout << "sorted[" << i << "] = " << sorted[i] << endl;
+		}
+		*/
+		
+		
+		uint *index = mapSortedArrayIndex();
+		//long *sorted = mapSortedArray();
+		/*int x = 7000;
+		string s;
+		while (x < SIZE) {
+			sem_wait(&lock);
+			for (; x < *index; ++x) {
+				if (x % RANGE == 0) {
+					cout << "----------" << endl;
+				}
+
+				if (x % 40 == 0) {
+					cout << "Enter any non-empty, non-space value:";
+					cin >> s;
+				}
+
+				cout << x << "\t" << sorted[x] << endl;
+			}
+			sem_post(&lock);
 		}
 		*/
 		/* remove the shared memory objects */
@@ -371,7 +395,7 @@ void parentProcess(void)
 	prevCounter = 0;
 	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
-		sleep(0.2);
+		//sleep(3);
 		cout << "---" << endl;
 		sem_wait(&lock);
 		cout << "Got lock" << endl;
@@ -379,19 +403,28 @@ void parentProcess(void)
 		for (int i = prevCounter; i < SIZE; i++)
 		{
 			//sem_wait(&lock);
-			if (sorted[i] == 0) 
+			if (sorted[i] == 0) //search until a 0 is found. From preCounter to (i - 1) will be the range of the quicksort 
 			{
-				counter = i - 1;
+				counter = i / 2;
 				cout << "counter " << counter << endl;
 				break;
 			}
 			//sem_post(&lock);
 		}	
 		
-		if (counter == prevCounter)
+		if (counter == prevCounter) //handles the condition if there are no more 0s but this can also happen if the element in the previous (i - 1) has nothing in it so search from the prevCounter to the very end. this is how I am seeing 0s
 		{
+			/*cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Completely sorted." << endl;
+			for (uint i = counter; i < counter + 100; ++i) {
+			if (i % RANGE == 0) {
+				cout << "----------" << endl;
+			}
+
+			cout << "sorted[" << i << "] = " << sorted[i] << endl;
+			}*/
 			counter = SIZE - 1;
 			cout << "counter2 " << counter << endl;
+			
 		}	
 		sortAll(sorted, prevCounter, counter);
 		sem_post(&lock);

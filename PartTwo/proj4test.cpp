@@ -147,6 +147,28 @@ pid_t performFork()
         else
         {
                 //parent process
+
+        		uint *index = mapSortedArrayIndex();
+        		long *sorted = mapSortedArray();
+        		int x = 0;
+        		string s;
+        		while (x < SIZE) {
+        			sem_wait(&lock);
+        			for (; x < *index; ++x) {
+        				if (x % RANGE == 0) {
+        					cout << "----------" << endl;
+        				}
+
+        				if (x % 40 == 0) {
+        					cout << "Enter any non-empty, non-space value:";
+        					cin >> s;
+        				}
+
+        				cout << x << "\t" << sorted[x] << endl;
+        			}
+        			sem_post(&lock);
+        		}
+
                 cout << "Parent process with PID: " << id << endl;
                 //simulateBusyWork('P');
                 while (numChild > 0)
@@ -162,7 +184,7 @@ pid_t performFork()
 
                 // TODO print the first 100 numbers in array of sorted numbers
                 // TODO currently, array of sorted numbers is sorted in groups of RANGE
-                long *sorted = mapSortedArray();
+//                long *sorted = mapSortedArray();
                 cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Currently sorted in groups of 10." << endl;
                 for (uint i = 0; i < 100; ++i) {
                         if (i % RANGE == 0) {
