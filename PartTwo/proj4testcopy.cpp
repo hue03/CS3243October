@@ -153,7 +153,6 @@ pid_t performFork()
 	{
 		//parent process
 		//sleep(3);
-		parentProcess();
 		//parentProcess();
 		cout << "Parent process with PID: " << id << endl;
 		while (numChild > 0)
@@ -167,7 +166,7 @@ pid_t performFork()
 		// TODO print the first 100 numbers in array of sorted numbers
 		// TODO currently, array of sorted numbers is sorted in groups of RANGE
 
-		long *sorted = mapSortedArray();
+		//long *sorted = mapSortedArray();
 		/*cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Currently sorted in groups of 10." << endl;
 		for (uint i = 0; i < 100; ++i) {
 			if (i % RANGE == 0) {
@@ -189,7 +188,7 @@ pid_t performFork()
 		*/
 		
 		
-		uint *index = mapSortedArrayIndex();
+		//uint *index = mapSortedArrayIndex();
 		//long *sorted = mapSortedArray();
 		/*int x = 7000;
 		string s;
@@ -319,6 +318,7 @@ void childProcess(void) {
 	long subarray[RANGE];
 
 	// read assigned section of array of unsorted numbers, sortMemory subsections, and append subsections to array of sorted numbers
+	cout << "S:" << start << " E:" << end << endl;
 	for (uint i = start; i < end; ++i) {
 		uint j = i % RANGE;
 
@@ -332,11 +332,16 @@ void childProcess(void) {
 			// append subarray to array of sorted numbers, requires synchronization with shared memory
 			sem_wait(&lock);
 			for (int k = 0; k < RANGE; ++k) {
-				sorted[(*index)++] = subarray[k];
+				sorted[*index] = subarray[k];
+				int temp = *index;
+				//cout << "b4: " << temp << " ";
+				*index = ++temp;
+				//cout << "c4: " << *index << endl;
 			}
 			sem_post(&lock);
 		}
 	}
+	cout << "I: " << *index << endl;
 }
 
 long* mapUnsortedArray(void) {
@@ -391,16 +396,17 @@ void sortMemory(long array[], long size)
 void parentProcess(void) 
 {
         long *sorted = mapSortedArray();
+	uint *index = mapSortedArrayIndex();
 	counter = 0;
 	prevCounter = 0;
 	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
 		//sleep(3);
-		cout << "---" << endl;
-		sem_wait(&lock);
-		cout << "Got lock" << endl;
-		cout << "counter " << counter << endl;
-		for (int i = prevCounter; i < SIZE; i++)
+		//cout << "---" << endl;
+		//sem_wait(&lock);
+		//cout << "Got lock" << endl;
+		//cout << "counter " << index[0] << endl;
+		/*for (int i = prevCounter; i < SIZE; i++)
 		{
 			//sem_wait(&lock);
 			if (sorted[i] == 0) //search until a 0 is found. From preCounter to (i - 1) will be the range of the quicksort 
@@ -411,9 +417,9 @@ void parentProcess(void)
 			}
 			//sem_post(&lock);
 		}	
-		
-		if (counter == prevCounter) //handles the condition if there are no more 0s but this can also happen if the element in the previous (i - 1) has nothing in it so search from the prevCounter to the very end. this is how I am seeing 0s
-		{
+		*/
+		//if (counter == prevCounter) //handles the condition if there are no more 0s but this can also happen if the element in the previous (i - 1) has nothing in it so search from the prevCounter to the very end. this is how I am seeing 0s
+		//{
 			/*cout << "----------" << endl << "The first 100 numbers in array of sorted numbers." << endl << "Completely sorted." << endl;
 			for (uint i = counter; i < counter + 100; ++i) {
 			if (i % RANGE == 0) {
@@ -422,15 +428,21 @@ void parentProcess(void)
 
 			cout << "sorted[" << i << "] = " << sorted[i] << endl;
 			}*/
-			counter = SIZE - 1;
-			cout << "counter2 " << counter << endl;
+		
+		//	counter = SIZE - 1;
+		//	cout << "counter2 " << counter << endl;
 			
-		}	
-		sortAll(sorted, prevCounter, counter);
+		//}	
+		
+		//sortAll(sorted, prevCounter, counter);
+		sortAll(sorted, prevCounter, index[0]);
 		sem_post(&lock);
-		cout << "Let go lock" << endl;
-		prevCounter = counter;
+		//cout << "Let go lock" << endl;
+		prevCounter = index[0];
 	}
+	sem_wait(&lock);
+	sortAll(sorted, 0, SIZE - 1);
+	sem_post(&lock);
 }
 
 

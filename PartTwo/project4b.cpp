@@ -263,11 +263,14 @@ void parentProcess(void)
 
 	//the previous index position to resume sorting from
 	prevCounter = 0;
+	sem_wait(&lock);
+	int currentIndex = (int)index[0];
+	sem_post(&lock);
 	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
 		//sleep(3);
 		//cout << "---" << endl;
-		if (prevCounter != (int)index[0])
+		if (prevCounter != currentIndex)
 		{
 			sem_wait(&lock);
 			cout << "Got lock" << endl;
@@ -278,6 +281,9 @@ void parentProcess(void)
 			cout << "Let go lock" << endl;
 			prevCounter = index[0];
 		}
+		sem_wait(&lock);
+		currentIndex = (int)index[0];
+		sem_post(&lock);
 	}
 	sem_wait(&lock);
 	//sort the whole sorted array
