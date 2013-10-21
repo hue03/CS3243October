@@ -255,8 +255,13 @@ void sortMemory(long array[], long size)
 
 void parentProcess(void) 
 {
+	//create a pointer to the shared sorted array
         long *sorted = mapSortedArray();
+
+	//create a pointer to the shared memory containing the current index position of the children
 	uint *index = mapSortedArrayIndex();
+
+	//the previous index position to resume sorting from
 	prevCounter = 0;
 	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
@@ -267,6 +272,7 @@ void parentProcess(void)
 			sem_wait(&lock);
 			cout << "Got lock" << endl;
 			cout << "counter " << index[0] << endl;
+			//sort a subsection of the sorted array
 			sortAll(sorted, prevCounter, index[0]);
 			sem_post(&lock);
 			cout << "Let go lock" << endl;
@@ -274,6 +280,7 @@ void parentProcess(void)
 		}
 	}
 	sem_wait(&lock);
+	//sort the whole sorted array
 	sortAll(sorted, 0, SIZE - 1);
 	sem_post(&lock);
 }
