@@ -6,8 +6,12 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <vector>
 #include <semaphore.h>
+#include <fstream>
+#include <sys/mman.h>
 
 using namespace std;
 int counter, child_id, range;
@@ -22,6 +26,32 @@ void fillMemory();
 void sortMemory();
 int main()
 {	
+	int SIZE = 10000 * sizeof(long);
+	cout << "SIZE:  " << SIZE << endl;
+	const char *name = "numbers";
+	int shm_fd;
+	long *ptr;
+
+	shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+	ftruncate(shm_fd, SIZE);
+	ptr = (long*)mmap(0, SIZE, PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+	ifstream file("numbers.txt");
+	string line;
+cout << "Size of ptr:  " << sizeof(ptr) << endl << "Size of long:  " << sizeof(long) << endl << "Pointer start:  " << ptr << endl;
+int i = 1;
+
+	while (getline(file, line))
+	{
+		*ptr = atol((char*)line.c_str());
+		cout << i++ << "\t" << *ptr << "\t" << ptr++ << endl;
+	}
+
+	for (;;) {
+		cout << i++ << "\t" << ptr++ << endl;
+	}
+
+return 0;
 	performFork();
 }
 
