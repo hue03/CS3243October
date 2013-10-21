@@ -27,6 +27,8 @@
 // name of shared memory object of sorted numbers
 #define SORTED "sorted"
 
+#define LOCK "lock"
+
 // name of shared memory object of index of array of sorted numbers
 #define INDEX "index"
 
@@ -39,7 +41,7 @@
 using namespace std;
 int prevCounter, child_id;
 int numChild;
-sem_t lock;
+sem_t *lock;
 
 pid_t performFork();
 // read and store numbers from "numbers.txt"
@@ -61,6 +63,8 @@ long* mapSortedArray(void);
 
 // return pointer to shared memory object of index of array of sorted numbers for use
 uint* mapSortedArrayIndex(void);
+
+sem_t* mapSemaphore(void);
 
 // sortMemory specified array with specified size using selection sortMemory
 void sortMemory(long*, long);
@@ -84,7 +88,6 @@ pid_t performFork()
 	child_id = 0;
 
 	pid_t pid;
-	sem_init(&lock, 0, 1);
 
 	for (int i = 0; i < numChild; i++)
 	{
@@ -164,6 +167,18 @@ void createSortedArray(void) {
 	ftruncate(shm_fd, sizeof(int));
 }
 
+void createSemaphore(void) {
+	/* open the shared memory object of sorted numbers */
+	int shm_fd = shm_open(LOCK, O_CREAT | O_RDWR, 0666);
+
+	/* configure the size of the shared memory object of sorted numbers */
+	ftruncate(shm_fd, sizeof(sem_t));
+
+	lock = mapSemaphore();
+
+	sem_init(lock, 0, 1);
+}
+
 void childProcess(void) {
 	// array of unsorted numbers
 	long *unsorted = mapUnsortedArray();
@@ -198,11 +213,11 @@ void childProcess(void) {
 			sortMemory(subarray, RANGE);
 
 			// append subarray to array of sorted numbers, requires synchronization with shared memory
-			sem_wait(&lock);
+			sem_wait(lock);
 			for (int k = 0; k < RANGE; ++k) {
 				sorted[(*index)++] = subarray[k];
 			}
-			sem_post(&lock);
+			sem_post(lock);
 		}
 	}
 }
@@ -229,6 +244,14 @@ uint* mapSortedArrayIndex(void) {
 
 	/* return pointer to memory map of shared memory object of index of array of sorted numbers */
 	return (uint*)mmap(0, sizeof(int), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+}
+
+sem_t* mapSemaphore(void) {
+	/* open shared memory object of index of array of sorted numbers */
+	int shm_fd = shm_open(LOCK, O_RDWR, 0666);
+
+	/* return pointer to memory map of shared memory object of index of array of sorted numbers */
+	return (sem_t*)mmap(0, sizeof(sem_t), PROT_WRITE, MAP_SHARED, shm_fd, 0);
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Selection_sort
@@ -265,32 +288,29 @@ void parentProcess(void)
 
 	//the previous index position to resume sorting from
 	prevCounter = 0;
-	sem_wait(&lock);
 	int currentIndex = (int)index[0];
-	sem_post(&lock);
 	while (prevCounter < SIZE - 1) {
 		//sleep so child process can fill the memory
 		//sleep(3);
 		//cout << "---" << endl;
 		if (prevCounter != currentIndex)
 		{
-			sem_wait(&lock);
+			sem_wait(lock);
 			cout << "Got lock" << endl;
 			cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
 			sortAll(sorted, prevCounter, index[0]);
-			sem_post(&lock);
+			sem_post(lock);
 			cout << "Let go lock" << endl;
 			prevCounter = index[0];
 		}
-		sem_wait(&lock);
 		currentIndex = (int)index[0];
-		sem_post(&lock);
 	}
-	sem_wait(&lock);
+	sem_wait(lock);
 	//sort the whole sorted array
+	sem_wait(lock);
 	sortAll(sorted, 0, SIZE - 1);
-	sem_post(&lock);
+	sem_post(lock);
 }
 
 
