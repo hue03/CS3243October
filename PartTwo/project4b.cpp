@@ -150,8 +150,6 @@ void readNumbers(void) {
 void childProcess(void) {
 	size_t childSize = SIZE / NUM_OF_CHILDREN;	// size of child array
 	size_t offset = (child_id - 1) * childSize;
-	size_t start = (child_id - 1) * childSize;	// starting index of child in array of unsorted numbers
-	size_t end = child_id * childSize;	// ending index of child in array of unsorted numbers
 	long subarray[childSize];	// sub array of sorted numbers to be added to main array of sorted numbers
 
 	for (size_t i = 0; i < childSize; ++i) {
