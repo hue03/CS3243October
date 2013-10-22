@@ -83,10 +83,10 @@ int main()
 pid_t performFork()
 {
 	numChild = 4;
+	child_id = 0;
 	readNumbers();
 	createSortedArray();
-	child_id = 0;
-
+	createSemaphore();
 	pid_t pid;
 
 	for (int i = 0; i < numChild; i++)
@@ -108,14 +108,13 @@ pid_t performFork()
 	{
 		//child process
 		childProcess();
-		cout << "Child process C" << id << " terminated." << endl;
+		cout << "Child process C" << id << " terminated. " << endl;
 		exit(0);
 	}
 	else
 	{
 		cout << "Parent process with PID: " << id << endl;
-		//parent process
-		parentProcess();
+		//parentProcess();
 		while (numChild > 0)
 		{
 			wait(NULL);
@@ -165,6 +164,9 @@ void createSortedArray(void) {
 	
 	/* configure the size of the shared memory object for the index in the array of sorted numbers */
 	ftruncate(shm_fd, sizeof(int));
+
+	uint *index = mapSortedArrayIndex();
+	*index = 0;
 }
 
 void createSemaphore(void) {
@@ -176,7 +178,7 @@ void createSemaphore(void) {
 
 	lock = mapSemaphore();
 
-	sem_init(lock, 0, 1);
+	sem_init(lock, 1, 1);
 }
 
 void childProcess(void) {
@@ -191,7 +193,6 @@ void childProcess(void) {
 
 	// size of child array
 	uint childSize = SIZE / numChild;
-
 	// starting index of child in array of unsorted numbers
 	uint start = (child_id - 1) * childSize;
 
@@ -216,6 +217,7 @@ void childProcess(void) {
 			sem_wait(lock);
 			for (int k = 0; k < RANGE; ++k) {
 				sorted[(*index)++] = subarray[k];
+				//cout << "K: " << k << endl;
 			}
 			sem_post(lock);
 		}
@@ -296,17 +298,16 @@ void parentProcess(void)
 		if (prevCounter != currentIndex)
 		{
 			sem_wait(lock);
-			cout << "Got lock" << endl;
-			cout << "counter " << index[0] << endl;
+		//	cout << "Got lock" << endl;
+		//	cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
 			sortAll(sorted, prevCounter, index[0]);
 			sem_post(lock);
-			cout << "Let go lock" << endl;
+		//	cout << "Let go lock" << endl;
 			prevCounter = index[0];
 		}
 		currentIndex = (int)index[0];
 	}
-	sem_wait(lock);
 	//sort the whole sorted array
 	sem_wait(lock);
 	sortAll(sorted, 0, SIZE - 1);
