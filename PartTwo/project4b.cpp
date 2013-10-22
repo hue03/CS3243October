@@ -50,6 +50,7 @@ void readNumbers(void);
 // create shared memory object of sorted numbers
 void createSortedArray(void);
 
+// create shared memory semaphore and map to it for all processes
 void createSemaphore(void);
 
 // sort a subarray of numbers and appends them to the main array of sorted numbers
@@ -72,7 +73,7 @@ void sortMemory(long*, long);
 // sort the whole shared memory called sorted using quicksort
 void sortAll(long*, int, int);
 
-//sort's the children's partitions
+// sort's the children's partitions
 void parentProcess(void);
 
 int main()
@@ -106,7 +107,7 @@ pid_t performFork()
 	}
 	else if (pid == 0)
 	{
-		//child process
+		//child do stuff
 		childProcess();
 		cout << "Child process C" << id << " terminated. " << endl;
 		exit(0);
@@ -114,13 +115,15 @@ pid_t performFork()
 	else
 	{
 		cout << "Parent process with PID: " << id << endl;
-		//parentProcess();
+		//parent do stuff
+		parentProcess();
 		while (numChild > 0)
 		{
 			wait(NULL);
 			numChild--;
-			//cout << "Child process C" << id << " terminated." << endl;
 		}
+
+		//detach from shared memory
 		shm_unlink(UNSORTED);
 		shm_unlink(SORTED);
 		shm_unlink(INDEX);
@@ -290,21 +293,20 @@ void parentProcess(void)
 
 	//the previous index position to resume sorting from
 	int prevIndex = 0;
+	
+	//index position where the last child was at
 	int currentIndex = (int)index[0];
 	while (prevIndex < SIZE - 1) {
-		//sleep so child process can fill the memory
-		//sleep(3);
-		//cout << "---" << endl;
 		if (prevIndex != currentIndex)
 		{
 			sem_wait(lock);
 		//	cout << "Got lock" << endl;
 		//	cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
-			sortAll(sorted, prevIndex, index[0]);
+			sortAll(sorted, prevIndex, currentIndex - 10);
 			sem_post(lock);
 		//	cout << "Let go lock" << endl;
-			prevIndex = index[0];
+			prevIndex = currentIndex;
 		}
 		currentIndex = (int)index[0];
 	}
@@ -312,6 +314,14 @@ void parentProcess(void)
 	sem_wait(lock);
 	sortAll(sorted, 0, SIZE - 1);
 	sem_post(lock);
+
+	ofstream numberSorted("numbers_sorted.txt"); //opens the output file
+	for (int i = 0; i < SIZE; i++)
+	{
+		numberSorted << sorted[i] << endl; //write to output file
+	}
+	numberSorted.close(); //close output file
+	cout << "View sorted numbers in 'numbers_sorted.txt'" << endl;
 }
 
 
