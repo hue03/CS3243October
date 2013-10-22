@@ -39,7 +39,7 @@
 #define RANGE 10
 
 using namespace std;
-int prevCounter, child_id;
+int child_id;
 int numChild;
 sem_t *lock;
 
@@ -289,22 +289,22 @@ void parentProcess(void)
 	uint *index = mapSortedArrayIndex();
 
 	//the previous index position to resume sorting from
-	prevCounter = 0;
+	int prevIndex = 0;
 	int currentIndex = (int)index[0];
-	while (prevCounter < SIZE - 1) {
+	while (prevIndex < SIZE - 1) {
 		//sleep so child process can fill the memory
 		//sleep(3);
 		//cout << "---" << endl;
-		if (prevCounter != currentIndex)
+		if (prevIndex != currentIndex)
 		{
 			sem_wait(lock);
 		//	cout << "Got lock" << endl;
 		//	cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
-			sortAll(sorted, prevCounter, index[0]);
+			sortAll(sorted, prevIndex, index[0]);
 			sem_post(lock);
 		//	cout << "Let go lock" << endl;
-			prevCounter = index[0];
+			prevIndex = index[0];
 		}
 		currentIndex = (int)index[0];
 	}
