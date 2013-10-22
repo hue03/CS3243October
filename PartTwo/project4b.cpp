@@ -303,7 +303,7 @@ void parentProcess(void)
 		//	cout << "Got lock" << endl;
 		//	cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
-			sortAll(sorted, prevIndex, currentIndex - 10);
+			sortAll(sorted, prevIndex, currentIndex - 1);
 			sem_post(lock);
 		//	cout << "Let go lock" << endl;
 			prevIndex = currentIndex;
