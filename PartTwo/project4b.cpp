@@ -11,6 +11,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/shm.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -94,43 +95,30 @@ pid_t performFork()
 }
 
 void createSharedMemory(void) {
-	/* open the shared memory object of unsorted numbers */
-	int shm_fd = shm_open(UNSORTED, O_CREAT | O_RDWR, 0666);
+	/* allocate shared memory segment of unsorted numbers */
+	int segment_id = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
 
-	/* configure the size of shared memory object of unsorted numbers */
-	ftruncate(shm_fd, SIZE * sizeof(long));
-	
-	/* memory map shared memory object for unsorted numbers */
-	unsorted = (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	/* attach shared memory segment of unsorted numbers */
+	unsorted = (long*) shmat(segment_id, NULL, 0);
 
-	/* open the shared memory object of sorted numbers */
-	shm_fd = shm_open(SORTED, O_CREAT | O_RDWR, 0666);
+	/* allocate shared memory segment of sorted numbers */
+	segment_id = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
 
-	/* configure the size of the shared memory object of sorted numbers */
-	ftruncate(shm_fd, SIZE * sizeof(long));
-	
-	/* memory map shared memory object of sorted numbers */
-	sorted = (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	/* attach shared memory segment of sorted numbers */
+	sorted = (long*) shmat(segment_id, NULL, 0);
 
-	/* open the shared memory object for index in array of sorted numbers */
-	shm_fd = shm_open(INDEX, O_CREAT | O_RDWR, 0666);
-	
-	/* configure the size of the shared memory object for the index in the array of sorted numbers */
-	ftruncate(shm_fd, sizeof(int));
+	/* allocate shared memory segment of index of array of sorted numbers */
+	segment_id = shmget(IPC_PRIVATE, sizeof(size_t), S_IRUSR | S_IWUSR);
 
-	/* memory map shared memory object of index of array of sorted numbers */
-	index = (size_t*)mmap(0, sizeof(int), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	/* attach shared memory segment of index of array of sorted numbers */
+	index = (size_t*) shmat(segment_id, NULL, 0);
 	*index = 0;
 
-	/* open the shared memory object of sorted numbers */
-	shm_fd = shm_open(LOCK, O_CREAT | O_RDWR, 0666);
+	/* allocate shared memory segment of semaphore lock */
+	segment_id = shmget(IPC_PRIVATE, sizeof(sem_t), S_IRUSR | S_IWUSR);
 
-	/* configure the size of the shared memory object of sorted numbers */
-	ftruncate(shm_fd, sizeof(sem_t));
-
-	/* memory map shared memory object of semaphore lock */
-	lock = (sem_t*)mmap(0, sizeof(sem_t), PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
+	/* attach shared memory segment of semaphore lock */
+	lock = (sem_t*) shmat(segment_id, NULL, 0);
 	sem_init(lock, 1, 1);
 }
 
