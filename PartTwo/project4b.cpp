@@ -20,7 +20,7 @@
 #define INDEX "index"	// name of shared memory object of index of array of sorted numbers
 #define LOCK "lock"	// name of shared memory object of semaphore
 #define SIZE 10000	// number of items in "numbers.txt"
-#define RANGE 10	// range of numbers to sort at a time
+#define RANGE 10	// range of numbers to insert at a time
 #define NUM_OF_CHILDREN 4
 
 using namespace std;
@@ -36,7 +36,7 @@ void readNumbers(void);	// read and store numbers from "numbers.txt"
 void childProcess(void);	// sort a subarray of numbers and append them to main array of sorted numbers
 void sortMemory(long*, size_t);	// sort specified array with specified size using selection sortMemory
 void sortAll(long*, int, int);	// sort the whole shared memory called sorted using quicksort
-void parentProcess(void);	// sort's the children's partitions
+void parentProcess(void);	// sort the children's partitions
 
 int main()
 {
@@ -153,17 +153,17 @@ void childProcess(void) {
 	long subarray[childSize];	// sub array of sorted numbers to be added to main array of sorted numbers
 
 	for (size_t i = 0; i < childSize; ++i) {
-		subarray[i] = unsorted[i + offset];
+		subarray[i] = unsorted[i + offset]; // fill child's subarray with the 2500 numbers in its partition
 	}
 
-	sortMemory(subarray, childSize);
+	sortMemory(subarray, childSize); // child uses selection sort to sort its 2500 numbers
 
 	for (size_t i = 0; i < childSize; ++i) {
 		if (i % RANGE == 0) {
 			sem_wait(lock);
 		}
 
-		sorted[(*index)++] = subarray[i];
+		sorted[(*index)++] = subarray[i]; // insert into the sorted array 10 numbers at a time
 
 		if (i % RANGE == RANGE - 1) {
 			sem_post(lock);
@@ -198,23 +198,20 @@ void parentProcess(void)
 	//index position where the last child was at
 	int currentIndex = (int)index[0];
 	while (prevIndex < SIZE - 1) {
-		if (prevIndex != currentIndex)
+		sem_wait(lock);
+		currentIndex = (int)index[0];
+	//	cout << "Got lock" << endl;
+	//	cout << "counter " << index[0] << endl;
+		if (currentIndex != prevIndex)
 		{
-			sem_wait(lock);
-		//	cout << "Got lock" << endl;
-		//	cout << "counter " << index[0] << endl;
 			//sort a subsection of the sorted array
-			sortAll(sorted, prevIndex, currentIndex - 1);
-			sem_post(lock);
-		//	cout << "Let go lock" << endl;
+			sortAll(sorted, 0, currentIndex - 1);
+			cout << "P" << getpid() << " finished sorting from 0 to " << currentIndex - 1 << endl; 
 			prevIndex = currentIndex;
 		}
-		currentIndex = (int)index[0];
+		sem_post(lock);
+		//cout << "Let go lock" << endl;
 	}
-	//sort the whole sorted array
-	sem_wait(lock);
-	sortAll(sorted, 0, SIZE - 1);
-	sem_post(lock);
 
 	ofstream numberSorted("numbers_sorted.txt"); //opens the output file
 	for (int i = 0; i < SIZE; i++)
