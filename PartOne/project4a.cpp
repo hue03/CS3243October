@@ -133,7 +133,8 @@ int main(int argc, char *argv[]) {
 	running = false;
 
 	pthread_mutex_lock(&output);
-	cout << "                         main() is exiting." << endl;
+	cout << "                         main() is exiting.  Joining threads."
+			<< endl;
 	pthread_mutex_unlock(&output);
 
 	// join producer threads
@@ -163,8 +164,7 @@ int main(int argc, char *argv[]) {
 
 void *producer(void *param) {
 	size_t *index = (size_t*) param;
-	bool lastProducer;	// true if this is the last producer.
-	bool tooManyConsumers;// true if there are more consumers left than there are buffer items.
+	bool moreConsumers;	// true if there are more consumers left than there are buffer items.
 
 	pthread_mutex_lock(&mProducersLeft);
 	++producersLeft;
@@ -176,8 +176,10 @@ void *producer(void *param) {
 	pthread_mutex_unlock(&mProducersLeft);
 
 	do {
-		/* sleep for a random period of time */
-		sleep(rand() % P_RAND_SLEEP + 1);
+		if (running) {
+			/* sleep for a random period of time */
+			sleep(rand() % P_RAND_SLEEP + 1);
+		}
 
 		/* produce an item in next produced */
 		// generate a random number
@@ -226,25 +228,24 @@ void *producer(void *param) {
 		// if main() signals threads to stop running ...
 		if (!running) {
 			pthread_mutex_lock(&mConsumersLeft);
-			tooManyConsumers = consumersLeft > buffer.count;
+			pthread_mutex_lock(&mProducersLeft);
+			moreConsumers = (consumersLeft > producersLeft);
+			pthread_mutex_unlock(&mProducersLeft);
 			pthread_mutex_unlock(&mConsumersLeft);
 
-			lastProducer = (numProducers == *index);
-
-			if (lastProducer && tooManyConsumers) {
+			if (moreConsumers) {
 				pthread_mutex_lock(&output);
 				buffer.outputCount();
 				cout << "P" << *index
-						<< "    won't join main(). There are more Consumers left than buffer items."
+						<< "    won't join main() yet. There are more Consumers left than Producers left."
 						<< endl;
 				pthread_mutex_unlock(&output);
 			}
 		}
-	} while (running || (lastProducer && tooManyConsumers));
+	} while (running || moreConsumers);
 	// loop conditions
 	// (1) main() is sleeping (running == true), or
-	// (2) this is the last producer (numProducers == *index) and
-	//     there are more consumers left than there are buffer items (consumersLeft > buffer.count)
+	// (2) there are more consumers left than there are producers left.
 
 	pthread_mutex_lock(&mProducersLeft);
 	--producersLeft;
@@ -258,9 +259,7 @@ void *producer(void *param) {
 
 void *consumer(void *param) {
 	size_t *index = (size_t*) param;
-	bool lastConsumer;	// true if this is the last consumer
-	bool moreProducersLeft;	// true if there is at least one producer left
-	bool bufferNotEmpty;	// true if buffer.count > 0
+	bool moreProducers;	// true if there is at least one producer left
 
 	pthread_mutex_lock(&mConsumersLeft);
 	++consumersLeft;
@@ -272,8 +271,10 @@ void *consumer(void *param) {
 	pthread_mutex_unlock(&mConsumersLeft);
 
 	do {
-		/* sleep for a random period of time */
-		sleep(rand() % C_RAND_SLEEP + 1);
+		if (running) {
+			/* sleep for a random period of time */
+			sleep(rand() % C_RAND_SLEEP + 1);
+		}
 
 		buffer_item item;
 
@@ -322,35 +323,23 @@ void *consumer(void *param) {
 		// if main() signals threads to stop running ...
 		if (!running) {
 			pthread_mutex_lock(&mProducersLeft);
-			moreProducersLeft = (producersLeft > 0);
+			pthread_mutex_lock(&mConsumersLeft);
+			moreProducers = (producersLeft > consumersLeft);
+			pthread_mutex_unlock(&mConsumersLeft);
 			pthread_mutex_unlock(&mProducersLeft);
 
-			lastConsumer = (numConsumers == *index);
-			bufferNotEmpty = (buffer.count > 0);
-
-			if (lastConsumer) {
-				if (bufferNotEmpty) {
-					pthread_mutex_lock(&output);
-					buffer.outputCount();
-					cout << "   C" << *index
-							<< " won't join main(). There are still items in the buffer."
-							<< endl;
-					pthread_mutex_unlock(&output);
-				} else if (moreProducersLeft) {
-					pthread_mutex_lock(&output);
-					cout << "                      C" << *index
-							<< " won't join main(). There are still Producers left."
-							<< endl;
-					pthread_mutex_unlock(&output);
-				}
+			if (moreProducers) {
+				pthread_mutex_lock(&output);
+				cout << "                      C" << *index
+						<< " won't join main() yet. There are more Producers left than Consumers left."
+						<< endl;
+				pthread_mutex_unlock(&output);
 			}
 		}
-	} while (running || (lastConsumer && (bufferNotEmpty || moreProducersLeft)));
+	} while (running || moreProducers);
 	// loop conditions
-	// (1) main() is sleeping (running == true), or
-	// (2) this is the last consumer (numConsumers == *index) and either
-	//     (1) the buffer is not empty (buffer.count > 0), or
-	//     (2) there is at least one producer left.
+	// (1) main() is sleeping, or
+	// (2) there are more producers left than consumers left.
 
 	pthread_mutex_lock(&mConsumersLeft);
 	--consumersLeft;
