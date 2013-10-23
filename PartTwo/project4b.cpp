@@ -10,16 +10,11 @@
 #include <iostream>
 #include <semaphore.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define FILENAME "numbers.txt"	// name of file containing unsorted numbers
-#define UNSORTED "unsorted"	// name of shared memory object of unsorted numbers
-#define SORTED "sorted"	// name of shared memory object of sorted numbers
-#define INDEX "index"	// name of shared memory object of index of array of sorted numbers
-#define LOCK "lock"	// name of shared memory object of semaphore
 #define SIZE 10000	// number of items in "numbers.txt"
 #define RANGE 10	// range of numbers to insert at a time
 #define NUM_OF_CHILDREN 4
@@ -29,6 +24,7 @@ using namespace std;
 int child_id;
 long *unsorted, *sorted;
 size_t *index;
+int segment_unsorted, segment_sorted, segment_index, segment_semaphore;
 sem_t *lock;
 
 pid_t performFork();
@@ -70,8 +66,14 @@ pid_t performFork()
 	{
 		//child do stuff
 		childProcess();
+
+		//children detach from shared memory	
+		shmdt(unsorted);	
+		shmdt(sorted);	
+		shmdt(index);	
+		shmdt(lock);
+
 		cout << "Child process C" << id << " terminated. " << endl;
-		exit(0);
 	}
 	else
 	{
@@ -84,41 +86,47 @@ pid_t performFork()
 
 		// destory semaphore
 		sem_destroy(lock);
-
-		//detach from shared memory
-		shm_unlink(UNSORTED);
-		shm_unlink(SORTED);
-		shm_unlink(INDEX);
-		shm_unlink(LOCK);
+		
+		//parent detach from shared memory	
+		shmdt(unsorted);	
+		shmdt(sorted);	
+		shmdt(index);	
+		shmdt(lock);
+		
+		//destroy shared memory
+		shmctl(segment_unsorted, IPC_RMID, 0);
+		shmctl(segment_sorted, IPC_RMID, 0);
+		shmctl(segment_index, IPC_RMID, 0);
+		shmctl(segment_semaphore, IPC_RMID, 0);
 	}	
 	return pid;
 }
 
 void createSharedMemory(void) {
 	/* allocate shared memory segment of unsorted numbers */
-	int segment_id = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
+	segment_unsorted = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
 
 	/* attach shared memory segment of unsorted numbers */
-	unsorted = (long*) shmat(segment_id, NULL, 0);
+	unsorted = (long*) shmat(segment_unsorted, NULL, 0);
 
 	/* allocate shared memory segment of sorted numbers */
-	segment_id = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
+	segment_sorted = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
 
 	/* attach shared memory segment of sorted numbers */
-	sorted = (long*) shmat(segment_id, NULL, 0);
+	sorted = (long*) shmat(segment_sorted, NULL, 0);
 
 	/* allocate shared memory segment of index of array of sorted numbers */
-	segment_id = shmget(IPC_PRIVATE, sizeof(size_t), S_IRUSR | S_IWUSR);
+	segment_index = shmget(IPC_PRIVATE, sizeof(size_t), S_IRUSR | S_IWUSR);
 
 	/* attach shared memory segment of index of array of sorted numbers */
-	index = (size_t*) shmat(segment_id, NULL, 0);
+	index = (size_t*) shmat(segment_index, NULL, 0);
 	*index = 0;
 
 	/* allocate shared memory segment of semaphore lock */
-	segment_id = shmget(IPC_PRIVATE, sizeof(sem_t), S_IRUSR | S_IWUSR);
+	segment_semaphore = shmget(IPC_PRIVATE, sizeof(sem_t), S_IRUSR | S_IWUSR);
 
 	/* attach shared memory segment of semaphore lock */
-	lock = (sem_t*) shmat(segment_id, NULL, 0);
+	lock = (sem_t*) shmat(segment_semaphore, NULL, 0);
 	sem_init(lock, 1, 1);
 }
 
