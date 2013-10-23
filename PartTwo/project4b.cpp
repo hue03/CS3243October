@@ -165,6 +165,8 @@ void childProcess(void) {
 			sem_post(lock);
 		}
 	}
+
+	
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Selection_sort
