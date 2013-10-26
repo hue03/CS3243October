@@ -14,6 +14,7 @@
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 5000
 #define MAX_QUANTA 50000
+#define ENABLE_COMPACTION 0
 
 using namespace std;
 
@@ -34,7 +35,7 @@ int main()
 {
 	assignName();
 	assignSize();
-	for (int i = 0; i < MAX_PROCESS; i++)
+	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
 		cout << vectOfProcesses[i].name << endl;
 	}
@@ -45,7 +46,7 @@ void assignName()
 	int val;
 	myProcess.name = 64;
 	vectOfProcesses.push_back(myProcess);
-	for (int i = 1; i < MAX_PROCESS; i++)
+	for (int i = 1; i < MAX_PROCESSES; i++)
 	{
 		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
 		if (i < 10)
