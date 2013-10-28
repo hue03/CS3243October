@@ -15,3 +15,4 @@
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 5000	// # of cpu quanta between memory map printouts
 #define MAX_QUANTA 50000	// # quanta to run before ending simulation
+#define ENABLE_COMPACTION 0
