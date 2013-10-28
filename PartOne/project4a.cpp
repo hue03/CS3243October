@@ -7,58 +7,69 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <list>
 #include <semaphore.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
-#include "buffer.h"
 
+typedef int buffer_item;
+#define BUFFER_SIZE 6
 #define SEED time(NULL)
-#define P_RAND_SLEEP 9
-#define C_RAND_SLEEP 9
+#define P_RAND_SLEEP 6
+#define C_RAND_SLEEP 6
+
+// buffer implemented as a circular queue
+struct Buffer {
+	size_t count;	// distinguishes a full buffer from an empty one
+	size_t start, end;
+	buffer_item buffer[BUFFER_SIZE];
+	pthread_mutex_t bufferMutex;	// mutex for writing to this buffer
+	sem_t empty;	// semaphore for number of empty elements
+	sem_t full;	// semaphore for number of full elements
+
+	Buffer();	// construct new Buffer
+	buffer_item& operator[](size_t);	// return reference to nth element
+	int numEmpty();	// return value of "empty" semaphore
+	int numFull();	// return value of "full" semaphore
+	void outputCount();	// output buffer count
+
+	/* insert item into buffer
+	 return 0 if successful, otherwise
+	 return -1 indicating an error condition */
+	int insert_item(buffer_item);
+
+	/* remove an object from buffer
+	 placing it in item
+	 return 0 if successful, otherwise
+	 return -1 indicating an error condition */
+	int remove_item(buffer_item*);
+};
 
 using namespace std;
 
 /* the buffer */
 Buffer buffer;
 
-// true while the threads work while main() sleeps
-// false when main() wakes and joins the threads
-bool running;
-
-// number of producer threads specified by the user
-uint numProducers;
-
-// number of consumer threads specified by the user
-uint numConsumers;
-
-// keeps track of the producers that are still running while main() is joining threads
-uint producersLeft;
-
-// keeps track of the consumers that are still running while main() is joining threads
-uint consumersLeft;
-
-// a mutex for cout and cerr
-pthread_mutex_t output;
-
-// a mutex for producersLeft
-pthread_mutex_t mProducersLeft;
-
-// a mutex for consumersLeft
-pthread_mutex_t mConsumersLeft;
+bool running;// true while threads work while main() sleeps; false when main() wakes and threads join main()
+size_t numProducers;	// number of producer threads; specified by user
+size_t numConsumers;	// number of consumer threads; specified by user
+size_t producersLeft;// number of producers still running while threads join main()
+size_t consumersLeft;// number of consumers still running while threads join main()
+pthread_mutex_t output;	// mutex for cout and cerr
+pthread_mutex_t mProducersLeft;	// mutex for producersLeft
+pthread_mutex_t mConsumersLeft;	// mutex for consumersLeft
 
 void *producer(void*); /* producer threads call this function */
-
 void *consumer(void*); /* consumer threads call this function */
 
-// changes the color of the output for random numbers
-// increases readability and tracing of when random numbers are produced and consumed
-string color(size_t);
+string color(size_t);// change color of output for random numbers; increases readability and traceability when random numbers are produced and consumed
 
 int main(int argc, char *argv[]) {
+	cout << color(-1);	// change color to white.
+
 	/* 1. Get command line arguments argv[1],argv[2],argv[3] */
 
+	// validate command line arguments
 	if (argc != 4) {
 		cerr << "!!!Invalid Arguments!!!" << endl << "_______________________"
 				<< endl << "Format your arguments as follow:" << endl
@@ -71,7 +82,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	// the length of time that main() sleeps; supplied by the user
+	// time, in seconds, that main() sleeps; specified by user
 	uint sleepTime = atoi(argv[1]);
 
 	numProducers = atoi(argv[2]);
@@ -80,141 +91,120 @@ int main(int argc, char *argv[]) {
 	/* 2. Initialize buffer */
 	buffer = Buffer();
 
-	// the list of producer and consumer threads
-	// used for joining threads
-	vector<pthread_t> threads;
+	vector<pthread_t> threads;// vector of producer and consumer threads; used for joining threads
 
 	producersLeft = 0;
 	consumersLeft = 0;
 	running = true;
-
 	srand(SEED);
 	pthread_mutex_init(&output, NULL);
-
-	cout << color(-1);
+	pthread_mutex_init(&mProducersLeft, NULL);
+	pthread_mutex_init(&mConsumersLeft, NULL);
 
 	/* 3. Create producer thread(s) */
-	for (uint i = 0; i < numProducers; ++i) {
-		// The thread to be created
+	for (size_t i = 0; i < numProducers; ++i) {
 		pthread_t thread;
+		size_t *index = new size_t(i + 1);
 
-		// The number of the producer
-		int pNum = i + 1;
-
-		pthread_create(&thread, NULL, producer, &pNum);
-
-		pthread_mutex_lock(&mProducersLeft);
-		++producersLeft;
-		pthread_mutex_unlock(&mProducersLeft);
-
-		pthread_mutex_lock(&output);
-		cout << "Producer " << pNum << " thread created." << endl;
-		pthread_mutex_unlock(&output);
-
+		pthread_create(&thread, NULL, producer, index);
 		threads.push_back(thread);
 	}
 
 	/* 4. Create consumer thread(s) */
-	for (uint i = 0; i < numConsumers; ++i) {
-		// The thread to be created
+	for (size_t i = 0; i < numConsumers; ++i) {
 		pthread_t thread;
+		size_t *index = new size_t(i + 1);
 
-		// The number of the consumer
-		int cNum = i + 1;
-
-		pthread_mutex_lock(&mConsumersLeft);
-		++consumersLeft;
-		pthread_mutex_unlock(&mConsumersLeft);
-
-		pthread_mutex_lock(&output);
-		cout << "Consumer " << cNum << " thread created." << endl;
-		pthread_mutex_unlock(&output);
-
-		pthread_create(&thread, NULL, consumer, &cNum);
-
+		pthread_create(&thread, NULL, consumer, index);
 		threads.push_back(thread);
 	}
 
 	/* 5. Sleep */
 
 	pthread_mutex_lock(&output);
-	cout << "main() sleeping." << endl;
+	cout << "                         main() is sleeping." << endl;
 	pthread_mutex_unlock(&output);
 
 	sleep(sleepTime);
 
 	/* 6. Exit */
 
-	pthread_mutex_lock(&output);
-	cout << "main() is exiting.  Joining threads." << endl;
-	pthread_mutex_unlock(&output);
-
-	// indicates that threads should finish their work
+	// indicate that threads should finish their work
 	running = false;
 
-	for (uint i = 0; i < numProducers; ++i) {
-		pthread_mutex_lock(&output);
-		cout << "Joining P" << (i + 1) << endl;
-		pthread_mutex_unlock(&output);
+	pthread_mutex_lock(&output);
+	cout << "                         main() is exiting.  Joining threads."
+			<< endl;
+	pthread_mutex_unlock(&output);
 
+	// join producer threads
+	for (size_t i = 0; i < numProducers; ++i) {
 		pthread_join(threads.at(i), NULL);
+
+		pthread_mutex_lock(&output);
+		cout << "                   P" << (i + 1) << "    joined with main()."
+				<< endl;
+		pthread_mutex_unlock(&output);
 	}
 
-	for (uint i = numProducers; i < numConsumers; ++i) {
-		pthread_mutex_lock(&output);
-		cout << "Joining    C" << (i + 1) << endl;
-		pthread_mutex_unlock(&output);
+	// join consumer threads
+	for (size_t i = 0; i < numConsumers; ++i) {
+		pthread_join(threads.at(i + numProducers), NULL);
 
-		pthread_join(threads.at(i), NULL);
+		pthread_mutex_lock(&output);
+		cout << "                      C" << (i + 1) << " joined with main()."
+				<< endl;
+		pthread_mutex_unlock(&output);
 	}
 
-	cout << "All threads joined with main()." << endl;
+	cout << "                         All threads joined with main()." << endl;
 
 	return 0;
 }
 
 void *producer(void *param) {
-	// The number of the producer
-	uint i = *(uint*) param;
+	size_t *index = (size_t*) param;
+	bool moreConsumers;	// true if there are more consumers left than there are buffer items.
 
-	// true if there are more consumers than producers while main() is joining threads
-	bool moreConsumers;
+	pthread_mutex_lock(&mProducersLeft);
+	++producersLeft;
 
-	// true if the number of this producer is the lowest of the threads that haven't joined main() yet
-	bool lowestProducer;
+	pthread_mutex_lock(&output);
+	cout << "                   P" << *index << "    created." << endl;
+	pthread_mutex_unlock(&output);
 
-	// true if this thread should proceed with the do-while loop
-	// consists of moreConsumers && lowestProducer
-	bool proceed;
+	pthread_mutex_unlock(&mProducersLeft);
 
 	do {
-		/* sleep for a random period of time */
-		sleep(rand() % P_RAND_SLEEP + 1);
+		if (running) {
+			/* sleep for a random period of time */
+			sleep(rand() % P_RAND_SLEEP + 1);
+		}
 
 		/* produce an item in next produced */
 		// generate a random number
 		buffer_item item = rand();
 
-		// checks empty semaphore
-		// if unavailable, then outputs that it is waiting
-		if (0 == buffer.numEmpty()) {
+		// if cannot acquire "empty" semaphore ...
+		if (buffer.numEmpty() == 0) {
+			// outputs that it is waiting
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "P" << i << "    waiting for Consumers." << endl;
+			buffer.outputCount();
+			cout << "P" << *index << "    waiting for Consumers." << endl;
 			pthread_mutex_unlock(&output);
 		}
 
 		sem_wait(&buffer.empty); /* acquire the semaphore */
 
-		// tries to lock the buffer mutex without blocking
-		// if unavailable, then outputs that it is waiting
+		// tries to lock the buffer mutex without blocking (i.e., trylock); if unavailable ...
 		if (pthread_mutex_trylock(&buffer.bufferMutex) != 0) {
+			// outputs that it is waiting
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "P" << i << "    waiting for buffer." << endl;
+			cout << "                   P" << *index
+					<< "    waiting for buffer." << endl;
 			pthread_mutex_unlock(&output);
 
-			// blocks while waiting for mutex lock
+			// tries to lock the buffer with blocking (i.e., lock)
 			pthread_mutex_lock(&buffer.bufferMutex); /* acquire the mutex lock */
 		}
 
@@ -226,8 +216,8 @@ void *producer(void *param) {
 			pthread_mutex_unlock(&output);
 		} else {
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "P" << i << "    produced random number "
+			buffer.outputCount();
+			cout << "P" << *index << "    produced random number "
 					<< color(buffer.end) << item << color(-1) << endl;
 			pthread_mutex_unlock(&output);
 		}
@@ -235,72 +225,80 @@ void *producer(void *param) {
 		pthread_mutex_unlock(&buffer.bufferMutex); /* release the mutex lock */
 		sem_post(&buffer.full); /* release the semaphore */
 
-		// if main() signaled threads to stop,
-		// then calculates moreConsumers, lowestProducer, and proceed
+		// if main() signals threads to stop running ...
 		if (!running) {
+			pthread_mutex_lock(&mConsumersLeft);
 			pthread_mutex_lock(&mProducersLeft);
-			moreConsumers = consumersLeft > producersLeft;
-			lowestProducer = i > numProducers - producersLeft;
+			moreConsumers = (consumersLeft > producersLeft);
 			pthread_mutex_unlock(&mProducersLeft);
+			pthread_mutex_unlock(&mConsumersLeft);
 
-			proceed = moreConsumers && lowestProducer;
+			if (moreConsumers) {
+				pthread_mutex_lock(&output);
+				buffer.outputCount();
+				cout << "P" << *index
+						<< "    won't join main() yet. There are more Consumers left than Producers left."
+						<< endl;
+				pthread_mutex_unlock(&output);
+			}
 		}
-	} while (running || proceed);
-	// loops while
-	// (1) main() is still sleeping (running == true) or
-	// (2) moreConsumers == true && lowestProducer == true
-
-	pthread_mutex_lock(&output);
-	buffer.printCount();
-	cout << "P" << i << "    ready to join main()" << endl;
-	pthread_mutex_unlock(&output);
+	} while (running || moreConsumers);
+	// loop conditions
+	// (1) main() is sleeping (running == true), or
+	// (2) there are more consumers left than there are producers left.
 
 	pthread_mutex_lock(&mProducersLeft);
 	--producersLeft;
 	pthread_mutex_unlock(&mProducersLeft);
 
+	// note:  index was created with new in main()
+	delete index;
+
 	pthread_exit(NULL);
 }
 
 void *consumer(void *param) {
-	// The number of the producer
-	uint i = *(uint*) param;
+	size_t *index = (size_t*) param;
+	bool moreProducers;	// true if there is at least one producer left
 
-	// true if there are more producers than consumers while main() is joining threads
-	bool moreProducers;
+	pthread_mutex_lock(&mConsumersLeft);
+	++consumersLeft;
 
-	// true if the number of this consumer is the lowest of the threads that haven't joined main() yet
-	bool lowestConsumer;
+	pthread_mutex_lock(&output);
+	cout << "                      C" << *index << " created." << endl;
+	pthread_mutex_unlock(&output);
 
-	// true if this thread should proceed with the do-while loop
-	// consists of moreProducers && lowestConsumer
-	bool proceed;
+	pthread_mutex_unlock(&mConsumersLeft);
 
 	do {
-		/* sleep for a random period of time */
-		sleep(rand() % C_RAND_SLEEP + 1);
+		if (running) {
+			/* sleep for a random period of time */
+			sleep(rand() % C_RAND_SLEEP + 1);
+		}
 
 		buffer_item item;
 
-		// checks full semaphore
-		// if unavailable, then outputs that it is waiting
+		// if cannot acquire "full" semaphore ...
 		if (0 == buffer.numFull()) {
+			// outputs that it is waiting
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "   C" << i << " waiting for Producers." << endl;
+			buffer.outputCount();
+			cout << "   C" << *index << " waiting for Producers." << endl;
 			pthread_mutex_unlock(&output);
 		}
 
 		sem_wait(&buffer.full); /* acquire the semaphore */
 
-		// tries to lock the buffer mutex without blocking
-		// if unavailable, then outputs that it is waiting
+		// tries to lock the buffer mutex without blocking (i.e., trylock)
+		// if unavailable ...
 		if (pthread_mutex_trylock(&buffer.bufferMutex) != 0) {
+			// outputs that it is waiting
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "   C" << i << " waiting for buffer." << endl;
+			cout << "                      C" << *index
+					<< " waiting for buffer." << endl;
 			pthread_mutex_unlock(&output);
 
+			// tries to lock the buffer with blocking (i.e., lock)
 			pthread_mutex_lock(&buffer.bufferMutex); /* acquire the mutex lock */
 		}
 
@@ -313,8 +311,8 @@ void *consumer(void *param) {
 		} else {
 			/* consume the item in next consumed */
 			pthread_mutex_lock(&output);
-			buffer.printCount();
-			cout << "   C" << i << " consumed random number "
+			buffer.outputCount();
+			cout << "   C" << *index << " consumed random number "
 					<< color(buffer.start) << item << color(-1) << endl;
 			pthread_mutex_unlock(&output);
 		}
@@ -322,29 +320,33 @@ void *consumer(void *param) {
 		pthread_mutex_unlock(&buffer.bufferMutex); /* release the mutex lock */
 		sem_post(&buffer.empty); /* release the semaphore */
 
-		// if main() signalled threads to stop,
-		// then calculates moreProducers, lowestConsumer, and proceed
+		// if main() signals threads to stop running ...
 		if (!running) {
+			pthread_mutex_lock(&mProducersLeft);
 			pthread_mutex_lock(&mConsumersLeft);
-			moreProducers = producersLeft > consumersLeft;
-			lowestConsumer = i > numConsumers - consumersLeft;
+			moreProducers = (producersLeft > consumersLeft);
 			pthread_mutex_unlock(&mConsumersLeft);
+			pthread_mutex_unlock(&mProducersLeft);
 
-			proceed = moreProducers && lowestConsumer;
+			if (moreProducers) {
+				pthread_mutex_lock(&output);
+				cout << "                      C" << *index
+						<< " won't join main() yet. There are more Producers left than Consumers left."
+						<< endl;
+				pthread_mutex_unlock(&output);
+			}
 		}
-	} while (running || (proceed && buffer.count > 0));
-	// loops while
-	// (1) main() is still sleeping (running == true) or
-	// (2) moreConsumers == true && lowestProducer == true
-
-	pthread_mutex_lock(&output);
-	buffer.printCount();
-	cout << "   C" << i << " ready to join main()" << endl;
-	pthread_mutex_unlock(&output);
+	} while (running || moreProducers);
+	// loop conditions
+	// (1) main() is sleeping, or
+	// (2) there are more producers left than consumers left.
 
 	pthread_mutex_lock(&mConsumersLeft);
 	--consumersLeft;
 	pthread_mutex_unlock(&mConsumersLeft);
+
+	// note:  index was created with new in main()
+	delete index;
 
 	pthread_exit(NULL);
 }
@@ -354,25 +356,20 @@ string color(size_t n) {
 
 	switch (n) {
 	case 0:
-		return result + "\033[31m";
+		return result + "\033[31m"; // red
 	case 1:
-		return result + "\033[32m";
+		return result + "\033[32m"; // green
 	case 2:
-		return result + "\033[33m";
+		return result + "\033[33m"; // brown
 	case 3:
-		return result + "\033[34m";
+		return result + "\033[34m"; // blue
 	case 4:
-		return result + "\033[35m";
+		return result + "\033[35m"; // purple
 	case 5:
-		return result + "\033[36m";
+		return result + "\033[36m"; // cyan
 	}
 
-	return "\033[0m";
-}
-
-buffer_item& Buffer::operator[](int i) {
-	buffer_item& value = buffer[i];
-	return value;
+	return "\033[0m"; // white
 }
 
 Buffer::Buffer() {
@@ -390,9 +387,6 @@ Buffer::Buffer() {
 	sem_init(&full, 0, 0);
 }
 
-/* insert item into buffer
- return 0 if successful, otherwise
- return -1 indicating an error condition */
 int Buffer::insert_item(buffer_item it) {
 	if (BUFFER_SIZE == count) {
 		return -1;
@@ -404,10 +398,6 @@ int Buffer::insert_item(buffer_item it) {
 	return 0;
 }
 
-/* remove an object from buffer
- placing it in item
- return 0 if successful, otherwise
- return -1 indicating an error condition */
 int Buffer::remove_item(buffer_item *it) {
 	if (0 == count) {
 		return -1;
@@ -419,25 +409,23 @@ int Buffer::remove_item(buffer_item *it) {
 	return 0;
 }
 
-// returns the value of the empty semaphore
+buffer_item& Buffer::operator[](size_t i) {
+	buffer_item &value = buffer[i];
+	return value;
+}
+
 int Buffer::numEmpty() {
 	int temp;
-
 	sem_getvalue(&empty, &temp);
-
 	return temp;
 }
 
-// returns the value of the full semaphore
 int Buffer::numFull() {
 	int temp;
-
 	sem_getvalue(&full, &temp);
-
 	return temp;
 }
 
-// prints the current buffer count
-void Buffer::printCount() {
-	std::cout << "Buffer count = " << count << " | ";
+void Buffer::outputCount() {
+	cout << "Buffer count = " << count << " | ";
 }

@@ -5,75 +5,35 @@
 // Date: 10/21/2013
 // File: project4b.cpp
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <semaphore.h>
 #include <fcntl.h>
 #include <fstream>
-#include <sys/mman.h>
+#include <iostream>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-// name of file containing unsorted numbers
-#define FILENAME "numbers.txt"
-
-// name of shared memory object of unsorted numbers
-#define UNSORTED "unsorted"
-
-// name of shared memory object of sorted numbers
-#define SORTED "sorted"
-
-#define LOCK "lock"
-
-// name of shared memory object of index of array of sorted numbers
-#define INDEX "index"
-
-// number of items in "numbers.txt"
-#define SIZE 10000
-
-// range of numbers to sort at a time
-#define RANGE 10
+#define FILENAME "numbers.txt"	// name of file containing unsorted numbers
+#define SIZE 10000	// number of items in "numbers.txt"
+#define RANGE 10	// range of numbers to insert at a time
+#define NUM_OF_CHILDREN 4
 
 using namespace std;
-int prevCounter, child_id;
-int numChild;
+
+int child_id;
+long *unsorted, *sorted;
+size_t *index;
+int segment_unsorted, segment_sorted, segment_index, segment_semaphore;
 sem_t *lock;
 
 pid_t performFork();
-// read and store numbers from "numbers.txt"
-void readNumbers(void);
-
-// create shared memory object of sorted numbers
-void createSortedArray(void);
-
-void createSemaphore(void);
-
-// sort a subarray of numbers and appends them to the main array of sorted numbers
-void childProcess(void);
-
-// return pointer to shared memory object of unsorted numbers for use
-long* mapUnsortedArray(void);
-
-// return pointer to shared memory object of sorted numbers for use
-long* mapSortedArray(void);
-
-// return pointer to shared memory object of index of array of sorted numbers for use
-uint* mapSortedArrayIndex(void);
-
-sem_t* mapSemaphore(void);
-
-// sortMemory specified array with specified size using selection sortMemory
-void sortMemory(long*, long);
-
-// sort the whole shared memory called sorted using quicksort
-void sortAll(long*, int, int);
-
-//sort's the children's partitions
-void parentProcess(void);
+void createSharedMemory(void);	// create shared memory objects
+void readNumbers(void);	// read and store numbers from "numbers.txt"
+void childProcess(void);	// sort a subarray of numbers and append them to main array of sorted numbers
+void sortMemory(long*, size_t);	// sort specified array with specified size using selection sortMemory
+void sortAll(long*, int, int);	// sort the whole shared memory called sorted using quicksort
+void parentProcess(void);	// sort the children's partitions
 
 int main()
 {
@@ -82,14 +42,12 @@ int main()
 
 pid_t performFork()
 {
-	numChild = 4;
-	readNumbers();
-	createSortedArray();
 	child_id = 0;
-
+	createSharedMemory();
+	readNumbers();
 	pid_t pid;
 
-	for (int i = 0; i < numChild; i++)
+	for (int i = 0; i < NUM_OF_CHILDREN; i++)
 	{
 		child_id++;
 		pid = fork();
@@ -106,171 +64,123 @@ pid_t performFork()
 	}
 	else if (pid == 0)
 	{
-		//child process
+		//child do stuff
 		childProcess();
-		cout << "Child process C" << id << " terminated." << endl;
-		exit(0);
+
+		//children detach from shared memory	
+		shmdt(unsorted);	
+		shmdt(sorted);	
+		shmdt(index);	
+		shmdt(lock);
+
+		cout << "Child process C" << id << " terminated. " << endl;
 	}
 	else
 	{
 		cout << "Parent process with PID: " << id << endl;
-		//parent process
+		//parent do stuff
 		parentProcess();
-		while (numChild > 0)
-		{
+		for (size_t i = 0; i < NUM_OF_CHILDREN; ++i) {
 			wait(NULL);
-			numChild--;
-			//cout << "Child process C" << id << " terminated." << endl;
 		}
-		shm_unlink(UNSORTED);
-		shm_unlink(SORTED);
-		shm_unlink(INDEX);
+
+		// destory semaphore
+		sem_destroy(lock);
+		
+		//parent detach from shared memory	
+		shmdt(unsorted);	
+		shmdt(sorted);	
+		shmdt(index);	
+		shmdt(lock);
+		
+		//destroy shared memory
+		shmctl(segment_unsorted, IPC_RMID, 0);
+		shmctl(segment_sorted, IPC_RMID, 0);
+		shmctl(segment_index, IPC_RMID, 0);
+		shmctl(segment_semaphore, IPC_RMID, 0);
 	}	
 	return pid;
 }
 
+void createSharedMemory(void) {
+	/* allocate shared memory segment of unsorted numbers */
+	segment_unsorted = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
+
+	/* attach shared memory segment of unsorted numbers */
+	unsorted = (long*) shmat(segment_unsorted, NULL, 0);
+
+	/* allocate shared memory segment of sorted numbers */
+	segment_sorted = shmget(IPC_PRIVATE, SIZE * sizeof(long), S_IRUSR | S_IWUSR);
+
+	/* attach shared memory segment of sorted numbers */
+	sorted = (long*) shmat(segment_sorted, NULL, 0);
+
+	/* allocate shared memory segment of index of array of sorted numbers */
+	segment_index = shmget(IPC_PRIVATE, sizeof(size_t), S_IRUSR | S_IWUSR);
+
+	/* attach shared memory segment of index of array of sorted numbers */
+	index = (size_t*) shmat(segment_index, NULL, 0);
+	*index = 0;
+
+	/* allocate shared memory segment of semaphore lock */
+	segment_semaphore = shmget(IPC_PRIVATE, sizeof(sem_t), S_IRUSR | S_IWUSR);
+
+	/* attach shared memory segment of semaphore lock */
+	lock = (sem_t*) shmat(segment_semaphore, NULL, 0);
+	sem_init(lock, 1, 1);
+}
+
 void readNumbers(void) {
-	int shm_fd;
-	long *unsorted;
-
-	/* open the shared memory object of unsorted numbers */
-	shm_fd = shm_open(UNSORTED, O_CREAT | O_RDWR, 0666);
-	
-	/* configure the size of shared memory object of unsorted numbers */
-	ftruncate(shm_fd, SIZE * sizeof(long));
-	
-	/* memory map shared memory object for unsorted numbers */
-	unsorted = (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
-	/* create file input stream */
+	// create file input stream
 	ifstream file(FILENAME);
 	string line;
+	int i = 0;
 
-	/* read file and store numbers into shared memory object of unsorted numbers */
+	// read file and store numbers into shared memory object of unsorted numbers
 	while (getline(file, line))
 	{
-		*unsorted++ = atol(line.c_str());
+		*(unsorted + i++) = atol(line.c_str());
 	}
-}
-
-void createSortedArray(void) {
-	/* open the shared memory object of sorted numbers */
-	int shm_fd = shm_open(SORTED, O_CREAT | O_RDWR, 0666);
-
-	/* configure the size of the shared memory object of sorted numbers */
-	ftruncate(shm_fd, SIZE * sizeof(long));
-	
-	/* open the shared memory object for index in array of sorted numbers */
-	shm_fd = shm_open(INDEX, O_CREAT | O_RDWR, 0666);
-	
-	/* configure the size of the shared memory object for the index in the array of sorted numbers */
-	ftruncate(shm_fd, sizeof(int));
-}
-
-void createSemaphore(void) {
-	/* open the shared memory object of sorted numbers */
-	int shm_fd = shm_open(LOCK, O_CREAT | O_RDWR, 0666);
-
-	/* configure the size of the shared memory object of sorted numbers */
-	ftruncate(shm_fd, sizeof(sem_t));
-
-	lock = mapSemaphore();
-
-	sem_init(lock, 0, 1);
 }
 
 void childProcess(void) {
-	// array of unsorted numbers
-	long *unsorted = mapUnsortedArray();
+	size_t childSize = SIZE / NUM_OF_CHILDREN;	// size of child array
+	size_t offset = (child_id - 1) * childSize;
+	long subarray[childSize];	// sub array of sorted numbers to be added to main array of sorted numbers
 
-	// array of sorted numbers
-	long *sorted = mapSortedArray();
+	for (size_t i = 0; i < childSize; ++i) {
+		subarray[i] = unsorted[i + offset]; // fill child's subarray with the 2500 numbers in its partition
+	}
 
-	// current index of array of sorted numbers
-	uint* index = mapSortedArrayIndex();
+	sortMemory(subarray, childSize); // child uses selection sort to sort its 2500 numbers
 
-	// size of child array
-	uint childSize = SIZE / numChild;
-
-	// starting index of child in array of unsorted numbers
-	uint start = (child_id - 1) * childSize;
-
-	// ending index of child in array of unsorted numbers
-	uint end = child_id * childSize;
-
-	// sub array of sorted numbers to be added to main array of sorted numbers
-	long subarray[RANGE];
-
-	// read assigned section of array of unsorted numbers, sortMemory subsections, and append subsections to array of sorted numbers
-	for (uint i = start; i < end; ++i) {
-		uint j = i % RANGE;
-
-		subarray[j] = unsorted[i];
-
-		// if at end of subarray ...
-		if (RANGE - 1 == j) {
-			// sort subarray
-			sortMemory(subarray, RANGE);
-
-			// append subarray to array of sorted numbers, requires synchronization with shared memory
+	for (size_t i = 0; i < childSize; ++i) {
+		if (i % RANGE == 0) {
 			sem_wait(lock);
-			for (int k = 0; k < RANGE; ++k) {
-				sorted[(*index)++] = subarray[k];
-			}
+		}
+
+		sorted[(*index)++] = subarray[i]; // insert into the sorted array 10 numbers at a time
+
+		if (i % RANGE == RANGE - 1) {
 			sem_post(lock);
 		}
 	}
-}
 
-long* mapUnsortedArray(void) {
-	/* open the shared memory object of unsorted numbers */
-	int shm_fd = shm_open(UNSORTED, O_RDONLY, 0666);
-
-	/* return pointer to memory map of shared memory object of unsorted numbers */
-	return (long*)mmap(0, SIZE * sizeof(long), PROT_READ, MAP_SHARED, shm_fd, 0);
-}
-
-long* mapSortedArray(void) {
-	/* open the shared memory object of sorted numbers */
-	int shm_fd = shm_open(SORTED, O_RDWR, 0666);
-
-	/* return pointer to memory map of shared memory object of sorted numbers */
-	return (long*)mmap(0, SIZE * sizeof(long), PROT_WRITE, MAP_SHARED, shm_fd, 0);
-}
-
-uint* mapSortedArrayIndex(void) {
-	/* open shared memory object of index of array of sorted numbers */
-	int shm_fd = shm_open(INDEX, O_RDWR, 0666);
-
-	/* return pointer to memory map of shared memory object of index of array of sorted numbers */
-	return (uint*)mmap(0, sizeof(int), PROT_WRITE, MAP_SHARED, shm_fd, 0);
-}
-
-uint* mapSemaphore(void) {
-	/* open shared memory object of index of array of sorted numbers */
-	int shm_fd = shm_open(LOCK, O_RDWR, 0666);
-
-	/* return pointer to memory map of shared memory object of index of array of sorted numbers */
-	return (sem_t*)mmap(0, sizeof(sem_t), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Selection_sort
-void sortMemory(long array[], long size)
-{
-	for (uint i = 0; i < size - 1; ++i)
-	{
-		uint minIndex = i;
+void sortMemory(long array[], size_t size) {
+	for (size_t i = 0; i < size - 1; ++i) {
+		size_t minIndex = i;
 
-		for (uint j = i + 1; j < size; ++j)
-		{
-			if (array[j] < array[minIndex])
-				{
-					minIndex = j;
-				}
+		for (size_t j = i + 1; j < size; ++j) {
+			if (array[j] < array[minIndex]) {
+				minIndex = j;
+			}
 		}
 
-		if (minIndex != i)
-		{
+		if (minIndex != i) {
 			long tmp = array[i];
 			array[i] = array[minIndex];
 			array[minIndex] = tmp;
@@ -280,27 +190,34 @@ void sortMemory(long array[], long size)
 
 void parentProcess(void) 
 {
-        long *sorted = mapSortedArray();
-	uint *index = mapSortedArrayIndex();
-	prevCounter = 0;
-	while (prevCounter < SIZE - 1) {
-		//sleep so child process can fill the memory
-		//sleep(3);
-		//cout << "---" << endl;
-		if (prevCounter != (int)index[0])
+	//the previous index position to resume sorting from
+	int prevIndex = 0;
+	
+	//index position where the last child was at
+	int currentIndex = (int)index[0];
+	while (prevIndex < SIZE - 1) {
+		sem_wait(lock);
+		currentIndex = (int)index[0];
+	//	cout << "Got lock" << endl;
+	//	cout << "counter " << index[0] << endl;
+		if (currentIndex != prevIndex)
 		{
-			sem_wait(lock);
-			cout << "Got lock" << endl;
-			cout << "counter " << index[0] << endl;
-			sortAll(sorted, prevCounter, index[0]);
-			sem_post(lock);
-			cout << "Let go lock" << endl;
-			prevCounter = index[0];
+			//sort a subsection of the sorted array
+			sortAll(sorted, 0, currentIndex - 1);
+			cout << "P" << getpid() << " finished sorting from 0 to " << currentIndex - 1 << endl; 
+			prevIndex = currentIndex;
 		}
+		sem_post(lock);
+		//cout << "Let go lock" << endl;
 	}
-	sem_wait(lock);
-	sortAll(sorted, 0, SIZE - 1);
-	sem_post(lock);
+
+	ofstream numberSorted("numbers_sorted.txt"); //opens the output file
+	for (int i = 0; i < SIZE; i++)
+	{
+		numberSorted << sorted[i] << endl; //write to output file
+	}
+	numberSorted.close(); //close output file
+	cout << "View sorted numbers in 'numbers_sorted.txt'" << endl;
 }
 
 
