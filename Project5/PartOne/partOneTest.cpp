@@ -34,9 +34,9 @@ int main()
 {
 	assignName();
 	assignSize();
-	for (int i = 0; i < MAX_PROCESS; i++)
+	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << vectOfProcesses[i].name << endl;
+		cout << vectOfProcesses[i].size << endl;
 	}
 }
 
@@ -45,7 +45,7 @@ void assignName()
 	int val;
 	myProcess.name = 64;
 	vectOfProcesses.push_back(myProcess);
-	for (int i = 1; i < MAX_PROCESS; i++)
+	for (int i = 1; i < MAX_PROCESSES; i++)
 	{
 		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
 		if (i < 10)
@@ -93,9 +93,32 @@ void assignSize()
 {
 	srand(getpid());
 	int majority = MAX_PROCESSES / 2;
-	int secondMajority = MAX_PROCESSES - (int)(MAX_PROCESSES * 0.45);
-	int thirdMajority = MAX_PROCESSES - (int)(MAX_PROCESSES * 0.05);
-	cout << majority << endl;
-	cout << secondMajority << endl;
-	cout << thirdMajority << endl;
+	int secondMajority = (int)(MAX_PROCESSES * 0.45) + majority + 1; // upper range for the amount pf processes in the 45% range
+	int thirdMajority = (int)(MAX_PROCESSES * 0.05) + secondMajority; //subtract 1 for the kernel (120B), same comment as above
+	//cout << majority << endl;
+	//cout << secondMajority << endl;
+	//cout << thirdMajority << endl;
+	int minMax, midMin, midMax;
+	minMax = MIN_MEMORY_PER_PROC + (int)(MAX_MEMORY_PER_PROC * 0.04);
+	midMin = minMax + 1;
+	midMax = midMin + (int)(MAX_MEMORY_PER_PROC * 0.56);
+	
+	vectOfProcesses[0].size = 120;
+	for (int i = 1; i <= majority; i++)
+	{
+		ushort tempSize = rand() % (minMax - MIN_MEMORY_PER_PROC + 1) + MIN_MEMORY_PER_PROC;
+		vectOfProcesses[i].size = tempSize;
+	}
+
+	for (int j = majority + 1; j < secondMajority; j++)
+	{
+		ushort tempSize = rand() % (midMax - midMin + 1) + midMin;
+		vectOfProcesses[j].size = tempSize;
+	}
+	
+	for (int k = secondMajority; k < thirdMajority; k++)
+	{
+		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
+		vectOfProcesses[k].size = tempSize;
+	}
 }
