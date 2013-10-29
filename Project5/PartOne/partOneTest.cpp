@@ -14,6 +14,7 @@
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 5000
 #define MAX_QUANTA 50000
+#define ENABLE_COMPACTION 0
 
 using namespace std;
 
