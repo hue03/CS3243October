@@ -5,7 +5,7 @@
 #include <vector>
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 5
+#define PROCESS_COUNT 40
 #define MIN_BURST 100
 #define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
@@ -32,28 +32,53 @@ struct Process {
 
 vector<Process> vectOfProcesses;
 vector<Process> readyQueue;
+char mainMemory [MAX_MEMORY];
 Process myProcess;
 
 void assignName();
 void assignSize();
 void assignBurst();
 void loadQueue();
+void initializeMemory();
+void firstFit();
+void bestFit();
+void worstFit();
+
 int main()
 {
 	assignName();
 	assignSize();
 	assignBurst();
 	loadQueue();
-	
+	initializeMemory();
+	firstFit();
+	//cout << "Choose a swapping method: " << endl;
+	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
+	//int input;
+	//cin >> input;
+	//switch (input)
+	//{
+	//	case 1: firstFit();
+	//		break;
+	//	default: cout << "Invalid input. Try again." << endl;
+	//		break;
+	//}
 	//print vectOfProcesses
 	//for (int i = 0; i < MAX_PROCESSES; i++)
 	//{
 	//	cout << vectOfProcesses[i].size << endl;
 	//}
+
 	//print the readyQueue
-	for (int i = 0; i < MAX_PROCESSES; i++)
+	//for (int i = 0; i < MAX_PROCESSES; i++)
+	//{
+	//	cout << readyQueue[i].size << endl;
+	//}
+	
+	//print mainMemory
+	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		cout << readyQueue[i].size << endl;
+		cout << mainMemory[i];
 	}
 }
 
@@ -155,5 +180,49 @@ void loadQueue()
 	for (uint i = 0; i < vectOfProcesses.size(); i++)
 	{
 		readyQueue.push_back(vectOfProcesses[i]);		
+	}
+}
+
+void initializeMemory()
+{
+	for (int i = 0; i < MAX_MEMORY; i++)
+	{
+		mainMemory[i] = 108;
+	}
+}
+
+void firstFit()
+{
+	int lastIndex = 0;
+	for (uint i = 0; i < PROCESS_COUNT; i++)
+	{
+		short tempSize = readyQueue[i].size;
+		cout << tempSize << endl;
+		for (int j = lastIndex; j < MAX_MEMORY; j++)
+		{
+		cout << tempSize << endl;
+			if (tempSize < 0)
+			{
+				cout << "Enough space." << endl;
+				short range = lastIndex + readyQueue[i].size;
+				for (int k = lastIndex; k < range; k++)
+				{
+					mainMemory[k] = readyQueue[i].name;
+				}
+				lastIndex = --j;
+				break;
+			}
+			else if (mainMemory[j] == 'l')
+			{
+				tempSize--;
+				cout << "Empty space" << endl;
+			}
+			else
+			{
+				lastIndex = ++j; //need to change this because it is inefficient
+				cout << "No free space" << endl;
+				break;
+			}
+		}
 	}
 }
