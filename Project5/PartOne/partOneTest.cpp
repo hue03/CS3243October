@@ -15,6 +15,10 @@
 #define PRINT_INTERVAL 5000
 #define MAX_QUANTA 50000
 #define ENABLE_COMPACTION 0
+#define LOWBYTE_PERCENT 50
+#define HIGHBYTE_PERCENT 5
+#define LOWBYTE_SIZE_INTERVAL_PERCENT 4
+#define MEDBYTE_SIZE_INTERVAL_PERCENT 56
 
 using namespace std;
 
@@ -27,17 +31,29 @@ struct Process {
 };
 
 vector<Process> vectOfProcesses;
+vector<Process> readyQueue;
 Process myProcess;
 
 void assignName();
 void assignSize();
+void assignBurst();
+void loadQueue();
 int main()
 {
 	assignName();
 	assignSize();
+	assignBurst();
+	loadQueue();
+	
+	//print vectOfProcesses
+	//for (int i = 0; i < MAX_PROCESSES; i++)
+	//{
+	//	cout << vectOfProcesses[i].size << endl;
+	//}
+	//print the readyQueue
 	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << vectOfProcesses[i].size << endl;
+		cout << readyQueue[i].size << endl;
 	}
 }
 
@@ -93,16 +109,16 @@ void assignName()
 void assignSize()
 {
 	srand(getpid());
-	int majority = MAX_PROCESSES / 2;
-	int secondMajority = (int)(MAX_PROCESSES * 0.45) + majority + 1; // upper range for the amount pf processes in the 45% range
-	int thirdMajority = (int)(MAX_PROCESSES * 0.05) + secondMajority; //subtract 1 for the kernel (120B), same comment as above
+	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
+	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount pf processes in the 45% range
+	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //subtract 1 for the kernel (120B), same comment as above
 	//cout << majority << endl;
 	//cout << secondMajority << endl;
 	//cout << thirdMajority << endl;
 	int minMax, midMin, midMax;
-	minMax = MIN_MEMORY_PER_PROC + (int)(MAX_MEMORY_PER_PROC * 0.04);
+	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	midMin = minMax + 1;
-	midMax = midMin + (int)(MAX_MEMORY_PER_PROC * 0.56);
+	midMax = midMin + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	
 	vectOfProcesses[0].size = 120;
 	for (int i = 1; i <= majority; i++)
@@ -121,5 +137,23 @@ void assignSize()
 	{
 		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
 		vectOfProcesses[k].size = tempSize;
+	}
+}
+
+void assignBurst()
+{
+	srand(getpid() * time(NULL));
+	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	{
+		ushort tempBurst = rand() % (MAX_BURST - MIN_BURST + 1) + MIN_BURST;
+		vectOfProcesses[i].burst = tempBurst;
+	}
+}
+
+void loadQueue()
+{
+	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	{
+		readyQueue.push_back(vectOfProcesses[i]);		
 	}
 }
