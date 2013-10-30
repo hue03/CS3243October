@@ -5,7 +5,7 @@
 #include <vector>
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 40
+#define PROCESS_COUNT 35
 #define MIN_BURST 100
 #define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
@@ -32,7 +32,7 @@ struct Process {
 
 vector<Process> vectOfProcesses;
 vector<Process> readyQueue;
-char mainMemory [MAX_MEMORY];
+Process mainMemory [MAX_MEMORY];
 Process myProcess;
 
 void assignName();
@@ -40,6 +40,7 @@ void assignSize();
 void assignBurst();
 void loadQueue();
 void initializeMemory();
+void fillMemory();
 void firstFit();
 void bestFit();
 void worstFit();
@@ -51,7 +52,7 @@ int main()
 	assignBurst();
 	loadQueue();
 	initializeMemory();
-	firstFit();
+	fillMemory();
 	//cout << "Choose a swapping method: " << endl;
 	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
 	//int input;
@@ -70,15 +71,15 @@ int main()
 	//}
 
 	//print the readyQueue
-	//for (int i = 0; i < MAX_PROCESSES; i++)
-	//{
-	//	cout << readyQueue[i].size << endl;
-	//}
+	for (int i = 0; i < MAX_PROCESSES; i++)
+	{
+		cout << readyQueue[i].size << endl;
+	}
 	
 	//print mainMemory
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		cout << mainMemory[i];
+		cout << mainMemory[i].name;
 	}
 }
 
@@ -167,8 +168,9 @@ void assignSize()
 
 void assignBurst()
 {
+	vectOfProcesses[0].burst = MAX_QUANTA;
 	srand(getpid() * time(NULL));
-	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	for (uint i = 1; i < vectOfProcesses.size(); i++)
 	{
 		ushort tempBurst = rand() % (MAX_BURST - MIN_BURST + 1) + MIN_BURST;
 		vectOfProcesses[i].burst = tempBurst;
@@ -187,35 +189,41 @@ void initializeMemory()
 {
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		mainMemory[i] = 108;
+		Process p;
+		p.name = 108;
+		p.size = 0;
+		p.burst = 0;
+		p.start = 0;
+		p.idleAt = 0;
+		mainMemory[i] = p;
 	}
 }
 
-void firstFit()
+void fillMemory()
 {
 	int lastIndex = 0;
 	for (uint i = 0; i < PROCESS_COUNT; i++)
 	{
 		short tempSize = readyQueue[i].size;
-		cout << tempSize << endl;
+		//cout << tempSize << endl;
 		for (int j = lastIndex; j < MAX_MEMORY; j++)
 		{
-		cout << tempSize << endl;
+		//cout << tempSize << endl;
 			if (tempSize < 0)
 			{
-				cout << "Enough space." << endl;
+				//cout << "Enough space." << endl;
 				short range = lastIndex + readyQueue[i].size;
 				for (int k = lastIndex; k < range; k++)
 				{
-					mainMemory[k] = readyQueue[i].name;
+					mainMemory[k] = readyQueue[i];
 				}
 				lastIndex = --j;
 				break;
 			}
-			else if (mainMemory[j] == 'l')
+			else if (mainMemory[j].size == 0)
 			{
 				tempSize--;
-				cout << "Empty space" << endl;
+				//cout << "Empty space" << endl;
 			}
 			else
 			{
