@@ -253,7 +253,7 @@ void fillMemory()
 		}
 	if ((MAX_MEMORY - usedMemory) < 11)
 	{
-		cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE QUEUE HAS PROCESSES OF SIZE >=11!!!" << endl;
+		cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE PROCESSES NEAR THE END OF THE QUEUE HAS A SIZE OF >=11!!!" << endl;
 		break;
 	}
 	}
