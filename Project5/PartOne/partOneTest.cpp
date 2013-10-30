@@ -5,7 +5,7 @@
 #include <vector>
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 35
+#define PROCESS_COUNT 50
 #define MIN_BURST 100
 #define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
@@ -80,7 +80,7 @@ int main()
 		cout << "Idle at: " <<  readyQueue[i].idleAt;
 		cout << endl;
 	}
-	cout << "------------------------------------------" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
 
 	//print mainMemory
 	for (int i = 0; i < MAX_MEMORY; i++)
@@ -189,6 +189,8 @@ void loadQueue()
 {
 	for (uint i = 0; i < PROCESS_COUNT; i++)
 	{
+		vectOfProcesses[i].start = 0;
+		vectOfProcesses[i].idleAt = 0;
 		readyQueue.push_back(vectOfProcesses[i]);		
 	}
 }
@@ -235,17 +237,12 @@ void fillMemory()
 				tempSize--;
 				//cout << "Empty space" << endl;
 			}
-			else
-			{
-				lastIndex = ++j; //need to change this because it is inefficient
-				cout << "No free space" << endl;
-				break;
-			}
-		}
-		if (lastIndex == MAX_MEMORY)
-		{
-			cout << "Memory full." << endl;
-			break;
+			//else
+			//{
+				//lastIndex = ++j; //need to change this because it is inefficient
+			//	cout << "No free space" << endl;
+			//	break;
+			//}
 		}
 	}
 }
