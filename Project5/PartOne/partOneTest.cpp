@@ -73,14 +73,22 @@ int main()
 	//print the readyQueue
 	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << readyQueue[i].size << endl;
+		cout << readyQueue[i].name << ":";
+		cout << "Size: " << readyQueue[i].size << " ";
+		cout << "Start: " << readyQueue[i].start << " ";
+		cout << "Burst time: " << readyQueue[i].burst << " ";
+		cout << "Idle at: " <<  readyQueue[i].idleAt;
+		cout << endl;
 	}
-	
+	cout << "------------------------------------------" << endl;
+
 	//print mainMemory
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
 		cout << mainMemory[i].name;
 	}
+	
+	cout << time(NULL) << endl;
 }
 
 void assignName()
@@ -215,6 +223,8 @@ void fillMemory()
 				short range = lastIndex + readyQueue[i].size;
 				for (int k = lastIndex; k < range; k++)
 				{
+					readyQueue[i].start = lastIndex;
+					readyQueue[i].idleAt = time(NULL) + readyQueue[i].burst;
 					mainMemory[k] = readyQueue[i];
 				}
 				lastIndex = --j;
