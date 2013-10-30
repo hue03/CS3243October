@@ -187,7 +187,7 @@ void assignBurst()
 
 void loadQueue()
 {
-	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	for (uint i = 0; i < PROCESS_COUNT; i++)
 	{
 		readyQueue.push_back(vectOfProcesses[i]);		
 	}
@@ -210,7 +210,7 @@ void initializeMemory()
 void fillMemory()
 {
 	int lastIndex = 0;
-	for (uint i = 0; i < PROCESS_COUNT; i++)
+	for (uint i = 0; i < readyQueue.size(); i++)
 	{
 		short tempSize = readyQueue[i].size;
 		//cout << tempSize << endl;
@@ -241,6 +241,11 @@ void fillMemory()
 				cout << "No free space" << endl;
 				break;
 			}
+		}
+		if (lastIndex == MAX_MEMORY)
+		{
+			cout << "Memory full." << endl;
+			break;
 		}
 	}
 }
