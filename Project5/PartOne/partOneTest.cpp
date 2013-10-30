@@ -29,7 +29,9 @@ struct Process {
 	int start;
 	int idleAt;
 };
-
+int usedMemory;
+int loadedProc;
+int largestSize;
 vector<Process> vectOfProcesses;
 vector<Process> readyQueue;
 Process mainMemory [MAX_MEMORY];
@@ -88,7 +90,10 @@ int main()
 		cout << mainMemory[i].name;
 	}
 	
-	cout << time(NULL) << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
+	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
+	cout << "Time Ended: " << time(NULL) << endl;
 }
 
 void assignName()
@@ -230,6 +235,8 @@ void fillMemory()
 					mainMemory[k] = readyQueue[i];
 				}
 				lastIndex = --j;
+				usedMemory += readyQueue[i].size;
+				loadedProc++;
 				break;
 			}
 			else if (mainMemory[j].size == 0)
@@ -244,5 +251,10 @@ void fillMemory()
 			//	break;
 			//}
 		}
+	if ((MAX_MEMORY - usedMemory) < 11)
+	{
+		cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE QUEUE HAS PROCESSES OF SIZE >=11!!!" << endl;
+		break;
+	}
 	}
 }
