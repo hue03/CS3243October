@@ -48,6 +48,8 @@ void assignSize();
 void assignBurst();
 void loadQueue();
 unsigned lengthOfQueue();
+void pushBack(Process *proc);
+void deQueue(Queue *targetNode, Queue* startNode);
 void initializeMemory();
 void fillMemory();
 void firstFit();
@@ -211,19 +213,25 @@ void loadQueue()
 		vectOfProcesses[i].start = 0;
 		vectOfProcesses[i].idleAt = 0;
 		Process *proc_ptr = &vectOfProcesses[i];
-		if (head_ptr == 0)
+		pushBack(proc_ptr);
+	}
+}
+
+void pushBack(Process *proc)
+{
+	Queue *temp_ptr = head_ptr;
+	if (temp_ptr == 0)
+	{
+		head_ptr = new Queue(proc, 0);
+	}
+	else
+	{
+		//Queue *temp_ptr = head_ptr; //this for some reason cannot be declared outside, wastes memory.
+		while (temp_ptr->next_ptr != 0)
 		{
-			head_ptr = new Queue(proc_ptr, 0);
+			temp_ptr = temp_ptr->next_ptr;
 		}
-		else
-		{
-			Queue *temp_ptr = head_ptr; //this for some reason cannot be decalred outside, wastes memory.
-			while (temp_ptr->next_ptr != 0)
-			{
-				temp_ptr = temp_ptr->next_ptr;
-			}
-			temp_ptr->next_ptr = new Queue(proc_ptr, 0);
-		}
+		temp_ptr->next_ptr = new Queue(proc, 0);
 	}
 }
 
@@ -234,6 +242,23 @@ unsigned lengthOfQueue(Queue *q)
 		return 0;
 	}
 	return 1 + lengthOfQueue(q->next_ptr);
+}
+
+void deQueue(Queue *targetNode, Queue *prevNode) //can possibly turn this into a recursive method instead of having the fill memory keep track what it the previous node
+{
+	//Queue *prev_ptr = startNode;
+	if (targetNode == head_ptr)
+	{
+		//cout << "Head" << endl;
+		prevNode = head_ptr->next_ptr;
+		free(head_ptr);
+		head_ptr = prevNode;
+	}
+	else
+	{
+		prevNode->next_ptr = targetNode->next_ptr;
+		free(targetNode);
+	}
 }
 
 void initializeMemory()
@@ -276,18 +301,7 @@ void fillMemory()
 				lastIndex = --j;
 				usedMemory += current_ptr->data_ptr->size;
 				loadedProc++;
-				if (current_ptr == head_ptr)
-				{
-					//cout << "Head" << endl;
-					prev_ptr = head_ptr->next_ptr;
-					free(head_ptr);
-					head_ptr = prev_ptr;
-				}
-				else
-				{
-					prev_ptr->next_ptr = current_ptr->next_ptr;
-					free(current_ptr);
-				}
+				deQueue(current_ptr, prev_ptr);
 				break;
 				
 			}
