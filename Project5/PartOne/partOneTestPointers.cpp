@@ -40,7 +40,6 @@ int loadedProc;
 int largestSize;
 Queue *head_ptr = 0;
 vector<Process> vectOfProcesses;
-//vector<Process*> readyQueue;
 Process* mainMemory [MAX_MEMORY];
 Process myProcess;
 
@@ -206,6 +205,7 @@ void assignBurst()
 
 void loadQueue()
 {
+	//Queue *temp_ptr = head_ptr;
 	for (uint i = 0; i < PROCESS_COUNT; i++)
 	{
 		vectOfProcesses[i].start = 0;
@@ -217,7 +217,7 @@ void loadQueue()
 		}
 		else
 		{
-			Queue *temp_ptr = head_ptr;
+			Queue *temp_ptr = head_ptr; //this for some reason cannot be decalred outside, wastes memory.
 			while (temp_ptr->next_ptr != 0)
 			{
 				temp_ptr = temp_ptr->next_ptr;
@@ -238,9 +238,10 @@ unsigned lengthOfQueue(Queue *q)
 
 void initializeMemory()
 {
+	Process *p;
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		Process *p = &myProcess;
+		p = &myProcess;
 		p->name = 108;
 		p->size = 0;
 		p->burst = 0;
@@ -253,6 +254,8 @@ void initializeMemory()
 void fillMemory()
 {
 	int lastIndex = 0;
+	Queue *prev_ptr = head_ptr;
+	cout << prev_ptr << " " <<head_ptr << endl;
 	for (Queue *current_ptr = head_ptr; current_ptr != 0; current_ptr = current_ptr->next_ptr)
 	{
 		short tempSize = current_ptr->data_ptr->size;
@@ -273,9 +276,20 @@ void fillMemory()
 				lastIndex = --j;
 				usedMemory += current_ptr->data_ptr->size;
 				loadedProc++;
-				head_ptr = current_ptr->next_ptr;
-				delete current_ptr;
+				if (current_ptr == head_ptr)
+				{
+					//cout << "Head" << endl;
+					prev_ptr = head_ptr->next_ptr;
+					free(head_ptr);
+					head_ptr = prev_ptr;
+				}
+				else
+				{
+					prev_ptr->next_ptr = current_ptr->next_ptr;
+					free(current_ptr);
+				}
 				break;
+				
 			}
 			else if (mainMemory[j]->size == 0)
 			{
@@ -289,10 +303,11 @@ void fillMemory()
 			//	break;
 			//}
 		}
-	if ((MAX_MEMORY - usedMemory) < 11)
-	{
-		cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE QUEUE HAS PROCESSES OF SIZE >=11!!!" << endl;
+		prev_ptr = current_ptr;
+		if ((MAX_MEMORY - usedMemory) < 11)
+		{
+			cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE QUEUE HAS PROCESSES OF SIZE >=11!!!" << endl;
 		break;
-	}
+		}
 	}
 }
