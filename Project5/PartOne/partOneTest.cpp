@@ -6,7 +6,7 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 5
+#define PROCESS_COUNT 50
 #define MIN_BURST 1
 #define MAX_BURST 5
 #define MIN_MEMORY_PER_PROC 4
@@ -311,8 +311,8 @@ void removeIdle()
 		//cout << "i: " << i << endl;
 		if ((mainMemory[i]->idleAt <= (int)time(NULL)) && (tempSize> 0))
 		{
-			//cout << "i: " << i << endl;
-			//cout << "size: " << tempSize << endl;
+			cout << "i: " << i << endl;
+			cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
 			zeroFillMemory(mainMemory[i]->start, mainMemory[i]->start + tempSize);
 			//Process *p;
@@ -331,7 +331,9 @@ void removeIdle()
 			loadedProc--;
 			//cout << "sizej: " << mainMemory[i + 1]->size << endl;
 		}
-		i += tempSize;
+		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
+		{				  //using a condition to try and correct this. trying to start where the process start's
+			i += tempSize - 1; //could possibly shift i to the start of the process at the top instead of this if condition
+		} 
 	}
 }
-
