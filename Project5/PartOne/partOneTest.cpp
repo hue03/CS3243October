@@ -6,15 +6,15 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 50
-#define MIN_BURST 100
-#define MAX_BURST 5000
+#define PROCESS_COUNT 5
+#define MIN_BURST 1
+#define MAX_BURST 5
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 5000
-#define MAX_QUANTA 50000
+#define MAX_QUANTA 5
 #define ENABLE_COMPACTION 0
 #define LOWBYTE_PERCENT 50
 #define HIGHBYTE_PERCENT 5
@@ -33,6 +33,7 @@ struct Process {
 int usedMemory;
 int loadedProc;
 int largestSize;
+int runTime;
 vector<Process> vectOfProcesses;
 deque<Process*> readyQueue;
 Process* mainMemory [MAX_MEMORY];
@@ -42,8 +43,9 @@ void assignName();
 void assignSize();
 void assignBurst();
 void loadQueue();
-void initializeMemory();
+void zeroFillMemory(int start, int end);
 void fillMemory();
+void removeIdle();
 void firstFit();
 void bestFit();
 void worstFit();
@@ -54,8 +56,9 @@ int main()
 	assignSize();
 	assignBurst();
 	loadQueue();
-	initializeMemory();
+	zeroFillMemory(0, MAX_MEMORY);
 	fillMemory();
+	runTime = time(NULL) + MAX_QUANTA;
 	//cout << "Choose a swapping method: " << endl;
 	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
 	//int input;
@@ -70,7 +73,7 @@ int main()
 	//print vectOfProcesses
 	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << vectOfProcesses[i].size << endl;
+		cout << vectOfProcesses[i].burst << endl;
 	}
 	cout << "--------------------------------------------------------------------------------" << endl;
 
@@ -95,6 +98,39 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
 	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
+	cout << "Time Ended: " << time(NULL) << endl;
+	
+	int printCount = 0;
+	while (time(NULL) <= runTime)
+	{
+	removeIdle();
+	if (printCount % PRINT_INTERVAL == 0)
+	{
+	//print the readyQueue
+	for (uint i = 0; i < readyQueue.size(); i++)
+	{
+		cout << readyQueue[i]->name << ":";
+		cout << "Size: " << readyQueue[i]->size << " ";
+		cout << "Start: " << readyQueue[i]->start << " ";
+		cout << "Burst time: " << readyQueue[i]->burst << " ";
+		cout << "Idle at: " <<  readyQueue[i]->idleAt;
+		cout << endl;
+	}
+	cout << "--------------------------------------------------------------------------------" << endl;
+
+	//print mainMemory
+	for (int i = 0; i < MAX_MEMORY; i++)
+	{
+		cout << mainMemory[i]->name;
+	}
+	
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
+	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	}
+	printCount++;
+	}
 	cout << "Time Ended: " << time(NULL) << endl;
 }
 
@@ -204,18 +240,19 @@ void loadQueue()
 	}
 }
 
-void initializeMemory()
+void zeroFillMemory(int start, int end)
 {
 	Process *p;
-	for (int i = 0; i < MAX_MEMORY; i++)
+	for (int i = start; i < end; i++)
 	{
 		p = &myProcess;
-		p->name = 108;
+		p->name = 248;
 		p->size = 0;
 		p->burst = 0;
 		p->start = 0;
 		p->idleAt = 0;
 		mainMemory[i] = p;
+		//cout << "i0: " << i << endl;
 	}
 }
 
@@ -233,10 +270,10 @@ void fillMemory()
 			{
 				//cout << "Enough space." << endl;
 				short range = lastIndex + readyQueue[i]->size;
+				readyQueue[i]->start = lastIndex;
+				readyQueue[i]->idleAt = time(NULL) + readyQueue[i]->burst;
 				for (int k = lastIndex; k < range; k++)
 				{
-					readyQueue[i]->start = lastIndex;
-					readyQueue[i]->idleAt = time(NULL) + readyQueue[i]->burst;
 					mainMemory[k] = readyQueue[i];
 				}
 				lastIndex = --j;
@@ -265,3 +302,36 @@ void fillMemory()
 	}
 	}
 }
+
+void removeIdle()
+{
+	for (int i = 120; i < MAX_MEMORY; i++)
+	{
+		int tempSize = mainMemory[i]->size;
+		//cout << "i: " << i << endl;
+		if ((mainMemory[i]->idleAt <= (int)time(NULL)) && (tempSize> 0))
+		{
+			//cout << "i: " << i << endl;
+			//cout << "size: " << tempSize << endl;
+			readyQueue.push_back(mainMemory[i]);
+			zeroFillMemory(mainMemory[i]->start, mainMemory[i]->start + tempSize);
+			//Process *p;
+			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
+			{
+				p = &myProcess;
+				p->name = 248;
+				p->size = 0;
+				p->burst = 0;
+				p->start = 0;
+				p->idleAt = 0;
+				mainMemory[j] = p;
+				cout << "j: " << j << endl;
+			}*/
+			usedMemory -= tempSize;
+			loadedProc--;
+			//cout << "sizej: " << mainMemory[i + 1]->size << endl;
+		}
+		i += tempSize;
+	}
+}
+
