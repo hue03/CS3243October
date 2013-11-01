@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <vector>
+#include <deque>  
 
 #define MAX_PROCESSES 60
 #define PROCESS_COUNT 50
@@ -33,8 +34,8 @@ int usedMemory;
 int loadedProc;
 int largestSize;
 vector<Process> vectOfProcesses;
-vector<Process> readyQueue;
-Process mainMemory [MAX_MEMORY];
+deque<Process*> readyQueue;
+Process* mainMemory [MAX_MEMORY];
 Process myProcess;
 
 void assignName();
@@ -67,19 +68,20 @@ int main()
 	//		break;
 	//}
 	//print vectOfProcesses
-	//for (int i = 0; i < MAX_PROCESSES; i++)
-	//{
-	//	cout << vectOfProcesses[i].size << endl;
-	//}
-
-	//print the readyQueue
 	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << readyQueue[i].name << ":";
-		cout << "Size: " << readyQueue[i].size << " ";
-		cout << "Start: " << readyQueue[i].start << " ";
-		cout << "Burst time: " << readyQueue[i].burst << " ";
-		cout << "Idle at: " <<  readyQueue[i].idleAt;
+		cout << vectOfProcesses[i].size << endl;
+	}
+	cout << "--------------------------------------------------------------------------------" << endl;
+
+	//print the readyQueue
+	for (uint i = 0; i < readyQueue.size(); i++)
+	{
+		cout << readyQueue[i]->name << ":";
+		cout << "Size: " << readyQueue[i]->size << " ";
+		cout << "Start: " << readyQueue[i]->start << " ";
+		cout << "Burst time: " << readyQueue[i]->burst << " ";
+		cout << "Idle at: " <<  readyQueue[i]->idleAt;
 		cout << endl;
 	}
 	cout << "--------------------------------------------------------------------------------" << endl;
@@ -87,7 +89,7 @@ int main()
 	//print mainMemory
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		cout << mainMemory[i].name;
+		cout << mainMemory[i]->name;
 	}
 	
 	cout << "--------------------------------------------------------------------------------" << endl;
@@ -192,24 +194,27 @@ void assignBurst()
 
 void loadQueue()
 {
+	Process *proc_ptr; 
 	for (uint i = 0; i < PROCESS_COUNT; i++)
 	{
 		vectOfProcesses[i].start = 0;
 		vectOfProcesses[i].idleAt = 0;
-		readyQueue.push_back(vectOfProcesses[i]);		
+		proc_ptr = &vectOfProcesses[i];
+		readyQueue.push_back(proc_ptr);		
 	}
 }
 
 void initializeMemory()
 {
+	Process *p;
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		Process p;
-		p.name = 108;
-		p.size = 0;
-		p.burst = 0;
-		p.start = 0;
-		p.idleAt = 0;
+		p = &myProcess;
+		p->name = 108;
+		p->size = 0;
+		p->burst = 0;
+		p->start = 0;
+		p->idleAt = 0;
 		mainMemory[i] = p;
 	}
 }
@@ -219,7 +224,7 @@ void fillMemory()
 	int lastIndex = 0;
 	for (uint i = 0; i < readyQueue.size(); i++)
 	{
-		short tempSize = readyQueue[i].size;
+		short tempSize = readyQueue[i]->size;
 		//cout << tempSize << endl;
 		for (int j = lastIndex; j < MAX_MEMORY; j++)
 		{
@@ -227,19 +232,21 @@ void fillMemory()
 			if (tempSize < 0)
 			{
 				//cout << "Enough space." << endl;
-				short range = lastIndex + readyQueue[i].size;
+				short range = lastIndex + readyQueue[i]->size;
 				for (int k = lastIndex; k < range; k++)
 				{
-					readyQueue[i].start = lastIndex;
-					readyQueue[i].idleAt = time(NULL) + readyQueue[i].burst;
+					readyQueue[i]->start = lastIndex;
+					readyQueue[i]->idleAt = time(NULL) + readyQueue[i]->burst;
 					mainMemory[k] = readyQueue[i];
 				}
 				lastIndex = --j;
-				usedMemory += readyQueue[i].size;
+				usedMemory += readyQueue[i]->size;
 				loadedProc++;
+				readyQueue.erase(readyQueue.begin() + i);
+				i--;
 				break;
 			}
-			else if (mainMemory[j].size == 0)
+			else if (mainMemory[j]->size == 0)
 			{
 				tempSize--;
 				//cout << "Empty space" << endl;
