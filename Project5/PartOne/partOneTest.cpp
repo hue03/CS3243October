@@ -1,20 +1,21 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <iostream>
 #include <vector>
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 50
-#define MIN_BURST 1
-#define MAX_BURST 5
+#define PROCESS_COUNT 10
+#define MIN_BURST 1000
+#define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.85
-#define PRINT_INTERVAL 5000
-#define MAX_QUANTA 5
+#define PRINT_INTERVAL 250
+#define MAX_QUANTA 5000
 #define ENABLE_COMPACTION 0
 #define LOWBYTE_PERCENT 50
 #define HIGHBYTE_PERCENT 5
@@ -30,6 +31,7 @@ struct Process {
 	int start;
 	int idleAt;
 };
+timeval stop, start;
 int usedMemory;
 int loadedProc;
 int largestSize;
@@ -46,6 +48,7 @@ void loadQueue();
 void zeroFillMemory(int start, int end);
 void fillMemory();
 void removeIdle();
+void sortByIdle(int left, int right);
 void firstFit();
 void bestFit();
 void worstFit();
@@ -58,7 +61,8 @@ int main()
 	loadQueue();
 	zeroFillMemory(0, MAX_MEMORY);
 	fillMemory();
-	runTime = time(NULL) + MAX_QUANTA;
+	gettimeofday(&start, NULL);
+	runTime = start.tv_usec + MAX_QUANTA;
 	//cout << "Choose a swapping method: " << endl;
 	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
 	//int input;
@@ -98,40 +102,63 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
 	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
-	cout << "Time Ended: " << time(NULL) << endl;
+	cout << "Runtime: " << runTime << endl;
 	
 	int printCount = 0;
-	while (time(NULL) <= runTime)
+	gettimeofday(&stop, NULL);
+	while (stop.tv_usec < runTime)
 	{
-	removeIdle();
-	if (printCount % PRINT_INTERVAL == 0)
-	{
-	//print the readyQueue
-	for (uint i = 0; i < readyQueue.size(); i++)
-	{
-		cout << readyQueue[i]->name << ":";
-		cout << "Size: " << readyQueue[i]->size << " ";
-		cout << "Start: " << readyQueue[i]->start << " ";
-		cout << "Burst time: " << readyQueue[i]->burst << " ";
-		cout << "Idle at: " <<  readyQueue[i]->idleAt;
-		cout << endl;
-	}
-	cout << "--------------------------------------------------------------------------------" << endl;
+		//firstFit();
+		removeIdle();
+		//print the readyQueue
+			for (uint i = 0; i < readyQueue.size(); i++)
+			{
+				cout << readyQueue[i]->name << ":";
+				cout << "Size: " << readyQueue[i]->size << " ";
+				cout << "Start: " << readyQueue[i]->start << " ";
+				cout << "Burst time: " << readyQueue[i]->burst << " ";
+				cout << "Idle at: " <<  readyQueue[i]->idleAt;
+				cout << endl;
+			}
+			cout << "--------------------------------------------------------------------------------" << endl;
+		if (readyQueue.size() > 1)
+		{
+			sortByIdle(0, readyQueue.size() - 1);
+		}
+		//if (printCount % PRINT_INTERVAL == 0)
+		//{
+			//print the readyQueue
+			for (uint i = 0; i < readyQueue.size(); i++)
+			{
+				cout << readyQueue[i]->name << ":";
+				cout << "Size: " << readyQueue[i]->size << " ";
+				cout << "Start: " << readyQueue[i]->start << " ";
+				cout << "Burst time: " << readyQueue[i]->burst << " ";
+				cout << "Idle at: " <<  readyQueue[i]->idleAt;
+				cout << endl;
+			}
+			cout << "--------------------------------------------------------------------------------" << endl;
 
-	//print mainMemory
-	for (int i = 0; i < MAX_MEMORY; i++)
-	{
-		cout << mainMemory[i]->name;
+			//print mainMemory
+			for (int i = 0; i < MAX_MEMORY; i++)
+			{
+				cout << mainMemory[i]->name;
+			}
+			
+			cout << "--------------------------------------------------------------------------------" << endl;
+			cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
+			cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
+			cout << "Current clock: " << stop.tv_usec << endl;
+			cout << "--------------------------------------------------------------------------------" << endl;
+		//}
+		firstFit();
+		printCount++;
+		gettimeofday(&stop, NULL);
 	}
+	cout << "Runtime: " << runTime << endl;
+	cout << "Time Ended: " << stop.tv_usec << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
 	
-	cout << "--------------------------------------------------------------------------------" << endl;
-	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
-	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
-	cout << "--------------------------------------------------------------------------------" << endl;
-	}
-	printCount++;
-	}
-	cout << "Time Ended: " << time(NULL) << endl;
 }
 
 void assignName()
@@ -258,29 +285,30 @@ void zeroFillMemory(int start, int end)
 
 void fillMemory()
 {
-	int lastIndex = 0;
+	int startIndex = 0;
 	for (uint i = 0; i < readyQueue.size(); i++)
 	{
 		short tempSize = readyQueue[i]->size;
 		//cout << tempSize << endl;
-		for (int j = lastIndex; j < MAX_MEMORY; j++)
+		for (int j = startIndex; j < MAX_MEMORY; j++)
 		{
 		//cout << tempSize << endl;
 			if (tempSize < 0)
 			{
 				//cout << "Enough space." << endl;
-				short range = lastIndex + readyQueue[i]->size;
-				readyQueue[i]->start = lastIndex;
-				readyQueue[i]->idleAt = time(NULL) + readyQueue[i]->burst;
-				for (int k = lastIndex; k < range; k++)
+				short range = startIndex + readyQueue[i]->size;
+				readyQueue[i]->start = startIndex;
+				gettimeofday(&start, NULL);
+				readyQueue[i]->idleAt = start.tv_usec + readyQueue[i]->burst;
+				for (int k = startIndex; k < range; k++)
 				{
 					mainMemory[k] = readyQueue[i];
 				}
-				lastIndex = --j;
+				startIndex = --j; //offset by 1 because j is past the beginning of the first spot of free space
 				usedMemory += readyQueue[i]->size;
 				loadedProc++;
 				readyQueue.erase(readyQueue.begin() + i);
-				i--;
+				i--; //makes the first process in queue next because the queue shrunk and would get skipped
 				break;
 			}
 			else if (mainMemory[j]->size == 0)
@@ -290,7 +318,7 @@ void fillMemory()
 			}
 			//else
 			//{
-				//lastIndex = ++j; //need to change this because it is inefficient
+				//startIndex = ++j; //need to change this because it is inefficient
 			//	cout << "No free space" << endl;
 			//	break;
 			//}
@@ -309,8 +337,9 @@ void removeIdle()
 	{
 		int tempSize = mainMemory[i]->size;
 		//cout << "i: " << i << endl;
-		if ((mainMemory[i]->idleAt <= (int)time(NULL)) && (tempSize> 0))
+		if ((mainMemory[i]->idleAt <= stop.tv_usec) && (tempSize> 0))
 		{
+			cout << "Current time " << stop.tv_usec << endl;
 			cout << "i: " << i << endl;
 			cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
@@ -335,5 +364,100 @@ void removeIdle()
 		{				  //using a condition to try and correct this. trying to start where the process start's
 			i += tempSize - 1; //could possibly shift i to the start of the process at the top instead of this if condition
 		} 
+	}
+}
+
+//Algorithm derived from www.algolist.net/Algorithms/Sorting/Quicksort
+void sortByIdle(int left, int right)
+{
+	int i = left, j = right;
+	Process* tmp;
+	int pivot = readyQueue[(left + right) / 2]->idleAt;
+
+	/* partition */
+	while (i <= j) 
+	{
+		while (readyQueue[i]->idleAt < pivot)
+		{
+			i++;
+		}
+            	while (readyQueue[j]->idleAt > pivot)
+		{
+                	j--;
+		}
+
+            	if (i <= j)
+		{
+                  	tmp = readyQueue[i];
+                  	readyQueue[i] = readyQueue[j];
+                  	readyQueue[j] = tmp;
+                  	i++;
+                  	j--;
+           	}
+      	};
+
+      	/* recursion */
+	if (left < j)
+	{
+		sortByIdle(left, j);
+	}
+
+      	if (i < right)
+	{
+        sortByIdle(i, right);
+	}
+}
+
+void firstFit()
+{
+	//int startIndex = 120;
+	int startIndex = mainMemory[0]->size;
+	//bool failToLoad = false;
+	//for (uint i = 0; i < readyQueue.size(); i++)
+	//{
+	while (readyQueue.size() > 0)
+	{	
+		short tempSize = readyQueue[0]->size;
+		//cout << tempSize << endl;
+		for (int j = startIndex; j < MAX_MEMORY; j++)
+		{
+			if (mainMemory[j]->size == 0)
+			{
+				cout << "Size in " << j << " " << mainMemory[j]->size << endl;
+				tempSize--;
+				if (tempSize == 0)
+				{
+					cout << "startIndex " << startIndex << endl;
+					//cout << "Enough space." << endl;
+					short range = startIndex + readyQueue[0]->size;
+					readyQueue[0]->start = startIndex;
+					gettimeofday(&start, NULL);
+					readyQueue[0]->idleAt = start.tv_usec + readyQueue[0]->burst;
+					for (int k = startIndex; k < range; k++)
+					{
+						mainMemory[k] = readyQueue[0];
+					}
+					cout << "Size in " << j << " " << mainMemory[j]->size << endl;
+					//startIndex = j + 1; //offset by 1 the element at j at this instant just got filled. start at the next element because it is the first element of a new segment
+					startIndex = mainMemory[0]->size;
+					cout << "Size in " << j + 1 << " " << mainMemory[j + 1]->size << endl;
+					usedMemory += readyQueue[0]->size;
+					loadedProc++;
+					readyQueue.erase(readyQueue.begin());
+					//i--; //makes the first process in queue next because the queue shrunk and would get skipped
+					//failToLoad = false;
+					break;
+				}
+			}
+			else
+			{
+				j += mainMemory[j]->size - 1; //offset by 1 because loop will increment after this
+				startIndex = j + 1; //set the start index to where j will be after it gets changed from above and also from the loop
+			}
+			/*if (j >= MAX_MEMORY)
+			{
+				i--;
+			}*/
+		}
 	}
 }
