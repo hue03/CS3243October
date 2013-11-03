@@ -17,6 +17,7 @@
 #define PRINT_INTERVAL 250
 #define MAX_QUANTA 5000
 #define ENABLE_COMPACTION 0
+
 #define LOWBYTE_PERCENT 50
 #define HIGHBYTE_PERCENT 5
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 4
@@ -36,6 +37,9 @@ int usedMemory;
 int loadedProc;
 int largestSize;
 int runTime;
+int freeBlocks;
+int largestFreeBlock;
+int smallestFreeBlock;
 vector<Process> vectOfProcesses;
 deque<Process*> readyQueue;
 Process* mainMemory [MAX_MEMORY];
@@ -52,6 +56,7 @@ void sortByIdle(int left, int right);
 void firstFit();
 void bestFit();
 void worstFit();
+void printMemoryMap(void);
 
 int main()
 {
@@ -94,15 +99,7 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 
 	//print mainMemory
-	for (int i = 0; i < MAX_MEMORY; i++)
-	{
-		cout << mainMemory[i]->name;
-	}
-	
-	cout << "--------------------------------------------------------------------------------" << endl;
-	cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
-	cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
-	cout << "Runtime: " << runTime << endl;
+	printMemoryMap();
 	
 	int printCount = 0;
 	gettimeofday(&stop, NULL);
@@ -140,16 +137,7 @@ int main()
 			cout << "--------------------------------------------------------------------------------" << endl;
 
 			//print mainMemory
-			for (int i = 0; i < MAX_MEMORY; i++)
-			{
-				cout << mainMemory[i]->name;
-			}
-			
-			cout << "--------------------------------------------------------------------------------" << endl;
-			cout << "Used Memory: " << usedMemory << " Free Memory: " << MAX_MEMORY - usedMemory << endl;
-			cout << "Loaded: " << loadedProc << " Unloaded: " << PROCESS_COUNT - loadedProc << endl;
-			cout << "Current clock: " << stop.tv_usec << endl;
-			cout << "--------------------------------------------------------------------------------" << endl;
+			printMemoryMap();
 		//}
 		firstFit();
 		printCount++;
@@ -460,4 +448,58 @@ void firstFit()
 			}
 		}
 	}
+}
+
+void printMemoryMap(void) {
+	float usedMemoryPercentage = 100.0 * usedMemory / MAX_MEMORY;
+	int freeMemory = MAX_MEMORY - usedMemory;
+	float freeMemoryPercentage = 100.0 * freeMemory / MAX_MEMORY;
+	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
+	int unloadedProc = PROCESS_COUNT - loadedProc;
+	float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
+	float blocksProcsRatio = 1.0 * freeBlocks / loadedProc;
+
+	cout << "QUANTA ELAPSED: " << runTime << endl;
+	cout << "MEMORY: " << MAX_MEMORY << "b\t" << "USED: " << usedMemory << " (" << usedMemoryPercentage << "%)\tFREE:" << freeMemory << " (" << freeMemoryPercentage << ")" << endl;
+	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
+	cout << "FREE BLOCKS: " << freeBlocks << "\tLARGEST: " << largestFreeBlock << "\tSMALLEST: " << smallestFreeBlock << "\tBLOCKS/PROCS RATIO: " << blocksProcsRatio << endl;
+	cout << "         10        20        30        40        50        60        70        80" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 0; i < 80; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "         90       100       110       120       130       140       150       160" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 80; i < 160; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        170       180       190       200       210       220       230       240" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 160; i < 240; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        250       260       270       280       290       300       310       320" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 240; i < 320; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        330       340       350       360       370       380       390       400" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 320; i < 400; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        410       420       430       440       450       460       470       480" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 400; i < 480; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        490       500       510       520       530       540       550       560" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 480; i < 560; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        570       580       590       600       610       620       630       640" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 560; i < 640; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        650       660       670       680       690       700       710       720" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 640; i < 720; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        730       740       750       760       770       780       790       800" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 720; i < 800; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        810       820       830       840       850       860       870       880" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 800; i < 880; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        890       900       910       920       930       940       950       960" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 880; i < 960; ++i) cout << mainMemory[i]->name;	cout << endl;
+	cout << "        970       980       990      1000      1010      1020      1030      1040" << endl;
+	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
+	for (size_t i = 960; i < 1040; ++i) cout << mainMemory[i]->name;	cout << endl;
 }

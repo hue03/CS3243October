@@ -16,3 +16,8 @@
 #define PRINT_INTERVAL 5000	// # of cpu quanta between memory map printouts
 #define MAX_QUANTA 50000	// # quanta to run before ending simulation
 #define ENABLE_COMPACTION 0
+
+int main()
+{
+	return 0;
+}
