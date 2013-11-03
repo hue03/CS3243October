@@ -9,7 +9,7 @@
 #define MAX_PROCESSES 60
 #define PROCESS_COUNT 10
 #define MIN_BURST 1000
-#define MAX_BURST 5000
+#define MAX_BURST 1500
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
@@ -276,7 +276,7 @@ void zeroFillMemory(int start, int end)
 		p->name = 248;
 		p->size = 0;
 		p->burst = 0;
-		p->start = 0;
+		p->start = start;
 		p->idleAt = 0;
 		mainMemory[i] = p;
 		//cout << "i0: " << i << endl;
@@ -417,47 +417,47 @@ void firstFit()
 	//{
 	while (readyQueue.size() > 0)
 	{	
-		short tempSize = readyQueue[0]->size;
-		//cout << tempSize << endl;
-		for (int j = startIndex; j < MAX_MEMORY; j++)
+		if (readyQueue[0]->size <= (MAX_MEMORY - usedMemory))
 		{
-			if (mainMemory[j]->size == 0)
+			short tempSize = readyQueue[0]->size;
+			cout << "Size of process: " << tempSize << endl;
+			for (int j = startIndex; j < MAX_MEMORY; j++)
 			{
-				cout << "Size in " << j << " " << mainMemory[j]->size << endl;
-				tempSize--;
-				if (tempSize == 0)
+				if (mainMemory[j]->size == 0)
 				{
-					cout << "startIndex " << startIndex << endl;
-					//cout << "Enough space." << endl;
-					short range = startIndex + readyQueue[0]->size;
-					readyQueue[0]->start = startIndex;
-					gettimeofday(&start, NULL);
-					readyQueue[0]->idleAt = start.tv_usec + readyQueue[0]->burst;
-					for (int k = startIndex; k < range; k++)
+					//cout << "Size in " << j << " " << mainMemory[j]->size << endl;
+					tempSize--;
+					if (tempSize == 0)
 					{
-						mainMemory[k] = readyQueue[0];
+						cout << "startIndex " << startIndex << endl;
+						//cout << "Enough space." << endl;
+						short range = startIndex + readyQueue[0]->size;
+						readyQueue[0]->start = startIndex;
+						gettimeofday(&start, NULL);
+						readyQueue[0]->idleAt = start.tv_usec + readyQueue[0]->burst;
+						for (int k = startIndex; k < range; k++)
+						{
+							mainMemory[k] = readyQueue[0];
+						}
+						cout << "Size in " << j << " " << mainMemory[j]->size << endl;
+						//startIndex = j + 1; //offset by 1 the element at j at this instant just got filled. start at the next element because it is the first element of a new segment
+						startIndex = mainMemory[0]->size;
+						cout << "Size in " << j + 1 << " " << mainMemory[j + 1]->size << endl;
+						usedMemory += readyQueue[0]->size;
+						loadedProc++;
+						readyQueue.erase(readyQueue.begin());
+						//i--; //makes the first process in queue next because the queue shrunk and would get skipped
+						//failToLoad = false;
+						break;
 					}
-					cout << "Size in " << j << " " << mainMemory[j]->size << endl;
-					//startIndex = j + 1; //offset by 1 the element at j at this instant just got filled. start at the next element because it is the first element of a new segment
-					startIndex = mainMemory[0]->size;
-					cout << "Size in " << j + 1 << " " << mainMemory[j + 1]->size << endl;
-					usedMemory += readyQueue[0]->size;
-					loadedProc++;
-					readyQueue.erase(readyQueue.begin());
-					//i--; //makes the first process in queue next because the queue shrunk and would get skipped
-					//failToLoad = false;
-					break;
+				}
+				else
+				{
+					tempSize = readyQueue[0]->size;
+					j += mainMemory[j]->size - 1; //offset by 1 because loop will increment after this
+					startIndex = j + 1; //set the start index to where j will be after it gets changed from above and also from the loop
 				}
 			}
-			else
-			{
-				j += mainMemory[j]->size - 1; //offset by 1 because loop will increment after this
-				startIndex = j + 1; //set the start index to where j will be after it gets changed from above and also from the loop
-			}
-			/*if (j >= MAX_MEMORY)
-			{
-				i--;
-			}*/
 		}
 	}
 }
