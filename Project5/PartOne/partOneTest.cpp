@@ -80,13 +80,15 @@ int main()
 	//		break;
 	//}
 	//print vectOfProcesses
+	cout << "List of every processes" << endl;
 	for (int i = 0; i < MAX_PROCESSES; i++)
 	{
-		cout << vectOfProcesses[i].burst << endl;
+		cout << "Process size: " << vectOfProcesses[i].size << endl;
 	}
 	cout << "--------------------------------------------------------------------------------" << endl;
 
 	//print the readyQueue
+	cout << "List of processes in the readyQueue" << endl;
 	for (uint i = 0; i < readyQueue.size(); i++)
 	{
 		cout << readyQueue[i]->name << ":";
@@ -108,6 +110,8 @@ int main()
 		//firstFit();
 		removeIdle();
 		//print the readyQueue
+		cout << "--------------------------------------------------------------------------------" << endl;
+		cout << "List of processes in the readyQueue before sortIdle:" << endl;
 			for (uint i = 0; i < readyQueue.size(); i++)
 			{
 				cout << readyQueue[i]->name << ":";
@@ -125,6 +129,7 @@ int main()
 		//if (printCount % PRINT_INTERVAL == 0)
 		//{
 			//print the readyQueue
+			cout << "List of processes in the readyQueue after sortIdle:" << endl;
 			for (uint i = 0; i < readyQueue.size(); i++)
 			{
 				cout << readyQueue[i]->name << ":";
@@ -460,7 +465,7 @@ void printMemoryMap(void) {
 	float blocksProcsRatio = 1.0 * freeBlocks / loadedProc;
 
 	cout << "QUANTA ELAPSED: " << runTime << endl;
-	cout << "MEMORY: " << MAX_MEMORY << "b\t" << "USED: " << usedMemory << " (" << usedMemoryPercentage << "%)\tFREE:" << freeMemory << " (" << freeMemoryPercentage << ")" << endl;
+	cout << "MEMORY: " << MAX_MEMORY << "b\t" << "USED: " << usedMemory << " (" << usedMemoryPercentage << "%)\tFREE:" << freeMemory << " (" << freeMemoryPercentage << "%)" << endl;
 	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
 	cout << "FREE BLOCKS: " << freeBlocks << "\tLARGEST: " << largestFreeBlock << "\tSMALLEST: " << smallestFreeBlock << "\tBLOCKS/PROCS RATIO: " << blocksProcsRatio << endl;
 	cout << "         10        20        30        40        50        60        70        80" << endl;
