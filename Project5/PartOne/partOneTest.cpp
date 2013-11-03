@@ -207,8 +207,8 @@ void assignSize()
 {
 	srand(getpid());
 	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
-	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount pf processes in the 45% range
-	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //subtract 1 for the kernel (120B), same comment as above
+	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount of processes in the 45% range
+	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //not adding 1 for the kernel (120B), same comment as above
 	//cout << majority << endl;
 	//cout << secondMajority << endl;
 	//cout << thirdMajority << endl;
@@ -353,9 +353,11 @@ void removeIdle()
 			loadedProc--;
 			//cout << "sizej: " << mainMemory[i + 1]->size << endl;
 		}
+		/*advancing the iterator by the size of the process to reduce the amount of checks it need to do if the whole process is removed or the process is not ready to be removed.
+		advances normally if the space is empty*/
 		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
-		{				  //using a condition to try and correct this. trying to start where the process start's
-			i += tempSize - 1; //could possibly shift i to the start of the process at the top instead of this if condition
+		{				  //using a condition to try and correct this. trying to start where the process starts
+			i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
 		} 
 	}
 }
@@ -389,7 +391,7 @@ void sortByIdle(int left, int right)
            	}
       	};
 
-      	/* recursion */
+    /* recursion */
 	if (left < j)
 	{
 		sortByIdle(left, j);
@@ -434,7 +436,7 @@ void firstFit()
 						}
 						cout << "Size in " << j << " " << mainMemory[j]->size << endl;
 						//startIndex = j + 1; //offset by 1 the element at j at this instant just got filled. start at the next element because it is the first element of a new segment
-						startIndex = mainMemory[0]->size;
+						startIndex = mainMemory[0]->size; //update the start index because its position + process size got filled
 						cout << "Size in " << j + 1 << " " << mainMemory[j + 1]->size << endl;
 						usedMemory += readyQueue[0]->size;
 						loadedProc++;
