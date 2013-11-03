@@ -453,7 +453,7 @@ void firstFit()
 				}
 				else
 				{
-					tempSize = readyQueue[0]->size;
+					tempSize = readyQueue[0]->size; //reset the tempSize counter because there is not enough contiguous memory
 					j += mainMemory[j]->size - 1; //offset by 1 because loop will increment after this
 					startIndex = j + 1; //set the start index to where j will be after it gets changed from above and also from the loop
 				}
