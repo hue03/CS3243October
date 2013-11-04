@@ -61,7 +61,6 @@ void printMemoryMap(void);
 int main()
 {
 	assignName();
-	for (size_t i = 0; i < PROCESS_COUNT; ++i) cout << vectOfProcesses[i].name << endl; return 0;
 	assignSize();
 	assignBurst();
 	loadQueue();
