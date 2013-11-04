@@ -7,7 +7,7 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 10
+#define PROCESS_COUNT 60
 #define MIN_BURST 1000
 #define MAX_BURST 1500
 #define MIN_MEMORY_PER_PROC 4
@@ -15,7 +15,7 @@
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 250
-#define MAX_QUANTA 5000
+#define MAX_QUANTA 50000
 #define ENABLE_COMPACTION 0
 
 #define LOWBYTE_PERCENT 50
@@ -61,6 +61,7 @@ void printMemoryMap(void);
 int main()
 {
 	assignName();
+	for (size_t i = 0; i < PROCESS_COUNT; ++i) cout << vectOfProcesses[i].name << endl; return 0;
 	assignSize();
 	assignBurst();
 	loadQueue();
@@ -156,49 +157,33 @@ int main()
 
 void assignName()
 {
-	int val;
-	myProcess.name = 64;
-	vectOfProcesses.push_back(myProcess);
-	for (int i = 1; i < MAX_PROCESSES; i++)
+	char name = '?';
+
+	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
 		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
-		if (i < 10)
+
+		switch(name)
 		{
-			val = 48 + i;
-			myProcess.name = val;
+		case '@':
+			name = '1';
+			break;
+		case '9':
+			name = 'A';
+			break;
+		case 'Z':
+			name = 'a';
+			break;
+		case 'H':
+		case 'k':
+			name += 2;
+			break;
+		default:
+			name +=1;
+			break;
 		}
-		else if ((10 <= i && i < 35))
-		{
-			if (i == 10)
-			{
-				val = 65;
-			}
-			else if (i == 18)
-			{
-				val += 2;
-			}
-			else
-			{
-				val += 1;
-			}
-			myProcess.name = val;
-		}
-		else
-		{
-			if (i == 35)
-			{
-				val = 97;
-			}
-			else if (i == 46)
-			{
-				val += 2;
-			}
-			else
-			{
-				val += 1;
-			}
-			myProcess.name = val;
-		}
+
+		myProcess.name = name;
 		vectOfProcesses.push_back(myProcess);
 	}
 }
