@@ -121,7 +121,17 @@ int main()
 	int printCount = 0;
 	while (runTime < MAX_QUANTA)
 	{
-		//firstFit();
+		findFreeBlocks();
+		//print list of free blocks
+		if (printCount % PRINT_INTERVAL == 0)
+		{
+			cout << "List of free blocks" << endl;
+			for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+			{
+				cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
+			}
+			cout << "--------------------------------------------------------------------------------" << endl;
+		}
 		if (printCount % PRINT_INTERVAL == 0)
 		{
 			//print the readyQueue
@@ -142,21 +152,18 @@ int main()
 		//firstFit();
 		//worstFit();
 		bestFit();
-		removeIdle();
 		if (printCount % PRINT_INTERVAL == 0)
 		{
+			cout << "AFTER INSERTING" << endl;
 			//print mainMemory
 			printMemoryMap();
 		}
-		findFreeBlocks();
+		removeIdle();
 		if (printCount % PRINT_INTERVAL == 0)
 		{
-			cout << "List of free blocks" << endl;
-			for (uint i = 0; i < vectOfFreeSpace.size(); i++)
-			{
-				cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
-			}
-			cout << "--------------------------------------------------------------------------------" << endl;
+			cout << "AFTER REMOVAL" << endl;
+			//print mainMemory
+			printMemoryMap();
 		}
 		printCount++;
 		runTime++;
