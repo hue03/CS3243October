@@ -361,15 +361,18 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int end)
 {
-	Process *p;
+	myProcess = Process(248, 0, 0, start, 0);
+
+//	Process *p;
+	Process *p = &myProcess;
 	for (int i = start; i < end; i++)
 	{
-		p = &myProcess;
-		p->name = 248;
-		p->size = 0;
-		p->burst = 0;
-		p->start = start;
-		p->idleAt = 0;
+//		p = &myProcess;
+//		p->name = 248;
+//		p->size = 0;
+//		p->burst = 0;
+//		p->start = start;
+//		p->idleAt = 0;
 		mainMemory[i] = p;
 		//cout << "i0: " << i << endl;
 	}
