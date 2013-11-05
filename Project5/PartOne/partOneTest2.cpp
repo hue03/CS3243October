@@ -84,7 +84,7 @@ int main()
 	findFreeBlocks();
 	//fillMemory();
 	//gettimeofday(&start, NULL);
-	runTime = 0;
+//	runTime = 0;
 	//cout << "Choose a swapping method: " << endl;
 	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
 	//int input;
@@ -120,22 +120,23 @@ int main()
 	//print mainMemory
 	printMemoryMap();
 	*/
-	int printCount = 0;
-	while (runTime < MAX_QUANTA)
+//	int printCount = 0;
+//	while (runTime < MAX_QUANTA)
+	for (int runTime = 0; runTime < MAX_QUANTA; ++runTime)
 	{
 		findFreeBlocks();
 		//print list of free blocks
-		if (printCount % PRINT_INTERVAL == 0)
+//		if (printCount % PRINT_INTERVAL == 0)
+		if (runTime % PRINT_INTERVAL == 0)
 		{
+			//print list of free blocks
 			cout << "List of free blocks" << endl;
 			for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 			{
 				cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
 			}
 			cout << "--------------------------------------------------------------------------------" << endl;
-		}
-		if (printCount % PRINT_INTERVAL == 0)
-		{
+
 			//print the readyQueue
 			cout << "List of processes in the readyQueue:" << endl;
 			for (uint i = 0; i < readyQueue.size(); i++)
@@ -151,24 +152,43 @@ int main()
 			//print mainMemory
 			printMemoryMap();
 		}
+//		if (printCount % PRINT_INTERVAL == 0)
+//		{
+//			//print the readyQueue
+//			cout << "List of processes in the readyQueue:" << endl;
+//			for (uint i = 0; i < readyQueue.size(); i++)
+//			{
+//				cout << readyQueue[i]->name << ":";
+//				cout << "Size: " << readyQueue[i]->size << " ";
+//				cout << "Start: " << readyQueue[i]->start << " ";
+//				cout << "Burst time: " << readyQueue[i]->burst << " ";
+//				cout << "Idle at: " <<  readyQueue[i]->idleAt;
+//				cout << endl;
+//			}
+//			cout << "--------------------------------------------------------------------------------" << endl;
+//			//print mainMemory
+//			printMemoryMap();
+//		}
 		//firstFit();
 		//worstFit();
 		bestFit();
-		if (printCount % PRINT_INTERVAL == 0)
+//		if (printCount % PRINT_INTERVAL == 0)
+		if (runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "AFTER INSERTING" << endl;
 			//print mainMemory
 			printMemoryMap();
 		}
 		removeIdle();
-		if (printCount % PRINT_INTERVAL == 0)
+//		if (printCount % PRINT_INTERVAL == 0)
+		if (runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "AFTER REMOVAL" << endl;
 			//print mainMemory
 			printMemoryMap();
 		}
-		printCount++;
-		runTime++;
+//		printCount++;
+//		runTime++;
 		//cout << "Runtime: " << runTime << endl;
 	}
 	cout << "Runtime: " << runTime << endl;
@@ -472,12 +492,13 @@ void findFreeBlocks()
 	vectOfFreeSpace.clear();
 //	largestFreeBlock = 0;
 //	smallestFreeBlock = 0;
-	int count = 0;
+//	int count = 0;
 	bool found = false;
 	int start;
 //	int size;
-	int i;
-	for (i = 0; i < MAX_MEMORY; i++)
+//	int i;
+//	for (i = 0; i < MAX_MEMORY; i++)
+	for (int i = 0; i < MAX_MEMORY; i++)
 	{
 //		if (mainMemory[i]->size == 0)
 		if (!found && mainMemory[i]->name == (char)248)
@@ -531,9 +552,9 @@ void findFreeBlocks()
 //			i += mainMemory[i]->size - 1; //offset by 1 because loop will increment i
 //			count = 0;
 		}
-
-		freeBlocks = vectOfFreeSpace.size();
 	}
+
+	freeBlocks = vectOfFreeSpace.size();
 
 //	if (count != 0) //handles the case where you go past the end of memory or else the data won't be saved
 //	{
