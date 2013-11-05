@@ -8,14 +8,14 @@
 
 #define MAX_PROCESSES 60
 #define PROCESS_COUNT 50
-#define MIN_BURST 10
-#define MAX_BURST 20
+#define MIN_BURST 100
+#define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.85
 #define PRINT_INTERVAL 5000
-#define MAX_QUANTA 50
+#define MAX_QUANTA 50000
 #define ENABLE_COMPACTION 0
 
 #define LOWBYTE_PERCENT 50
@@ -116,8 +116,8 @@ int main()
 	while (runTime < MAX_QUANTA)
 	{
 		//firstFit();
-		//if (printCount % PRINT_INTERVAL == 0)
-		//{
+		if (printCount % PRINT_INTERVAL == 0)
+		{
 			//print the readyQueue
 			cout << "List of processes in the readyQueue:" << endl;
 			for (uint i = 0; i < readyQueue.size(); i++)
@@ -132,36 +132,25 @@ int main()
 			cout << "--------------------------------------------------------------------------------" << endl;
 			//print mainMemory
 			printMemoryMap();
-		//}
+		}
 		//firstFit();
 		worstFit();
-		//if (printCount % PRINT_INTERVAL == 0)
-		//{
-			//print the readyQueue
-			cout << "List of processes in the readyQueue:" << endl;
-			for (uint i = 0; i < readyQueue.size(); i++)
-			{
-				cout << readyQueue[i]->name << ":";
-				cout << "Size: " << readyQueue[i]->size << " ";
-				cout << "Start: " << readyQueue[i]->start << " ";
-				cout << "Burst time: " << readyQueue[i]->burst << " ";
-				cout << "Idle at: " <<  readyQueue[i]->idleAt;
-				cout << endl;
-			}
-			cout << "--------------------------------------------------------------------------------" << endl;
+		removeIdle();
+		if (printCount % PRINT_INTERVAL == 0)
+		{
 			//print mainMemory
 			printMemoryMap();
-		//}
-		removeIdle();
-		//print mainMemory
-		printMemoryMap();
-		findFreeBlocks();
-		cout << "List of free blocks" << endl;
-		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
-		{
-			cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
 		}
-		cout << "--------------------------------------------------------------------------------" << endl;
+		findFreeBlocks();
+		if (printCount % PRINT_INTERVAL == 0)
+		{
+			cout << "List of free blocks" << endl;
+			for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+			{
+				cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
+			}
+			cout << "--------------------------------------------------------------------------------" << endl;
+		}
 		printCount++;
 		runTime++;
 		//cout << "Runtime: " << runTime << endl;
@@ -174,49 +163,33 @@ int main()
 
 void assignName()
 {
-	int val;
-	myProcess.name = 64;
-	vectOfProcesses.push_back(myProcess);
-	for (int i = 1; i < MAX_PROCESSES; i++)
+	char name = '?';
+
+	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
 		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
-		if (i < 10)
+
+		switch(name)
 		{
-			val = 48 + i;
-			myProcess.name = val;
+		case '@':
+			name = '1';
+			break;
+		case '9':
+			name = 'A';
+			break;
+		case 'Z':
+			name = 'a';
+			break;
+		case 'H':
+		case 'k':
+			name += 2;
+			break;
+		default:
+			name +=1;
+			break;
 		}
-		else if ((10 <= i && i < 35))
-		{
-			if (i == 10)
-			{
-				val = 65;
-			}
-			else if (i == 18)
-			{
-				val += 2;
-			}
-			else
-			{
-				val += 1;
-			}
-			myProcess.name = val;
-		}
-		else
-		{
-			if (i == 35)
-			{
-				val = 97;
-			}
-			else if (i == 46)
-			{
-				val += 2;
-			}
-			else
-			{
-				val += 1;
-			}
-			myProcess.name = val;
-		}
+
+		myProcess.name = name;
 		vectOfProcesses.push_back(myProcess);
 	}
 }
@@ -350,9 +323,9 @@ void removeIdle()
 		//cout << "i: " << i << endl;
 		if ((mainMemory[i]->idleAt <= runTime) && (tempSize> 0))
 		{
-			cout << "Current time " << runTime << endl;
-			cout << "i: " << i << endl;
-			cout << "size: " << tempSize << endl;
+			//cout << "Current time " << runTime << endl;
+			//cout << "i: " << i << endl;
+			//cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
 			zeroFillMemory(mainMemory[i]->start, mainMemory[i]->start + tempSize);
 			//Process *p;
@@ -602,7 +575,7 @@ void worstFit()
 				//cout << "j: " << j << endl;
 				mainMemory[j] = readyQueue[0];
 			}
-			cout << readyQueue[0]->name << endl;
+			//cout << readyQueue[0]->name << endl;
 			usedMemory += readyQueue[0]->size;
 			loadedProc++;
 			readyQueue.erase(readyQueue.begin());
