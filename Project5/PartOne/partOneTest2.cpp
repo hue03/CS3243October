@@ -133,7 +133,8 @@ int main()
 			//print mainMemory
 			printMemoryMap();
 		//}
-		firstFit();
+		//firstFit();
+		worstFit();
 		//if (printCount % PRINT_INTERVAL == 0)
 		//{
 			//print the readyQueue
@@ -570,6 +571,56 @@ void firstFit()
 			queueSize = readyQueue.size();
 		}
 	}*/
+}
+
+void worstFit()
+{
+	bool flag = true;
+	int tempSize = 0;
+	int tempStart = 0;
+	uint queueSize = readyQueue.size();
+	while (flag && queueSize > 0)
+	{
+		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+		{
+			if (vectOfFreeSpace[i].size > tempSize)
+			{
+				tempSize = vectOfFreeSpace[i].size;
+				tempStart = vectOfFreeSpace[i].start;
+				//cout << "start: " << tempStart << " size: " << tempSize << endl;
+			}
+		}
+		if (tempSize > readyQueue[0]->size)
+		{
+			//cout << "beginfor loop" << endl;
+			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+			{
+				//cout << "inside for loop" << endl;
+				readyQueue[0]->start = tempStart;
+				//cout << "1" << endl;
+				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+				//cout << "j: " << j << endl;
+				mainMemory[j] = readyQueue[0];
+			}
+			cout << readyQueue[0]->name << endl;
+			usedMemory += readyQueue[0]->size;
+			loadedProc++;
+			readyQueue.erase(readyQueue.begin());
+			findFreeBlocks();
+		}
+		//cout << "outside for loop" << endl;
+		if (queueSize == readyQueue.size())
+		{
+			//cout << "Q " << queueSize << endl;
+			flag = false;
+		}
+		else
+		{
+			queueSize = readyQueue.size();
+			tempSize = 0;
+			tempStart = 0;
+		}
+	}
 }
 
 void printMemoryMap(void) {
