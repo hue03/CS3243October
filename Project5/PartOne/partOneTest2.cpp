@@ -134,7 +134,8 @@ int main()
 			printMemoryMap();
 		}
 		//firstFit();
-		worstFit();
+		//worstFit();
+		bestFit();
 		removeIdle();
 		if (printCount % PRINT_INTERVAL == 0)
 		{
@@ -563,7 +564,66 @@ void worstFit()
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
 			}
 		}
-		if (tempSize > readyQueue[0]->size)
+		if (tempSize >= readyQueue[0]->size)
+		{
+			//cout << "beginfor loop" << endl;
+			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+			{
+				//cout << "inside for loop" << endl;
+				readyQueue[0]->start = tempStart;
+				//cout << "1" << endl;
+				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+				//cout << "j: " << j << endl;
+				mainMemory[j] = readyQueue[0];
+			}
+			//cout << readyQueue[0]->name << endl;
+			usedMemory += readyQueue[0]->size;
+			loadedProc++;
+			readyQueue.erase(readyQueue.begin());
+			findFreeBlocks();
+		}
+		//cout << "outside for loop" << endl;
+		if (queueSize == readyQueue.size())
+		{
+			//cout << "Q " << queueSize << endl;
+			flag = false;
+		}
+		else
+		{
+			queueSize = readyQueue.size();
+			tempSize = 0;
+			tempStart = 0;
+		}
+	}
+}
+
+void bestFit()
+{
+	bool flag = true;
+	int tempSize = 0;
+	int tempStart = 0;
+	uint queueSize = readyQueue.size();
+	while (flag && queueSize > 0)
+	{
+		//cout << "Free space vect size" << vectOfFreeSpace.size() << endl;
+		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+		{
+			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+			{
+				if (tempSize == 0)
+				{
+					tempSize = vectOfFreeSpace[i].size;
+					tempStart = vectOfFreeSpace[i].start;
+				}
+				else if (vectOfFreeSpace[i].size < tempSize)
+				{
+					tempSize = vectOfFreeSpace[i].size;
+					tempStart = vectOfFreeSpace[i].start;
+					//cout << "start: " << tempStart << " size: " << tempSize << endl;
+				}
+			}
+		}
+		if (tempSize >= readyQueue[0]->size)
 		{
 			//cout << "beginfor loop" << endl;
 			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
