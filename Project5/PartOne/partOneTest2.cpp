@@ -78,7 +78,6 @@ int main()
 //	assignBurst();
 //	loadQueue();
 	createProcesses();
-	for (size_t i = 0; i < PROCESS_COUNT; ++i) cout << readyQueue[i]->name << '\t' << readyQueue[i]->burst << '\t' << readyQueue[i]->size << '\t' << readyQueue[i]->start << '\t' << readyQueue[i]->idleAt << endl; return 0;
 	zeroFillMemory(0, MAX_MEMORY);
 	findFreeBlocks();
 	//fillMemory();
