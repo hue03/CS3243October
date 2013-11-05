@@ -383,7 +383,7 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int size)
 {
-	myProcess = Process(248, 0, 0, start, 0);
+	myProcess = Process(248, 0, size, start, 0);
 
 //	Process *p;
 	Process *p = &myProcess;
