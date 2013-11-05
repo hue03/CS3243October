@@ -81,7 +81,7 @@ int main()
 //	loadQueue();
 	createProcesses();
 	zeroFillMemory(0, MAX_MEMORY);
-	findFreeBlocks();
+//	findFreeBlocks();
 	//fillMemory();
 	//gettimeofday(&start, NULL);
 //	runTime = 0;
