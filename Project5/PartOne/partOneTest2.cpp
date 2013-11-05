@@ -122,7 +122,7 @@ int main()
 	*/
 //	int printCount = 0;
 //	while (runTime < MAX_QUANTA)
-	for (int runTime = 0; runTime < MAX_QUANTA; ++runTime)
+	for (runTime = 0; runTime < MAX_QUANTA; ++runTime)
 	{
 		findFreeBlocks();
 		//print list of free blocks
