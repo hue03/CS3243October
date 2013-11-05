@@ -19,6 +19,7 @@
 #define ENABLE_COMPACTION 0
 
 #define LOWBYTE_PERCENT 50
+#define MEDBYTE_PERCENT 45
 #define HIGHBYTE_PERCENT 5
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 4
 #define MEDBYTE_SIZE_INTERVAL_PERCENT 56
@@ -197,35 +198,63 @@ void assignName()
 void assignSize()
 {
 	//srand(getpid());
-	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
-	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount of processes in the 45% range
-	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //not adding 1 for the kernel (120B), same comment as above
+	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
+	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
+//	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
+	int numLowByte = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
+//	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount of processes in the 45% range
+	int numMedByte = (int)(MAX_PROCESSES * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
+//	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //not adding 1 for the kernel (120B), same comment as above
 	//cout << majority << endl;
 	//cout << secondMajority << endl;
 	//cout << thirdMajority << endl;
-	int minMax, midMin, midMax;
-	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-	midMin = minMax + 1;
-	midMax = midMin + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	int minMax, midMin, midMax;
+//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	midMin = minMax + 1;
+//	midMax = midMin + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+	int highByteSizeRange = (int)(memoryPerProcSizeRange * (highByteSizeIntervalPercent * 0.01));
 	
-	vectOfProcesses[0].size = 120;
-	for (int i = 1; i <= majority; i++)
+//	vectOfProcesses[0].size = 120;
+//	for (int i = 1; i <= majority; i++)
+	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
-		ushort tempSize = rand() % (minMax - MIN_MEMORY_PER_PROC + 1) + MIN_MEMORY_PER_PROC;
+//		ushort tempSize = rand() % (minMax - MIN_MEMORY_PER_PROC + 1) + MIN_MEMORY_PER_PROC;
+		ushort tempSize;
+
+		if (0 == i)
+		{
+			tempSize = 120;
+		}
+		else if (i <= numLowByte)
+		{
+			tempSize= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
+		}
+		else if (i <= numLowByte + numMedByte)
+		{
+			tempSize= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
+		}
+		else
+		{
+			tempSize= rand() % highByteSizeIntervalPercent + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
+		}
+
 		vectOfProcesses[i].size = tempSize;
 	}
 
-	for (int j = majority + 1; j < secondMajority; j++)
-	{
-		ushort tempSize = rand() % (midMax - midMin + 1) + midMin;
-		vectOfProcesses[j].size = tempSize;
-	}
-	
-	for (int k = secondMajority; k < thirdMajority; k++)
-	{
-		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
-		vectOfProcesses[k].size = tempSize;
-	}
+//	for (int j = majority + 1; j < secondMajority; j++)
+//	{
+//		ushort tempSize = rand() % (midMax - midMin + 1) + midMin;
+//		vectOfProcesses[j].size = tempSize;
+//	}
+//
+//	for (int k = secondMajority; k < thirdMajority; k++)
+//	{
+//		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
+//		vectOfProcesses[k].size = tempSize;
+//	}
 }
 
 void assignBurst()
