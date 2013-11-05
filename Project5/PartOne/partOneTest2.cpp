@@ -7,7 +7,7 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 50
+#define PROCESS_COUNT 60
 #define MIN_BURST 100
 #define MAX_BURST 5000
 #define MIN_MEMORY_PER_PROC 4
@@ -32,6 +32,9 @@ struct Process {
 	ushort size;
 	int start;
 	int idleAt;
+
+	Process();
+	Process(char name, ushort burst, ushort size, int start, int idleAt);
 };
 
 struct freeBlock {
@@ -49,13 +52,14 @@ int smallestFreeBlock;
 vector<Process> vectOfProcesses;
 vector<freeBlock> vectOfFreeSpace;
 deque<Process*> readyQueue;
-Process* mainMemory [MAX_MEMORY];
+Process* mainMemory[MAX_MEMORY];
 Process myProcess;
 
-void assignName();
-void assignSize();
-void assignBurst();
-void loadQueue();
+//void assignName();
+//void assignSize();
+//void assignBurst();
+//void loadQueue();
+void createProcesses(void);
 void zeroFillMemory(int start, int end);
 void fillMemory();
 void removeIdle();
@@ -68,11 +72,13 @@ void printMemoryMap(void);
 
 int main()
 {
-	assignName();
+//	assignName();
 	srand(time(NULL));
-	assignSize();
-	assignBurst();
-	loadQueue();
+//	assignSize();
+//	assignBurst();
+//	loadQueue();
+	createProcesses();
+	for (size_t i = 0; i < PROCESS_COUNT; ++i) cout << readyQueue[i]->name << '\t' << readyQueue[i]->burst << '\t' << readyQueue[i]->size << '\t' << readyQueue[i]->start << '\t' << readyQueue[i]->idleAt << endl; return 0;
 	zeroFillMemory(0, MAX_MEMORY);
 	findFreeBlocks();
 	//fillMemory();
@@ -162,14 +168,127 @@ int main()
 }
 
 
-void assignName()
+//void assignName()
+//{
+//	char name = '?';
+//
+//	for (int i = 0; i < PROCESS_COUNT; i++)
+//	{
+//		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
+//
+//		switch(name)
+//		{
+//		case '@':
+//			name = '1';
+//			break;
+//		case '9':
+//			name = 'A';
+//			break;
+//		case 'Z':
+//			name = 'a';
+//			break;
+//		case 'H':
+//		case 'k':
+//			name += 2;
+//			break;
+//		default:
+//			name +=1;
+//			break;
+//		}
+//
+//		myProcess.name = name;
+//		vectOfProcesses.push_back(myProcess);
+//	}
+//}
+//
+//void assignSize()
+//{
+//	//srand(getpid());
+//	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
+//	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
+//	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
+//	int numLowByte = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
+//	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount of processes in the 45% range
+//	int numMedByte = (int)(MAX_PROCESSES * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
+//	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //not adding 1 for the kernel (120B), same comment as above
+	//cout << majority << endl;
+	//cout << secondMajority << endl;
+	//cout << thirdMajority << endl;
+//	int minMax, midMin, midMax;
+//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	midMin = minMax + 1;
+//	midMax = midMin + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+//	int highByteSizeRange = (int)(memoryPerProcSizeRange * (highByteSizeIntervalPercent * 0.01));
+//
+//	vectOfProcesses[0].size = 120;
+//	for (int i = 1; i <= majority; i++)
+//	for (int i = 0; i < PROCESS_COUNT; i++)
+//	{
+//		ushort tempSize = rand() % (minMax - MIN_MEMORY_PER_PROC + 1) + MIN_MEMORY_PER_PROC;
+//		ushort tempSize;
+//
+//		if (0 == i)
+//		{
+//			tempSize = 120;
+//		}
+//		else if (i <= numLowByte)
+//		{
+//			tempSize= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
+//		}
+//		else if (i <= numLowByte + numMedByte)
+//		{
+//			tempSize= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
+//		}
+//		else
+//		{
+//			tempSize= rand() % highByteSizeIntervalPercent + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
+//		}
+//
+//		vectOfProcesses[i].size = tempSize;
+//	}
+//
+//	for (int j = majority + 1; j < secondMajority; j++)
+//	{
+//		ushort tempSize = rand() % (midMax - midMin + 1) + midMin;
+//		vectOfProcesses[j].size = tempSize;
+//	}
+//
+//	for (int k = secondMajority; k < thirdMajority; k++)
+//	{
+//		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
+//		vectOfProcesses[k].size = tempSize;
+//	}
+//}
+//
+//void assignBurst()
+//{
+//	vectOfProcesses[0].burst = MAX_QUANTA;
+//	//srand(getpid() * time(NULL));
+//	for (uint i = 1; i < vectOfProcesses.size(); i++)
+//	{
+//		ushort tempBurst = rand() % (MAX_BURST - MIN_BURST + 1) + MIN_BURST;
+//		vectOfProcesses[i].burst = tempBurst;
+//	}
+//}
+
+void createProcesses(void)
 {
+	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
+	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
+	int numLowByte = PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01);
+	int numMedByte = (int)(PROCESS_COUNT * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
+	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+
+	int burstRange = MAX_BURST - MIN_BURST + 1;
+
 	char name = '?';
 
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
-		myProcess.start = MIN_MEMORY_PER_PROC * (i + 1);
-
 		switch(name)
 		{
 		case '@':
@@ -190,95 +309,48 @@ void assignName()
 			break;
 		}
 
-		myProcess.name = name;
-		vectOfProcesses.push_back(myProcess);
-	}
-}
-
-void assignSize()
-{
-	//srand(getpid());
-	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
-	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
-//	int majority = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
-	int numLowByte = MAX_PROCESSES * (LOWBYTE_PERCENT * 0.01);
-//	int secondMajority = (int)(MAX_PROCESSES * ((LOWBYTE_PERCENT - HIGHBYTE_PERCENT) * 0.01) + majority + 1); // upper range for the amount of processes in the 45% range
-	int numMedByte = (int)(MAX_PROCESSES * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
-//	int thirdMajority = (int)(MAX_PROCESSES * (HIGHBYTE_PERCENT * 0.01)) + secondMajority; //not adding 1 for the kernel (120B), same comment as above
-	//cout << majority << endl;
-	//cout << secondMajority << endl;
-	//cout << thirdMajority << endl;
-//	int minMax, midMin, midMax;
-//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-//	minMax = MIN_MEMORY_PER_PROC + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-//	midMin = minMax + 1;
-//	midMax = midMin + (int)((MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC) * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
-	int highByteSizeRange = (int)(memoryPerProcSizeRange * (highByteSizeIntervalPercent * 0.01));
-	
-//	vectOfProcesses[0].size = 120;
-//	for (int i = 1; i <= majority; i++)
-	for (int i = 0; i < PROCESS_COUNT; i++)
-	{
-//		ushort tempSize = rand() % (minMax - MIN_MEMORY_PER_PROC + 1) + MIN_MEMORY_PER_PROC;
-		ushort tempSize;
+		ushort burst;
+		ushort size;
 
 		if (0 == i)
 		{
-			tempSize = 120;
+			burst = MAX_QUANTA;
+			size = 120;
 		}
 		else if (i <= numLowByte)
 		{
-			tempSize= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
+			size= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
+			burst = rand() % burstRange + MIN_BURST;
 		}
 		else if (i <= numLowByte + numMedByte)
 		{
-			tempSize= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
+			size= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
+			burst = rand() % burstRange + MIN_BURST;
 		}
 		else
 		{
-			tempSize= rand() % highByteSizeIntervalPercent + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
+			size= rand() % highByteSizeIntervalPercent + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
+			burst = rand() % burstRange + MIN_BURST;
 		}
 
-		vectOfProcesses[i].size = tempSize;
-	}
+		Process *process = new Process(name, burst, size, 0, 0);
 
-//	for (int j = majority + 1; j < secondMajority; j++)
+		vectOfProcesses.push_back(*process);
+		readyQueue.push_back(process);
+	}
+}
+
+//void loadQueue()
+//{
+//	Process *proc_ptr;
+//	for (uint i = 0; i < PROCESS_COUNT; i++)
 //	{
-//		ushort tempSize = rand() % (midMax - midMin + 1) + midMin;
-//		vectOfProcesses[j].size = tempSize;
+//		vectOfProcesses[i].start = 0;
+//		vectOfProcesses[i].idleAt = 0;
+//		proc_ptr = &vectOfProcesses[i];
+//		readyQueue.push_back(proc_ptr);
 //	}
-//
-//	for (int k = secondMajority; k < thirdMajority; k++)
-//	{
-//		ushort tempSize = rand() % (MAX_MEMORY_PER_PROC - (midMax + 1) + 1) + (midMax + 1);
-//		vectOfProcesses[k].size = tempSize;
-//	}
-}
-
-void assignBurst()
-{
-	vectOfProcesses[0].burst = MAX_QUANTA;
-	//srand(getpid() * time(NULL));
-	for (uint i = 1; i < vectOfProcesses.size(); i++)
-	{
-		ushort tempBurst = rand() % (MAX_BURST - MIN_BURST + 1) + MIN_BURST;
-		vectOfProcesses[i].burst = tempBurst;
-	}
-}
-
-void loadQueue()
-{
-	Process *proc_ptr; 
-	for (uint i = 0; i < PROCESS_COUNT; i++)
-	{
-		vectOfProcesses[i].start = 0;
-		vectOfProcesses[i].idleAt = 0;
-		proc_ptr = &vectOfProcesses[i];
-		readyQueue.push_back(proc_ptr);		
-	}
-}
+//}
 
 void zeroFillMemory(int start, int end)
 {
@@ -677,4 +749,14 @@ void printMemoryMap(void) {
 	cout << "        970       980       990      1000      1010      1020      1030      1040" << endl;
 	cout << "|----+----|----+----|----+----|----+----|----+----|----+----|----+----|----+----|" << endl;
 	for (size_t i = 960; i < 1040; ++i) cout << mainMemory[i]->name;	cout << endl;
+}
+
+Process::Process() : name(' '), burst(0), size(0), start(0), idleAt(0)
+{
+
+}
+
+Process::Process(char name, ushort burst, ushort size, int start, int idleAt) : name(name), burst(burst), size(size), start(start), idleAt(idleAt)
+{
+
 }
