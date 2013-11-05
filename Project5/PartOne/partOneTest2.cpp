@@ -40,6 +40,8 @@ struct Process {
 struct freeBlock {
 	ushort size;
 	int start;
+
+	freeBlock(int start, ushort size);
 };
 //timeval stop, start;
 int usedMemory;
@@ -466,64 +468,93 @@ void removeIdle()
 
 void findFreeBlocks()
 {
-	vectOfFreeSpace.erase(vectOfFreeSpace.begin(), vectOfFreeSpace.begin() + vectOfFreeSpace.size());
-	largestFreeBlock = 0;
-	smallestFreeBlock = 0;
+//	vectOfFreeSpace.erase(vectOfFreeSpace.begin(), vectOfFreeSpace.begin() + vectOfFreeSpace.size());
+	vectOfFreeSpace.clear();
+//	largestFreeBlock = 0;
+//	smallestFreeBlock = 0;
 	int count = 0;
+	bool found = false;
+	int start;
+//	int size;
 	int i;
 	for (i = 0; i < MAX_MEMORY; i++)
 	{
-		if (mainMemory[i]->size == 0)
+//		if (mainMemory[i]->size == 0)
+		if (!found && mainMemory[i]->name == (char)248)
 		{
-			count++;
+			start = i;
+			found = true;
 		}
-		else
+//		else
+		else if (found && (mainMemory[i]->name != (char)248 || MAX_MEMORY - 1 == i))
 		{
-			if (count != 0)
+			int size = i - start + 1;
+
+			if (vectOfFreeSpace.size() == 0)
 			{
-				freeBlock block;
-				block.size = count;
-				block.start = i - count;
-				vectOfFreeSpace.push_back(block);
-				if (count > largestFreeBlock)
-				{
-					largestFreeBlock = count;
-					if (smallestFreeBlock == 0)
-					{
-						smallestFreeBlock = count;
-					}
-				}
-				else if (count < smallestFreeBlock)
-				{
-					smallestFreeBlock = count;
-				}
-				freeBlocks = vectOfFreeSpace.size();
+				largestFreeBlock = size;
+				smallestFreeBlock = size;
 			}
-			i += mainMemory[i]->size - 1; //offset by 1 because loop will increment i
-			count = 0;
-		}
-	}
-	
-	if (count != 0) //handles the case where you go past the end of memory or else the data won't be saved
-	{
-		freeBlock block;
-		block.size = count;
-		block.start = i - count;
-		vectOfFreeSpace.push_back(block);
-		if (count > largestFreeBlock)
-		{
-			largestFreeBlock = count;
-			if (smallestFreeBlock == 0)
+			else if (size > largestFreeBlock)
 			{
-				smallestFreeBlock = count;
+				largestFreeBlock = size;
 			}
+			else if (size < smallestFreeBlock)
+			{
+				smallestFreeBlock = size;
+			}
+
+			vectOfFreeSpace.push_back(freeBlock(start, size));
+
+			found = false;
+
+//			if (count != 0)
+//			{
+//				freeBlock block;
+//				block.size = count;
+//				block.start = i - count;
+//				vectOfFreeSpace.push_back(block);
+//				if (count > largestFreeBlock)
+//				{
+//					largestFreeBlock = count;
+//					if (smallestFreeBlock == 0)
+//					{
+//						smallestFreeBlock = count;
+//					}
+//				}
+//				else if (count < smallestFreeBlock)
+//				{
+//					smallestFreeBlock = count;
+//				}
+//				freeBlocks = vectOfFreeSpace.size();
+//			}
+//			i += mainMemory[i]->size - 1; //offset by 1 because loop will increment i
+//			count = 0;
 		}
-		else if (count < smallestFreeBlock)
-		{
-			smallestFreeBlock = count;
-		}
+
 		freeBlocks = vectOfFreeSpace.size();
 	}
+
+//	if (count != 0) //handles the case where you go past the end of memory or else the data won't be saved
+//	{
+//		freeBlock block;
+//		block.size = count;
+//		block.start = i - count;
+//		vectOfFreeSpace.push_back(block);
+//		if (count > largestFreeBlock)
+//		{
+//			largestFreeBlock = count;
+//			if (smallestFreeBlock == 0)
+//			{
+//				smallestFreeBlock = count;
+//			}
+//		}
+//		else if (count < smallestFreeBlock)
+//		{
+//			smallestFreeBlock = count;
+//		}
+//		freeBlocks = vectOfFreeSpace.size();
+//	}
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Quicksort
@@ -826,6 +857,11 @@ Process::Process() : name(' '), burst(0), size(0), start(0), idleAt(0)
 }
 
 Process::Process(char name, ushort burst, ushort size, int start, int idleAt) : name(name), burst(burst), size(size), start(start), idleAt(idleAt)
+{
+
+}
+
+freeBlock::freeBlock(int start, ushort size) : size(size), start(start)
 {
 
 }
