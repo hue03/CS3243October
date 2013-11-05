@@ -381,13 +381,13 @@ void createProcesses(void)
 //	}
 //}
 
-void zeroFillMemory(int start, int end)
+void zeroFillMemory(int start, int size)
 {
 	myProcess = Process(248, 0, 0, start, 0);
 
 //	Process *p;
 	Process *p = &myProcess;
-	for (int i = start; i < end; i++)
+	for (int i = 0; i < size; i++)
 	{
 //		p = &myProcess;
 //		p->name = 248;
@@ -395,7 +395,7 @@ void zeroFillMemory(int start, int end)
 //		p->burst = 0;
 //		p->start = start;
 //		p->idleAt = 0;
-		mainMemory[i] = p;
+		mainMemory[start + i] = p;
 		//cout << "i0: " << i << endl;
 	}
 }
@@ -460,7 +460,7 @@ void removeIdle()
 			//cout << "i: " << i << endl;
 			//cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
-			zeroFillMemory(mainMemory[i]->start, mainMemory[i]->start + tempSize);
+			zeroFillMemory(mainMemory[i]->start, tempSize);
 			//Process *p;
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
 			{
