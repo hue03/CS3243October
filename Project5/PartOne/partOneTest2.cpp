@@ -1012,20 +1012,24 @@ void compaction()
 			cout << "moving 1" << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
 			targetProcess->start = targetBlock.start;
-			for (int j = targetBlock.start; j < (targetBlock.start + targetProcess->size); j++)
+			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
+			int fillStart = targetBlock.start + targetBlock.size - 1;
+			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
 			{
+				//cout << "j: " << j << endl;
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
-			startBlock = vectOfFreeSpace.size() - 1;
+			startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes. not efficient
 		}
 		else
 		{
 			startBlock--;
-			if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
-			{
+			//if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
+			//{
 				lastIndex = vectOfFreeSpace[startBlock].start - 1;
-			}
+				cout << "start from " << lastIndex << endl;
+			//}
 		}
 		/*(if (secondTargetProcess->size != MAX_MEMORY)
 		{
