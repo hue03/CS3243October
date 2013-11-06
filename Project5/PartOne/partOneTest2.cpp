@@ -7,22 +7,22 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 60
-#define MIN_BURST 100
-#define MAX_BURST 5000
+#define PROCESS_COUNT 50
+#define MIN_BURST 5
+#define MAX_BURST 15
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
-#define MAX_BLOCK_PROC_RATIO 0.85
-#define PRINT_INTERVAL 5000
-#define MAX_QUANTA 50000
-#define ENABLE_COMPACTION 0
+#define MAX_BLOCK_PROC_RATIO 0.30
+#define PRINT_INTERVAL 5
+#define MAX_QUANTA 50
+#define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
 
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
 #define HIGHBYTE_PERCENT 5
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 4
-#define MEDBYTE_SIZE_INTERVAL_PERCENT 56
+#define MEDBYTE_SIZE_INTERVAL_PERCENT 57
 
 using namespace std;
 
@@ -70,6 +70,7 @@ void sortByIdle(int left, int right);
 void firstFit();
 void bestFit();
 void worstFit();
+void compaction();
 void printMemoryMap(void);
 
 int main()
@@ -180,10 +181,21 @@ int main()
 			printMemoryMap();
 		}
 		removeIdle();
+		findFreeBlocks(); //need this to update the block status
 //		if (printCount % PRINT_INTERVAL == 0)
 		if (runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "AFTER REMOVAL" << endl;
+			//print mainMemory
+			printMemoryMap();
+		}
+		if ((1.0 * freeBlocks / loadedProc) >= MAX_BLOCK_PROC_RATIO && ENABLE_COMPACTION)
+		{
+			cout << "BEFORE COMPACTION" << endl;
+			//print mainMemory
+			printMemoryMap();
+			compaction();
+			cout << "AFTER COMPACTION" << endl;
 			//print mainMemory
 			printMemoryMap();
 		}
@@ -816,6 +828,104 @@ void bestFit()
 			tempStart = 0;
 		}
 	}
+}
+
+void compaction()
+{
+	int unload = 0;
+	int startBlock = vectOfFreeSpace.size() - 1;
+	while (freeBlocks > 1)
+	{
+		//cout << "Inside while" << endl;
+		freeBlock targetBlock = vectOfFreeSpace[startBlock];
+		cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
+		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
+		//cout << "2nd target" << endl;
+		Process *targetProcess, *secondTargetProcess;
+		//cout << "Declare" << endl;
+		Process tempProcess;
+		targetProcess = secondTargetProcess = &tempProcess;
+		targetProcess->size = MAX_MEMORY;
+		//cout << "a1" << endl;
+		secondTargetProcess->size = MAX_MEMORY;
+		//cout << "a2" << endl;
+		for (int i = mainMemory[0]->size; i < MAX_MEMORY; i++)
+		{
+			//cout << "Inside 1st for " << i << endl;
+			if (mainMemory[i]->size == 0)
+			{
+				//cout << "nothing" << endl;
+				; //do nothing
+			}
+			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
+			{
+				targetProcess = mainMemory[i]; //can go to a hole towards the front
+				cout << "2nd if " << targetProcess->size << endl;
+				i += mainMemory[i]->size - 1; //offset by 1 because of double increment
+			}
+			/*else if (mainMemory[i]->size <= lastTargetBlock.size && mainMemory[i]->size < secondTargetProcess->size)
+			{
+				secondTargetProcess = mainMemory[i]; //can go to a hole towards the front
+				cout << "3rd if " << secondTargetProcess->size  << endl;
+				i += mainMemory[i]->size - 1; //offset by 1 because of double increment
+			}*/
+			/*else if (
+			{
+				start
+				cout << "changed target" << endl;
+				if (freeBlocks <= 2)
+				{
+				cout << "Dequeue " << mainMemory[i]->size << endl;
+				cout << "Dequeue " << i << endl;
+				 //cannot go to the frontmost nor rearmost hole remove from memory and go into the beginning of queue
+				unload++;
+				readyQueue.push_front(mainMemory[i]);
+				i += mainMemory[i]->size - 1; //offset by 1 because of double increment
+				zeroFillMemory(mainMemory[i]->start, mainMemory[i]->size);
+				}
+			}*/
+		}
+		cout << "Finished for" << endl;
+		if (targetProcess->size != MAX_MEMORY)
+		{
+			cout << "moving 1" << endl;
+			zeroFillMemory(targetProcess->start, targetProcess->size);
+			targetProcess->start = targetBlock.start;
+			for (int j = targetBlock.start; j < (targetBlock.start + targetProcess->size); j++)
+			{
+				mainMemory[j] = targetProcess;
+			}
+			findFreeBlocks();
+		}
+		else
+		{
+			startBlock--;
+		}
+		/*(if (secondTargetProcess->size != MAX_MEMORY)
+		{
+			cout << "moving 2" << endl;
+			zeroFillMemory(secondTargetProcess->start, secondTargetProcess->size);
+			secondTargetProcess->start = lastTargetBlock.start;
+			for (int j = lastTargetBlock.start; j < (lastTargetBlock.start + secondTargetProcess->size); j++)
+			{
+				mainMemory[j] = secondTargetProcess;
+			}
+			findFreeBlocks();
+		}*/
+		cout << "Num of blocks: " << freeBlocks << endl;
+		printMemoryMap();
+	}
+	/*for (int k = 0; k < unload; k++) //bring back the unloaded processes
+	{
+		for (int l = vectOfFreeSpace[0].start; l < readyQueue[k]->size; l++)
+		{
+			readyQueue[k]->start = vectOfFreeSpace[0].start;
+			mainMemory[l] = readyQueue[k];
+			readyQueue.erase(readyQueue.begin());
+		}
+		findFreeBlocks();
+	}*/
+	cout << "End of code" << endl;
 }
 
 void printMemoryMap(void) {
