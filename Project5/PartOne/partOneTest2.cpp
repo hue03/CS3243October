@@ -953,9 +953,9 @@ void bestFit()
 
 void compaction()
 {
-	int unload = 0;
 	int startBlock = vectOfFreeSpace.size() - 1;
-	while (freeBlocks > 1)
+	int lastIndex = vectOfFreeSpace[startBlock].start - 1;
+	while (startBlock > -1)
 	{
 		//cout << "Inside while" << endl;
 		freeBlock targetBlock = vectOfFreeSpace[startBlock];
@@ -970,7 +970,7 @@ void compaction()
 		//cout << "a1" << endl;
 		secondTargetProcess->size = MAX_MEMORY;
 		//cout << "a2" << endl;
-		for (int i = mainMemory[0]->size; i < MAX_MEMORY; i++)
+		for (int i = lastIndex; i > mainMemory[0]->size; i--)
 		{
 			//cout << "Inside 1st for " << i << endl;
 			if (mainMemory[i]->size == 0)
@@ -982,7 +982,7 @@ void compaction()
 			{
 				targetProcess = mainMemory[i]; //can go to a hole towards the front
 				cout << "2nd if " << targetProcess->size << endl;
-				i += mainMemory[i]->size - 1; //offset by 1 because of double increment
+				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
 			/*else if (mainMemory[i]->size <= lastTargetBlock.size && mainMemory[i]->size < secondTargetProcess->size)
 			{
@@ -1017,10 +1017,15 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
+			startBlock = vectOfFreeSpace.size() - 1;
 		}
 		else
 		{
 			startBlock--;
+			if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
+			{
+				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			}
 		}
 		/*(if (secondTargetProcess->size != MAX_MEMORY)
 		{
