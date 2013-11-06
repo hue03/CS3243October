@@ -306,7 +306,7 @@ int main()
 void createProcesses(void)
 {
 	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
-	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
+	int highByteSizeIntervalPercent = 100 - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
 	int numLowByte = PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01);
 	int numMedByte = (int)(PROCESS_COUNT * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
@@ -383,7 +383,7 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int size)
 {
-	myProcess = Process(248, 0, size, start, 0);
+	myProcess = Process(248, 0, 0, start, 0);
 
 //	Process *p;
 	Process *p = &myProcess;
