@@ -521,7 +521,11 @@ void findFreeBlocks()
 
 		if (found && (mainMemory[i]->name != (char)248 || MAX_MEMORY - 1 == i))
 		{
-			int size = i - start + 1;
+			int size = i - start;
+
+			if (MAX_MEMORY - 1 == i) {
+				++size;
+			}
 
 			if (vectOfFreeSpace.size() == 0)
 			{
