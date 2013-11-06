@@ -959,7 +959,7 @@ void compaction()
 	{
 		//cout << "Inside while" << endl;
 		freeBlock targetBlock = vectOfFreeSpace[startBlock];
-		cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
+		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
 		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
 		//cout << "2nd target" << endl;
 		Process *targetProcess, *secondTargetProcess;
@@ -981,7 +981,7 @@ void compaction()
 			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
 			{
 				targetProcess = mainMemory[i]; //can go to a hole towards the front
-				cout << "2nd if " << targetProcess->size << endl;
+				//cout << "2nd if " << targetProcess->size << endl;
 				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
 			/*else if (mainMemory[i]->size <= lastTargetBlock.size && mainMemory[i]->size < secondTargetProcess->size)
@@ -1009,11 +1009,12 @@ void compaction()
 		cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
 		{
-			cout << "moving 1" << endl;
+			//cout << "moving 1" << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
-			targetProcess->start = targetBlock.start;
-			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
+			//targetProcess->start = targetBlock.start;
+			//cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
 			int fillStart = targetBlock.start + targetBlock.size - 1;
+			targetProcess->start = fillStart - targetProcess->size + 1;
 			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
 			{
 				//cout << "j: " << j << endl;
@@ -1028,7 +1029,7 @@ void compaction()
 			//if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
 			//{
 				lastIndex = vectOfFreeSpace[startBlock].start - 1;
-				cout << "start from " << lastIndex << endl;
+				//cout << "start from " << lastIndex << endl;
 			//}
 		}
 		/*(if (secondTargetProcess->size != MAX_MEMORY)
@@ -1042,19 +1043,44 @@ void compaction()
 			}
 			findFreeBlocks();
 		}*/
-		cout << "Num of blocks: " << freeBlocks << endl;
-		printMemoryMap();
+		//cout << "Num of blocks: " << freeBlocks << endl;
+		//printMemoryMap();
 	}
-	/*for (int k = 0; k < unload; k++) //bring back the unloaded processes
+	printMemoryMap();
+	while (freeBlocks > 1)
 	{
-		for (int l = vectOfFreeSpace[0].start; l < readyQueue[k]->size; l++)
+		freeBlock targetBlock = vectOfFreeSpace[0];
+		for (int m = targetBlock.size + 1; m < MAX_MEMORY; m++)
 		{
-			readyQueue[k]->start = vectOfFreeSpace[0].start;
-			mainMemory[l] = readyQueue[k];
-			readyQueue.erase(readyQueue.begin());
+			cout << m << endl;
+			if (mainMemory[m]->size > 0)
+			{
+				cout << "found " << mainMemory[m]->name << endl;
+				Process* targetProcess = mainMemory[m];
+				int start = mainMemory[m]->start;
+				for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
+				{
+					cout << "insert " << n << endl;
+					mainMemory[n] = targetProcess;
+					cout << mainMemory[n]->name << endl;
+					mainMemory[n]->start = targetBlock.start;
+				}
+				cout << "main " << start << " " << mainMemory[m]->size << endl;
+				zeroFillMemory(start, mainMemory[m]->size);
+				printMemoryMap();
+				findFreeBlocks();
+				for (int i = 0; i < vectOfFreeSpace.size(); i++)
+				{
+					cout << "Block: " << vectOfFreeSpace[i].start << vectOfFreeSpace[i].size << endl;
+				}
+				targetBlock = vectOfFreeSpace[0];
+				cout << "start " << targetBlock.start << endl;
+				cout << "Num of blocks: " << freeBlocks << endl;
+				//printMemoryMap();
+				break;
+			}
 		}
-		findFreeBlocks();
-	}*/
+	}
 	cout << "End of code" << endl;
 }
 
