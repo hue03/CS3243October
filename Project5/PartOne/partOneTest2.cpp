@@ -306,7 +306,7 @@ int main()
 void createProcesses(void)
 {
 	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
-	int highByteSizeIntervalPercent = MAX_MEMORY_PER_PROC - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
+	int highByteSizeIntervalPercent = 100 - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
 	int numLowByte = PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01);
 	int numMedByte = (int)(PROCESS_COUNT * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
@@ -383,7 +383,7 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int size)
 {
-	myProcess = Process(248, 0, size, start, 0);
+	myProcess = Process(248, 0, 0, start, 0);
 
 //	Process *p;
 	Process *p = &myProcess;
@@ -761,60 +761,106 @@ void worstFit()
 
 void bestFit()
 {
-	bool flag = true;
-	int tempSize = 0;
-	int tempStart = 0;
-	uint queueSize = readyQueue.size();
-	while (flag && queueSize > 0)
+//	bool flag = true;
+//	int tempSize = 0;
+//	int tempStart = 0;
+//	uint queueSize = readyQueue.size();
+//	while (flag && queueSize > 0)
+	while (readyQueue.size() > 0)
 	{
-		//cout << "Free space vect size" << vectOfFreeSpace.size() << endl;
+//		//cout << "Free space vect size" << vectOfFreeSpace.size() << endl;
+
+		Process *process = readyQueue.front();
+		int processSize = process->size;
+
+		if (processSize > largestFreeBlock)
+		{
+			break;
+		}
+
+		freeBlock smallest(-1, MAX_MEMORY + 1);
+
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+//			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+//			{
+//				if (tempSize == 0)
+//				{
+//					tempSize = vectOfFreeSpace[i].size;
+//					tempStart = vectOfFreeSpace[i].start;
+//				}
+//				else if (vectOfFreeSpace[i].size < tempSize)
+//				{
+//					tempSize = vectOfFreeSpace[i].size;
+//					tempStart = vectOfFreeSpace[i].start;
+//					//cout << "start: " << tempStart << " size: " << tempSize << endl;
+//				}
+//			}
+
+			int freeSize = vectOfFreeSpace[i].size;
+
+			if (processSize <= freeSize && freeSize < smallest.size)
 			{
-				if (tempSize == 0)
+				smallest = freeBlock(vectOfFreeSpace[i].start, freeSize);
+
+				if (freeSize == smallestFreeBlock || freeSize == processSize)
 				{
-					tempSize = vectOfFreeSpace[i].size;
-					tempStart = vectOfFreeSpace[i].start;
-				}
-				else if (vectOfFreeSpace[i].size < tempSize)
-				{
-					tempSize = vectOfFreeSpace[i].size;
-					tempStart = vectOfFreeSpace[i].start;
-					//cout << "start: " << tempStart << " size: " << tempSize << endl;
+					break;
 				}
 			}
 		}
-		if (tempSize >= readyQueue[0]->size)
-		{
-			//cout << "beginfor loop" << endl;
-			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
-			{
-				//cout << "inside for loop" << endl;
-				readyQueue[0]->start = tempStart;
-				//cout << "1" << endl;
-				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
-				//cout << "j: " << j << endl;
-				mainMemory[j] = readyQueue[0];
-			}
-			//cout << readyQueue[0]->name << endl;
-			usedMemory += readyQueue[0]->size;
-			loadedProc++;
-			readyQueue.erase(readyQueue.begin());
-			findFreeBlocks();
-		}
-		//cout << "outside for loop" << endl;
-		if (queueSize == readyQueue.size())
-		{
-			//cout << "Q " << queueSize << endl;
-			flag = false;
+//		if (tempSize >= readyQueue[0]->size)
+//		{
+//			//cout << "beginfor loop" << endl;
+//			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+//			{
+//				//cout << "inside for loop" << endl;
+//				readyQueue[0]->start = tempStart;
+//				//cout << "1" << endl;
+//				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+//				//cout << "j: " << j << endl;
+//				mainMemory[j] = readyQueue[0];
+//			}
+//			//cout << readyQueue[0]->name << endl;
+//			usedMemory += readyQueue[0]->size;
+//			loadedProc++;
+//			readyQueue.erase(readyQueue.begin());
+//			findFreeBlocks();
+//		}
+//		//cout << "outside for loop" << endl;
+
+		if (-1 == smallest.start) {
+			break;
 		}
 		else
 		{
-			queueSize = readyQueue.size();
-			tempSize = 0;
-			tempStart = 0;
+			Process *process = readyQueue.front();
+			int start = smallest.start;
+			process->start = start;
+			process->idleAt = runTime + process->burst;
+
+			for (size_t i = 0; i < process->size; ++i)
+			{
+				mainMemory[start + i] = process;
+			}
+
+			usedMemory += process->size;
+			loadedProc++;
+			readyQueue.pop_front();
+			findFreeBlocks();
 		}
+
+//		if (queueSize == readyQueue.size())
+//		{
+//			//cout << "Q " << queueSize << endl;
+//			flag = false;
+//		}
+//		else
+//		{
+//			queueSize = readyQueue.size();
+//			tempSize = 0;
+//			tempStart = 0;
+//		}
 	}
 }
 
