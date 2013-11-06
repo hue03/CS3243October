@@ -86,17 +86,27 @@ int main()
 	//fillMemory();
 	//gettimeofday(&start, NULL);
 //	runTime = 0;
-	//cout << "Choose a swapping method: " << endl;
-	//cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
-	//int input;
-	//cin >> input;
-	//switch (input)
-	//{
-	//	case 1: firstFit();
-	//		break;
-	//	default: cout << "Invalid input. Try again." << endl;
-	//		break;
-	//}
+	void (*fit)(void);
+	int input;
+	do
+	{
+		cout << "Choose a swapping method: " << endl;
+		cout << "1. First Fit\n2. Best Fit\n3. Worst Fit" << endl;
+//		int input;
+		cin >> input;
+		switch (input)
+		{
+//			case 1: firstFit();
+			case 1: fit = &firstFit;
+				break;
+			case 2: fit = &bestFit;
+				break;
+			case 3: fit = &worstFit;
+				break;
+			default: cout << "Invalid input. Try again." << endl;
+				break;
+		}
+	} while (input < 1 || input > 3);
 	//print vectOfProcesses
 	/*cout << "List of every processes" << endl;
 	for (int i = 0; i < MAX_PROCESSES; i++)
@@ -170,9 +180,10 @@ int main()
 //			//print mainMemory
 //			printMemoryMap();
 //		}
-		//firstFit();
+		fit();
+//		firstFit();
 		//worstFit();
-		bestFit();
+//		bestFit();
 //		if (printCount % PRINT_INTERVAL == 0)
 		if (runTime % PRINT_INTERVAL == 0)
 		{
@@ -519,9 +530,14 @@ void findFreeBlocks()
 			found = true;
 		}
 //		else
-		else if (found && (mainMemory[i]->name != (char)248 || MAX_MEMORY - 1 == i))
+
+		if (found && (mainMemory[i]->name != (char)248 || MAX_MEMORY - 1 == i))
 		{
-			int size = i - start + 1;
+			int size = i - start;
+
+			if (MAX_MEMORY - 1 == i) {
+				++size;
+			}
 
 			if (vectOfFreeSpace.size() == 0)
 			{
@@ -633,39 +649,67 @@ void sortByIdle(int left, int right)
 
 void firstFit()
 {
-	bool flag = true;
-	uint queueSize = readyQueue.size();
-	while (flag && queueSize > 0)
+//	bool flag = true;
+//	uint queueSize = readyQueue.size();
+//	while (flag && queueSize > 0)
+	while (readyQueue.size() > 0)
 	{
+		Process *process = readyQueue.front();
+		int processSize = process->size;
+
+		if (processSize > largestFreeBlock)
+		{
+			break;
+		}
+
+		freeBlock best(-1, 0);
+
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+//			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+			if (vectOfFreeSpace[i].size >= process->size)
 			{
+				best = vectOfFreeSpace[i];
+				Process *process = readyQueue.front();
+				int start = best.start;
+				process->start = start;
+				process->idleAt = runTime + process->burst;
+
 				//cout << "free space: " << vectOfFreeSpace[i].size << endl;
 				//cout << "process in Q size: " << readyQueue[0]->size << endl;
-				for (int j = vectOfFreeSpace[i].start; j < (vectOfFreeSpace[i].start + readyQueue[0]->size); j++)
+//				for (int j = vectOfFreeSpace[i].start; j < (vectOfFreeSpace[i].start + readyQueue[0]->size); j++)
+				for (int j = 0; j < process->size; j++)
 				{
 					//cout << "j: " << j << endl;
-					readyQueue[0]->start = vectOfFreeSpace[i].start;
-					readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
-					mainMemory[j] = readyQueue[0];
+//					readyQueue[0]->start = vectOfFreeSpace[i].start;
+//					readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+//					mainMemory[j] = readyQueue[0];
+					mainMemory[start + j] = process;
 				}
-				usedMemory += readyQueue[0]->size;
+//				usedMemory += readyQueue[0]->size;
+				usedMemory += process->size;
 				loadedProc++;
-				readyQueue.erase(readyQueue.begin());
+//				readyQueue.erase(readyQueue.begin());
+				readyQueue.pop_front();
 				findFreeBlocks();
 				//tempSize = readyQueue[0];
+
+				break;
 			}
 		}
 		//cout << "outside for loop" << endl;
-		if (queueSize == readyQueue.size())
-		{
+//		if (queueSize == readyQueue.size())
+//		{
 			//cout << "Q " << queueSize << endl;
-			flag = false;
-		}
-		else
-		{
-			queueSize = readyQueue.size();
+//			flag = false;
+//		}
+//		else
+//		{
+//			queueSize = readyQueue.size();
+//		}
+
+		if (-1 == best.start) {
+			break;
 		}
 	}
 	
@@ -723,110 +767,187 @@ void firstFit()
 
 void worstFit()
 {
-	bool flag = true;
-	int tempSize = 0;
-	int tempStart = 0;
-	uint queueSize = readyQueue.size();
-	while (flag && queueSize > 0)
+//	bool flag = true;
+//	int tempSize = 0;
+//	int tempStart = 0;
+//	uint queueSize = readyQueue.size();
+//	while (flag && queueSize > 0)
+	while (readyQueue.size() > 0)
 	{
+		Process *process = readyQueue.front();
+		int processSize = process->size;
+
+		if (processSize > largestFreeBlock)
+		{
+			break;
+		}
+
+		freeBlock largest(-1, 0);
+
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-			if (vectOfFreeSpace[i].size > tempSize)
+//			if (vectOfFreeSpace[i].size > tempSize)
+			if (vectOfFreeSpace[i].size == largestFreeBlock)
 			{
-				tempSize = vectOfFreeSpace[i].size;
-				tempStart = vectOfFreeSpace[i].start;
+//				tempSize = vectOfFreeSpace[i].size;
+//				tempStart = vectOfFreeSpace[i].start;
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
+
+				largest = vectOfFreeSpace[i];
+				Process *process = readyQueue.front();
+				int start = largest.start;
+				process->start = start;
+				process->idleAt = runTime + process->burst;
+
+				for (int j = 0; j < process->size; j++)
+				{
+					mainMemory[start + j] = process;
+				}
+
+				usedMemory += process->size;
+				loadedProc++;
+				readyQueue.pop_front();
+				findFreeBlocks();
+
+				break;
 			}
 		}
-		if (tempSize >= readyQueue[0]->size)
-		{
+
+//		if (tempSize >= readyQueue[0]->size)
+//		{
 			//cout << "beginfor loop" << endl;
-			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
-			{
+//			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+//			for (int j = 0; j < process->size; j++)
+//			{
 				//cout << "inside for loop" << endl;
-				readyQueue[0]->start = tempStart;
+//				readyQueue[0]->start = tempStart;
 				//cout << "1" << endl;
-				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+//				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
 				//cout << "j: " << j << endl;
-				mainMemory[j] = readyQueue[0];
-			}
+//				mainMemory[j] = readyQueue[0];
+//			}
 			//cout << readyQueue[0]->name << endl;
-			usedMemory += readyQueue[0]->size;
-			loadedProc++;
-			readyQueue.erase(readyQueue.begin());
-			findFreeBlocks();
-		}
+//			usedMemory += readyQueue[0]->size;
+//			usedMemory += process->size;
+//			loadedProc++;
+//			readyQueue.erase(readyQueue.begin());
+//			readyQueue.pop_front();
+//			findFreeBlocks();
+//		}
+
 		//cout << "outside for loop" << endl;
-		if (queueSize == readyQueue.size())
-		{
+//		if (queueSize == readyQueue.size())
+//		{
 			//cout << "Q " << queueSize << endl;
-			flag = false;
-		}
-		else
-		{
-			queueSize = readyQueue.size();
-			tempSize = 0;
-			tempStart = 0;
+//			flag = false;
+//		}
+//		else
+//		{
+//			queueSize = readyQueue.size();
+//			tempSize = 0;
+//			tempStart = 0;
+//		}
+
+		if (-1 == largest.start) {
+			break;
 		}
 	}
 }
 
 void bestFit()
 {
-	bool flag = true;
-	int tempSize = 0;
-	int tempStart = 0;
-	uint queueSize = readyQueue.size();
-	while (flag && queueSize > 0)
+//	bool flag = true;
+//	int tempSize = 0;
+//	int tempStart = 0;
+//	uint queueSize = readyQueue.size();
+//	while (flag && queueSize > 0)
+	while (readyQueue.size() > 0)
 	{
 		//cout << "Free space vect size" << vectOfFreeSpace.size() << endl;
+
+		Process *process = readyQueue.front();
+		int processSize = process->size;
+
+		if (processSize > largestFreeBlock)
+		{
+			break;
+		}
+
+		freeBlock smallest(-1, MAX_MEMORY + 1);
+
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+			int freeSize = vectOfFreeSpace[i].size;
+
+//			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
+			if (processSize <= freeSize && freeSize < smallest.size)
 			{
-				if (tempSize == 0)
-				{
-					tempSize = vectOfFreeSpace[i].size;
-					tempStart = vectOfFreeSpace[i].start;
-				}
-				else if (vectOfFreeSpace[i].size < tempSize)
-				{
-					tempSize = vectOfFreeSpace[i].size;
-					tempStart = vectOfFreeSpace[i].start;
+//				if (tempSize == 0)
+//				{
+//					tempSize = vectOfFreeSpace[i].size;
+//					tempStart = vectOfFreeSpace[i].start;
+//				}
+//				else if (vectOfFreeSpace[i].size < tempSize)
+//				{
+//					tempSize = vectOfFreeSpace[i].size;
+//					tempStart = vectOfFreeSpace[i].start;
 					//cout << "start: " << tempStart << " size: " << tempSize << endl;
+//				}
+
+				smallest = vectOfFreeSpace[i];
+
+				if (freeSize == smallestFreeBlock || freeSize == processSize)
+				{
+					break;
 				}
 			}
 		}
-		if (tempSize >= readyQueue[0]->size)
+
+		if (-1 == smallest.start)
 		{
+			break;
+		}
+//		if (tempSize >= readyQueue[0]->size)
+		else
+		{
+			Process *process = readyQueue.front();
+			int start = smallest.start;
+			process->start = start;
+			process->idleAt = runTime + process->burst;
+
 			//cout << "beginfor loop" << endl;
-			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+//			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
+			for (int j = 0; j < process->size; j++)
 			{
 				//cout << "inside for loop" << endl;
-				readyQueue[0]->start = tempStart;
+//				readyQueue[0]->start = tempStart;
 				//cout << "1" << endl;
-				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
+//				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
 				//cout << "j: " << j << endl;
-				mainMemory[j] = readyQueue[0];
+//				mainMemory[j] = readyQueue[0];
+				mainMemory[start + j] = process;
 			}
 			//cout << readyQueue[0]->name << endl;
-			usedMemory += readyQueue[0]->size;
+//			usedMemory += readyQueue[0]->size;
+			usedMemory += process->size;
 			loadedProc++;
-			readyQueue.erase(readyQueue.begin());
+//			readyQueue.erase(readyQueue.begin());
+			readyQueue.pop_front();
 			findFreeBlocks();
 		}
 		//cout << "outside for loop" << endl;
-		if (queueSize == readyQueue.size())
-		{
+
+//		if (queueSize == readyQueue.size())
+//		{
 			//cout << "Q " << queueSize << endl;
-			flag = false;
-		}
-		else
-		{
-			queueSize = readyQueue.size();
-			tempSize = 0;
-			tempStart = 0;
-		}
+//			flag = false;
+//		}
+//		else
+//		{
+//			queueSize = readyQueue.size();
+//			tempSize = 0;
+//			tempStart = 0;
+//		}
 	}
 }
 
