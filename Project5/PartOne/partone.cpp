@@ -695,16 +695,19 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
-			startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
-			lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			if ((uint)startBlock != vectOfFreeSpace.size() - 1) //reduce the times going to the last free block. if the vector grew or shrunk start over again in case.
+			{
+				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
+				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			}
 		}
 		else
 		{
-			startBlock--;
+			startBlock--; //if nothing can be moved go down to the next free block to start from
 			//if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
 			//{
-				lastIndex = vectOfFreeSpace[startBlock].start - 1;
-				cout << "start from " << lastIndex << endl;
+			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
+			cout << "start from " << lastIndex << endl;
 			//}
 		}
 		cout << "Num of blocks: " << freeBlocks << endl;
@@ -723,9 +726,10 @@ void compaction()
 			if (mainMemory[m]->size > 0)
 			{
 				cout << "found " << mainMemory[m]->name << endl;
-				Process* targetProcess = mainMemory[m];
-				int start = mainMemory[m]->start;
-				if (targetProcess->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
+				//Process* targetProcess = mainMemory[m];
+				int start = mainMemory[m]->start; //saving the start location to use for deletion. the start is going to change in the else clause
+				//if (targetProcess->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
+				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
 					cout << "unload here" << endl;
@@ -735,10 +739,12 @@ void compaction()
 				}
 				else
 				{
-					for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
+					//for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++) //begin moving into the frontmost empty block
+					for (int n = targetBlock.start; n < (targetBlock.start + mainMemory[m]->size); n++) //begin moving into the frontmost empty block
 					{
 						cout << "insert " << n << endl;
-						mainMemory[n] = targetProcess;
+						//mainMemory[n] = targetProcess;
+						mainMemory[n] = mainMemory[m];
 						cout << mainMemory[n]->name << endl;
 						mainMemory[n]->start = targetBlock.start;
 					}
