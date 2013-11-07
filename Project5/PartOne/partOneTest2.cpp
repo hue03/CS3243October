@@ -22,7 +22,7 @@
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
 #define HIGHBYTE_PERCENT 5
-#define LOWBYTE_SIZE_INTERVAL_PERCENT 4
+#define LOWBYTE_SIZE_INTERVAL_PERCENT 5
 #define MEDBYTE_SIZE_INTERVAL_PERCENT 57
 
 using namespace std;
@@ -330,12 +330,13 @@ int main()
 
 void createProcesses(void)
 {
-	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
 	int highByteSizeIntervalPercent = 100 - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
-	int numLowByte = PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01);
+	int numLowByte = (int)(PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01));
 	int numMedByte = (int)(PROCESS_COUNT * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
+	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC + 1;
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
+	int highByteSizeRange = (int)(memoryPerProcSizeRange - medByteSizeRange - lowByteSizeRange);
 
 	int burstRange = MAX_BURST - MIN_BURST + 1;
 
@@ -373,24 +374,24 @@ void createProcesses(void)
 		}
 		else if (i <= numLowByte)
 		{
-			size= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
 			burst = rand() % burstRange + MIN_BURST;
+			size= rand() % lowByteSizeRange + MIN_MEMORY_PER_PROC;
 		}
 		else if (i <= numLowByte + numMedByte)
 		{
-			size= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
 			burst = rand() % burstRange + MIN_BURST;
+			size= rand() % medByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange;
 		}
 		else
 		{
-			size= rand() % highByteSizeIntervalPercent + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
 			burst = rand() % burstRange + MIN_BURST;
+			size= rand() % highByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
 		}
 
-		Process *process = new Process(name, burst, size, 0, 0);
+		Process process(name, burst, size, 0, 0);
 
-		vectOfProcesses.push_back(*process);
-		readyQueue.push_back(process);
+		vectOfProcesses.push_back(process);
+		readyQueue.push_back(&process);
 	}
 }
 
@@ -408,14 +409,14 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int size)
 {
-	myProcess = Process(248, 0, 0, start, 0);
+	myProcess = Process(' ', 0, 0, start, 0);
 
 //	Process *p;
 	Process *p = &myProcess;
 	for (int i = 0; i < size; i++)
 	{
 //		p = &myProcess;
-//		p->name = 248;
+//		p->name = ' ';
 //		p->size = 0;
 //		p->burst = 0;
 //		p->start = start;
@@ -490,7 +491,7 @@ void removeIdle()
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
 			{
 				p = &myProcess;
-				p->name = 248;
+				p->name = ' ';
 				p->size = 0;
 				p->burst = 0;
 				p->start = 0;
@@ -526,14 +527,14 @@ void findFreeBlocks()
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
 //		if (mainMemory[i]->size == 0)
-		if (!found && mainMemory[i]->name == (char)248)
+		if (!found && mainMemory[i]->name == ' ')
 		{
 			start = i;
 			found = true;
 		}
 //		else
 
-		if (found && (mainMemory[i]->name != (char)248 || MAX_MEMORY - 1 == i))
+		if (found && (mainMemory[i]->name != ' ' || MAX_MEMORY - 1 == i))
 		{
 			int size = i - start;
 
