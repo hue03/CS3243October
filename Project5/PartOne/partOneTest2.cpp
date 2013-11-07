@@ -182,6 +182,15 @@ int main()
 //			//print mainMemory
 //			printMemoryMap();
 //		}
+		removeIdle();
+		findFreeBlocks(); //need this to update the block status
+//		if (printCount % PRINT_INTERVAL == 0)
+		if (runTime % PRINT_INTERVAL == 0)
+		{
+			cout << "AFTER REMOVAL" << endl;
+			//print mainMemory
+			printMemoryMap();
+		}
 		fit();
 //		firstFit();
 		//worstFit();
@@ -190,15 +199,6 @@ int main()
 		if (runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "AFTER INSERTING" << endl;
-			//print mainMemory
-			printMemoryMap();
-		}
-		removeIdle();
-		findFreeBlocks(); //need this to update the block status
-//		if (printCount % PRINT_INTERVAL == 0)
-		if (runTime % PRINT_INTERVAL == 0)
-		{
-			cout << "AFTER REMOVAL" << endl;
 			//print mainMemory
 			printMemoryMap();
 		}
@@ -1145,7 +1145,7 @@ void printMemoryMap(void) {
 	for (size_t i = 960; i < 1040; ++i) cout << mainMemory[i]->name;	cout << endl;
 }
 
-Process::Process() : name(' '), burst(0), size(0), start(0), idleAt(0)
+Process::Process() : name(' '), burst(0), size(0), start(-1), idleAt(-1)
 {
 
 }
