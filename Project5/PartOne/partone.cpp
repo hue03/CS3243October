@@ -656,13 +656,12 @@ void compaction()
 		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
 		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
 		//cout << "2nd target" << endl;
-		Process *targetProcess, *secondTargetProcess;
+		Process *targetProcess;
 		//cout << "Declare" << endl;
 		Process tempProcess;
-		targetProcess = secondTargetProcess = &tempProcess;
+		targetProcess = &tempProcess;
 		targetProcess->size = MAX_MEMORY;
 		//cout << "a1" << endl;
-		secondTargetProcess->size = MAX_MEMORY;
 		//cout << "a2" << endl;
 		for (int i = lastIndex; i > mainMemory[0]->size; i--)
 		{
