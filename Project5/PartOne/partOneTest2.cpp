@@ -72,6 +72,7 @@ void firstFit();
 void bestFit();
 void worstFit();
 void compaction();
+void recoverToMemory(int);
 void printMemoryMap(void);
 
 int main()
@@ -1032,18 +1033,28 @@ void compaction()
 				cout << "found " << mainMemory[m]->name << endl;
 				Process* targetProcess = mainMemory[m];
 				int start = mainMemory[m]->start;
-
-				for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
+				if (targetProcess->size > targetBlock.size)
 				{
-					cout << "insert " << n << endl;
-					mainMemory[n] = targetProcess;
-					cout << mainMemory[n]->name << endl;
-					mainMemory[n]->start = targetBlock.start;
+					unload++;
+					cout << "unload here" << endl;
+					readyQueue.push_front(mainMemory[m]);
+					zeroFillMemory(start, mainMemory[m]->size);
+					findFreeBlocks();
 				}
-				cout << "main " << start << " " << mainMemory[m]->size << endl;
-				zeroFillMemory(start, mainMemory[m]->size);
+				else
+				{
+					for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
+					{
+						cout << "insert " << n << endl;
+						mainMemory[n] = targetProcess;
+						cout << mainMemory[n]->name << endl;
+						mainMemory[n]->start = targetBlock.start;
+					}
+					cout << "main " << start << " " << mainMemory[m]->size << endl;
+					zeroFillMemory(start, mainMemory[m]->size);
+					findFreeBlocks();
+				}
 				printMemoryMap();
-				findFreeBlocks();
 				for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 				{
 					cout << "Block: " << vectOfFreeSpace[i].start << " " << vectOfFreeSpace[i].size << endl;
@@ -1056,7 +1067,27 @@ void compaction()
 			}
 		}
 	}
+	if (unload > 0)
+	{
+		cout << "special case" << endl;
+		recoverToMemory(unload);
+		printMemoryMap();
+		findFreeBlocks();
+	}
 	cout << "End of code " << targetBlock.start + targetBlock.size << endl;
+}
+
+void recoverToMemory(int end)
+{
+	for (int i = 0; i < end; i++)
+	{
+		readyQueue[i]->start = vectOfFreeSpace[0].start; //careful here vectOfFreeSpace[0] might not exist
+		for (int j = 0; j < readyQueue[i]->size; j++)
+		{
+			mainMemory[vectOfFreeSpace[0].start + j] = readyQueue[i]; //careful here vectOfFreeSpace[0] might not exist
+		}
+		readyQueue.pop_front();
+	}
 }
 
 void printMemoryMap(void) {
