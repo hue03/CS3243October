@@ -17,7 +17,7 @@
 #define PRINT_INTERVAL 5
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-#define SEED 0
+#define SEED 2
 
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
@@ -985,12 +985,6 @@ void compaction()
 				//cout << "2nd if " << targetProcess->size << endl;
 				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
-			/*else if (mainMemory[i]->size <= lastTargetBlock.size && mainMemory[i]->size < secondTargetProcess->size)
-			{
-				secondTargetProcess = mainMemory[i]; //can go to a hole towards the front
-				cout << "3rd if " << secondTargetProcess->size  << endl;
-				i += mainMemory[i]->size - 1; //offset by 1 because of double increment
-			}*/
 		}
 		cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
@@ -1009,6 +1003,7 @@ void compaction()
 			}
 			findFreeBlocks();
 			startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes. not efficient
+			lastIndex = vectOfFreeSpace[startBlock].start - 1;
 		}
 		else
 		{
@@ -1019,25 +1014,17 @@ void compaction()
 				cout << "start from " << lastIndex << endl;
 			//}
 		}
-		/*(if (secondTargetProcess->size != MAX_MEMORY)
-		{
-			cout << "moving 2" << endl;
-			zeroFillMemory(secondTargetProcess->start, secondTargetProcess->size);
-			secondTargetProcess->start = lastTargetBlock.start;
-			for (int j = lastTargetBlock.start; j < (lastTargetBlock.start + secondTargetProcess->size); j++)
-			{
-				mainMemory[j] = secondTargetProcess;
-			}
-			findFreeBlocks();
-		}*/
 		cout << "Num of blocks: " << freeBlocks << endl;
 		printMemoryMap();
 	}
 	printMemoryMap();
-	while (false)
+	findFreeBlocks();
+	freeBlock targetBlock = vectOfFreeSpace[0];
+	int unload = 0;
+	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY)
 	{
-		freeBlock targetBlock = vectOfFreeSpace[0];
-		for (int m = targetBlock.size + 1; m < MAX_MEMORY; m++)
+		//freeBlock targetBlock = vectOfFreeSpace[0];
+		for (int m = (targetBlock.start + targetBlock.size); m < MAX_MEMORY; m++)
 		{
 			cout << m << endl;
 			if (mainMemory[m]->size > 0)
@@ -1045,6 +1032,7 @@ void compaction()
 				cout << "found " << mainMemory[m]->name << endl;
 				Process* targetProcess = mainMemory[m];
 				int start = mainMemory[m]->start;
+
 				for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
 				{
 					cout << "insert " << n << endl;
@@ -1056,19 +1044,19 @@ void compaction()
 				zeroFillMemory(start, mainMemory[m]->size);
 				printMemoryMap();
 				findFreeBlocks();
-				for (int i = 0; i < vectOfFreeSpace.size(); i++)
+				for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 				{
-					cout << "Block: " << vectOfFreeSpace[i].start << vectOfFreeSpace[i].size << endl;
+					cout << "Block: " << vectOfFreeSpace[i].start << " " << vectOfFreeSpace[i].size << endl;
 				}
 				targetBlock = vectOfFreeSpace[0];
 				cout << "start " << targetBlock.start << endl;
 				cout << "Num of blocks: " << freeBlocks << endl;
-				//printMemoryMap();
+				printMemoryMap();
 				break;
 			}
 		}
 	}
-	cout << "End of code" << endl;
+	cout << "End of code " << targetBlock.start + targetBlock.size << endl;
 }
 
 void printMemoryMap(void) {
