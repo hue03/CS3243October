@@ -409,10 +409,10 @@ void createProcesses(void)
 
 void zeroFillMemory(int start, int size)
 {
-	myProcess = Process(' ', 0, 0, start, 0);
+	Process process = Process(' ', 0, size, start, -1);
 
 //	Process *p;
-	Process *p = &myProcess;
+	Process *p = &process;
 	for (int i = 0; i < size; i++)
 	{
 //		p = &myProcess;
@@ -476,16 +476,19 @@ void fillMemory()
 
 void removeIdle()
 {
-	for (int i = 120; i < MAX_MEMORY; i++)
+//	for (int i = 120; i < MAX_MEMORY; i++)
+	for (int i = 0; i < MAX_MEMORY; i++)
 	{
 		int tempSize = mainMemory[i]->size;
 		//cout << "i: " << i << endl;
-		if ((mainMemory[i]->idleAt <= runTime) && (tempSize> 0))
+//		if ((mainMemory[i]->idleAt <= runTime) && (tempSize> 0))
+		if (mainMemory[i]->idleAt == runTime)
 		{
 			//cout << "Current time " << runTime << endl;
 			//cout << "i: " << i << endl;
 			//cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
+//			zeroFillMemory(mainMemory[i]->start, tempSize);
 			zeroFillMemory(mainMemory[i]->start, tempSize);
 			//Process *p;
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
@@ -505,10 +508,10 @@ void removeIdle()
 		}
 		/*advancing the iterator by the size of the process to reduce the amount of checks it need to do if the whole process is removed or the process is not ready to be removed.
 		advances normally if the space is empty*/
-		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
-		{				  //using a condition to try and correct this. trying to start where the process starts
-			i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
-		} 
+//		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
+//		{				  //using a condition to try and correct this. trying to start where the process starts
+		i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
+//		}
 	}
 }
 
