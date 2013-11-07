@@ -673,7 +673,6 @@ void firstFit()
 			if (vectOfFreeSpace[i].size >= process->size)
 			{
 				best = vectOfFreeSpace[i];
-				Process *process = readyQueue.front();
 				int start = best.start;
 				process->start = start;
 				process->idleAt = runTime + process->burst;
@@ -797,7 +796,6 @@ void worstFit()
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
 
 				largest = vectOfFreeSpace[i];
-				Process *process = readyQueue.front();
 				int start = largest.start;
 				process->start = start;
 				process->idleAt = runTime + process->burst;
@@ -913,7 +911,6 @@ void bestFit()
 //		if (tempSize >= readyQueue[0]->size)
 		else
 		{
-			Process *process = readyQueue.front();
 			int start = smallest.start;
 			process->start = start;
 			process->idleAt = runTime + process->burst;
