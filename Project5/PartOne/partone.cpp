@@ -25,12 +25,12 @@
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
 #define SEED 2
-#define EMPTY_PROCESS_NAME 32
+#define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
 //#define HIGHBYTE_PERCENT 5
-#define LOWBYTE_SIZE_INTERVAL_PERCENT 5
-#define MEDBYTE_SIZE_INTERVAL_PERCENT 57
+#define LOWBYTE_SIZE_INTERVAL_PERCENT 5 //computes the upper range of the size for the low byte interval
+#define MEDBYTE_SIZE_INTERVAL_PERCENT 57 //computes the upper range of the size for the med byte interval based on the upper range of the low byte size
 
 using namespace std;
 
@@ -60,9 +60,9 @@ int largestFreeBlock;
 int smallestFreeBlock;
 vector<Process> vectOfProcesses;
 vector<freeBlock> vectOfFreeSpace;
-deque<Process*> readyQueue;
-Process* mainMemory[MAX_MEMORY];
-Process myProcess;
+deque<Process*> readyQueue; //a queue of pointers to the elements in the vectOfProcesses
+Process* mainMemory[MAX_MEMORY]; //gets filled with pointers to the elements in the vectOfProcesses
+Process myProcess; //the empty process object
 
 void createProcesses(void);
 void zeroFillMemory(int start, int end);
@@ -153,7 +153,6 @@ int main()
 void createProcesses(void)
 {
 	int memoryPerProcSizeRange = MAX_MEMORY_PER_PROC - MIN_MEMORY_PER_PROC;
-	//int highByteSizeIntervalPercent = 100 - MEDBYTE_SIZE_INTERVAL_PERCENT - LOWBYTE_SIZE_INTERVAL_PERCENT;
 	int numLowByte = (int)(PROCESS_COUNT * (LOWBYTE_PERCENT * 0.01));
 	int numMedByte = (int)(PROCESS_COUNT * (MEDBYTE_PERCENT * 0.01)); // upper range for the amount of processes in the 45% range
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
@@ -256,12 +255,12 @@ void removeIdle()
 
 void findFreeBlocks()
 {
-	vectOfFreeSpace.clear();
+	vectOfFreeSpace.clear(); //wipes the vector clean. not efficient but easy to just find the new holes instead of modifying what is in the vector
 	bool found = false;
 	int start;
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
-		if (!found && mainMemory[i]->name == (char)EMPTY_PROCESS_NAME)
+		if (!found && mainMemory[i]->name == (char)EMPTY_PROCESS_NAME) //finding empty blocks
 		{
 			start = i;
 			found = true;
@@ -271,8 +270,8 @@ void findFreeBlocks()
 		{
 			int size = i - start;
 
-			if (MAX_MEMORY - 1 == i) {
-				++size;
+			if (MAX_MEMORY - 1 == i) { 
+				++size; //at the end of memory. increment by 1 before the loop terminates
 			}
 
 			if (vectOfFreeSpace.size() == 0)
@@ -354,7 +353,7 @@ void firstFit()
 
 		if (processSize > largestFreeBlock)
 		{
-			break;
+			break; //no free blocks with enough space
 		}
 
 		freeBlock best(-1, 0);
@@ -471,7 +470,7 @@ void worstFit()
 		Process *process = readyQueue.front();
 		int processSize = process->size;
 
-		if (processSize > largestFreeBlock)
+		if (processSize > largestFreeBlock) //biggest block can't fit the process
 		{
 			break;
 		}
@@ -561,7 +560,7 @@ void bestFit()
 		Process *process = readyQueue.front();
 		int processSize = process->size;
 
-		if (processSize > largestFreeBlock)
+		if (processSize > largestFreeBlock) //no free blocks with enough space
 		{
 			break;
 		}
@@ -645,14 +644,14 @@ void bestFit()
 
 void compaction()
 {
-	int startBlock = vectOfFreeSpace.size() - 1;
-	int lastIndex = vectOfFreeSpace[startBlock].start - 1;
-	while (startBlock > -1) //begin first part. move smallest things to the end free block.
+	int oldVectFreeSize = vectOfFreeSpace.size();
+	int startBlock = vectOfFreeSpace.size() - 1; //element/position number to indicate which free block to fill
+	int lastIndex = vectOfFreeSpace[startBlock].start - 1; //the starting index position where the loops will start from. subtract by 1 to move off of the free process.
+	while (startBlock > -1) //begin first part of compaction. move smallest things to the end free block.
 	{
 		//cout << "Inside while" << endl;
 		freeBlock targetBlock = vectOfFreeSpace[startBlock];
 		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
-		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
 		//cout << "2nd target" << endl;
 		Process *targetProcess;
 		//cout << "Declare" << endl;
@@ -671,7 +670,7 @@ void compaction()
 			}
 			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
 			{
-				targetProcess = mainMemory[i]; //can go to a hole towards the front
+				targetProcess = mainMemory[i]; //can go to a hole towards the back
 				//cout << "2nd if " << targetProcess->size << endl;
 				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
@@ -692,8 +691,10 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
-			if ((uint)startBlock != vectOfFreeSpace.size() - 1) //reduce the times going to the last free block. if the vector grew or shrunk start over again in case.
+			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
+			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
 			{
+				oldVectFreeSize = vectOfFreeSpace.size();
 				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
 				lastIndex = vectOfFreeSpace[startBlock].start - 1;
 			}
@@ -701,11 +702,8 @@ void compaction()
 		else
 		{
 			startBlock--; //if nothing can be moved go down to the next free block to start from
-			//if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
-			//{
 			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
 			cout << "start from " << lastIndex << endl;
-			//}
 		}
 		cout << "Num of blocks: " << freeBlocks << endl;
 		printMemoryMap();
@@ -714,7 +712,7 @@ void compaction()
 	findFreeBlocks();
 	freeBlock targetBlock = vectOfFreeSpace[0];
 	int unload = 0;
-	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY) //begin second part. move the first process found from the first block and move that into the first free block
+	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY) //begin second part of compaction. move the first process found from the first block and move that into the first free block
 	{
 		//freeBlock targetBlock = vectOfFreeSpace[0];
 		for (int m = (targetBlock.start + targetBlock.size); m < MAX_MEMORY; m++)
