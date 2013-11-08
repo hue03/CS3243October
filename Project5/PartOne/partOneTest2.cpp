@@ -61,7 +61,7 @@ Process myProcess;
 //void assignName();
 //void assignSize();
 //void assignBurst();
-//void loadQueue();
+void loadQueue();
 void createProcesses(void);
 void zeroFillMemory(int start, int end);
 void fillMemory();
@@ -81,8 +81,8 @@ int main()
 	srand(SEED);
 //	assignSize();
 //	assignBurst();
-//	loadQueue();
 	createProcesses();
+	loadQueue();
 	zeroFillMemory(0, MAX_MEMORY);
 //	findFreeBlocks();
 	//fillMemory();
@@ -183,7 +183,7 @@ int main()
 //			printMemoryMap();
 //		}
 		removeIdle();
-		findFreeBlocks(); //need this to update the block status
+//		findFreeBlocks(); //need this to update the block status
 //		if (printCount % PRINT_INTERVAL == 0)
 		if (runTime % PRINT_INTERVAL == 0)
 		{
@@ -192,6 +192,7 @@ int main()
 			printMemoryMap();
 		}
 		fit();
+//		findFreeBlocks();
 //		firstFit();
 		//worstFit();
 //		bestFit();
@@ -388,31 +389,36 @@ void createProcesses(void)
 			size= rand() % highByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
 		}
 
-		Process process(name, burst, size, 0, 0);
+//		Process process(name, burst, size, 0, 0);
 
-		vectOfProcesses.push_back(process);
-		readyQueue.push_back(&process);
+		vectOfProcesses.push_back(Process(name, burst, size, 0, 0));
+//		vectOfProcesses.push_back(process);
+
+//		readyQueue.push_back(&vectOfProcesses.back());
+//		readyQueue.push_back(&process);
 	}
 }
 
-//void loadQueue()
-//{
+void loadQueue()
+{
 //	Process *proc_ptr;
-//	for (uint i = 0; i < PROCESS_COUNT; i++)
-//	{
+	for (uint i = 0; i < PROCESS_COUNT; i++)
+	{
 //		vectOfProcesses[i].start = 0;
 //		vectOfProcesses[i].idleAt = 0;
 //		proc_ptr = &vectOfProcesses[i];
 //		readyQueue.push_back(proc_ptr);
-//	}
-//}
+		Process *proc_ptr = &vectOfProcesses[i];
+		readyQueue.push_back(proc_ptr);
+	}
+}
 
 void zeroFillMemory(int start, int size)
 {
-	Process process = Process(' ', 0, size, start, -1);
+//	Process process = new Process(' ', 0, size, start, -1);
 
 //	Process *p;
-	Process *p = &process;
+	Process *p = new Process(' ', 0, size, start, -1);
 	for (int i = 0; i < size; i++)
 	{
 //		p = &myProcess;
@@ -513,6 +519,8 @@ void removeIdle()
 		i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
 //		}
 	}
+
+	findFreeBlocks();
 }
 
 void findFreeBlocks()
@@ -522,28 +530,17 @@ void findFreeBlocks()
 //	largestFreeBlock = 0;
 //	smallestFreeBlock = 0;
 //	int count = 0;
-	bool found = false;
-	int start;
+//	bool found = false;
+//	int start;
 //	int size;
 //	int i;
 //	for (i = 0; i < MAX_MEMORY; i++)
 	for (int i = 0; i < MAX_MEMORY; i++)
 	{
 //		if (mainMemory[i]->size == 0)
-		if (!found && mainMemory[i]->name == ' ')
+		if (mainMemory[i]->name == ' ')
 		{
-			start = i;
-			found = true;
-		}
-//		else
-
-		if (found && (mainMemory[i]->name != ' ' || MAX_MEMORY - 1 == i))
-		{
-			int size = i - start;
-
-			if (MAX_MEMORY - 1 == i) {
-				++size;
-			}
+			int size = mainMemory[i]->size;
 
 			if (vectOfFreeSpace.size() == 0)
 			{
@@ -559,10 +556,38 @@ void findFreeBlocks()
 				smallestFreeBlock = size;
 			}
 
-			vectOfFreeSpace.push_back(freeBlock(start, size));
+			vectOfFreeSpace.push_back(freeBlock(mainMemory[i]->start, size));
+		}
+//		else
 
-			found = false;
+		i += mainMemory[i]->size - 1;
 
+//		if (found && (mainMemory[i]->name != ' ' || MAX_MEMORY - 1 == i))
+//		{
+//			int size = i - start;
+//
+//			if (MAX_MEMORY - 1 == i) {
+//				++size;
+//			}
+//
+//			if (vectOfFreeSpace.size() == 0)
+//			{
+//				largestFreeBlock = size;
+//				smallestFreeBlock = size;
+//			}
+//			else if (size > largestFreeBlock)
+//			{
+//				largestFreeBlock = size;
+//			}
+//			else if (size < smallestFreeBlock)
+//			{
+//				smallestFreeBlock = size;
+//			}
+//
+//			vectOfFreeSpace.push_back(freeBlock(start, size));
+//
+//			found = false;
+//
 //			if (count != 0)
 //			{
 //				freeBlock block;
@@ -585,7 +610,12 @@ void findFreeBlocks()
 //			}
 //			i += mainMemory[i]->size - 1; //offset by 1 because loop will increment i
 //			count = 0;
-		}
+//		}
+//
+//		if (mainMemory[i]->name != ' ')
+//		{
+//			i += mainMemory[i]->size - 1;
+//		}
 	}
 
 	freeBlocks = vectOfFreeSpace.size();
@@ -679,6 +709,16 @@ void firstFit()
 				int start = best.start;
 				process->start = start;
 				process->idleAt = runTime + process->burst;
+
+				if (process->size == best.size)
+				{
+					delete mainMemory[start];
+				}
+				else
+				{
+					mainMemory[start]->start += process->size;
+					mainMemory[start]->size -= process->size;
+				}
 
 				//cout << "free space: " << vectOfFreeSpace[i].size << endl;
 				//cout << "process in Q size: " << readyQueue[0]->size << endl;
@@ -803,6 +843,16 @@ void worstFit()
 				process->start = start;
 				process->idleAt = runTime + process->burst;
 
+				if (process->size == largest.size)
+				{
+					delete mainMemory[start];
+				}
+				else
+				{
+					mainMemory[start]->start += process->size;
+					mainMemory[start]->size -= process->size;
+				}
+
 				for (int j = 0; j < process->size; j++)
 				{
 					mainMemory[start + j] = process;
@@ -918,6 +968,16 @@ void bestFit()
 			process->start = start;
 			process->idleAt = runTime + process->burst;
 
+			if (process->size == smallest.size)
+			{
+				delete mainMemory[start];
+			}
+			else
+			{
+				mainMemory[start]->start += process->size;
+				mainMemory[start]->size -= process->size;
+			}
+
 			//cout << "beginfor loop" << endl;
 //			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
 			for (int j = 0; j < process->size; j++)
@@ -930,6 +990,7 @@ void bestFit()
 //				mainMemory[j] = readyQueue[0];
 				mainMemory[start + j] = process;
 			}
+
 			//cout << readyQueue[0]->name << endl;
 //			usedMemory += readyQueue[0]->size;
 			usedMemory += process->size;
