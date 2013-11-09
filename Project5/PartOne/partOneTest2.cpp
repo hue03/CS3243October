@@ -408,8 +408,7 @@ void loadQueue()
 //		vectOfProcesses[i].idleAt = 0;
 //		proc_ptr = &vectOfProcesses[i];
 //		readyQueue.push_back(proc_ptr);
-		Process *proc_ptr = &vectOfProcesses[i];
-		readyQueue.push_back(proc_ptr);
+		readyQueue.push_back(&vectOfProcesses.at(i));
 	}
 }
 
