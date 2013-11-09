@@ -481,10 +481,11 @@ void fillMemory()
 
 void removeIdle()
 {
+	int tempSize;
 //	for (int i = 120; i < MAX_MEMORY; i++)
-	for (int i = 0; i < MAX_MEMORY; i++)
+	for (int i = 0; i < MAX_MEMORY; i += tempSize)
 	{
-		int tempSize = mainMemory[i]->size;
+		tempSize = mainMemory[i]->size;
 		//cout << "i: " << i << endl;
 //		if ((mainMemory[i]->idleAt <= runTime) && (tempSize> 0))
 		if (mainMemory[i]->idleAt == runTime)
@@ -527,7 +528,7 @@ void removeIdle()
 		advances normally if the space is empty*/
 //		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
 //		{				  //using a condition to try and correct this. trying to start where the process starts
-		i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
+//		i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
 //		}
 	}
 
@@ -543,15 +544,16 @@ void findFreeBlocks()
 //	int count = 0;
 //	bool found = false;
 //	int start;
-//	int size;
+	int size;
 //	int i;
 //	for (i = 0; i < MAX_MEMORY; i++)
-	for (int i = 0; i < MAX_MEMORY; i++)
+	for (int i = 0; i < MAX_MEMORY; i += size)
 	{
+		size = mainMemory[i]->size;
 //		if (mainMemory[i]->size == 0)
 		if (mainMemory[i]->name == ' ')
 		{
-			int size = mainMemory[i]->size;
+//			int size = mainMemory[i]->size;
 
 			if (vectOfFreeSpace.size() == 0)
 			{
@@ -571,7 +573,7 @@ void findFreeBlocks()
 		}
 //		else
 
-		i += mainMemory[i]->size - 1;
+//		i += mainMemory[i]->size - 1;
 
 //		if (found && (mainMemory[i]->name != ' ' || MAX_MEMORY - 1 == i))
 //		{
