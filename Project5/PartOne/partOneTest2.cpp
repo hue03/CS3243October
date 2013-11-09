@@ -494,7 +494,19 @@ void removeIdle()
 			//cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
 //			zeroFillMemory(mainMemory[i]->start, tempSize);
-			zeroFillMemory(mainMemory[i]->start, tempSize);
+
+			int nextIndex = mainMemory[i]->start + tempSize;
+
+			if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
+			{
+				Process *p = mainMemory[nextIndex];
+				zeroFillMemory(mainMemory[i]->start, tempSize + p->size);
+				delete p;
+			}
+			else
+			{
+				zeroFillMemory(mainMemory[i]->start, tempSize);
+			}
 			//Process *p;
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
 			{
