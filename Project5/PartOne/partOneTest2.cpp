@@ -417,8 +417,16 @@ void zeroFillMemory(int start, int size)
 //	Process process = new Process(' ', 0, size, start, -1);
 
 //	Process *p;
-	Process *p = new Process(' ', 0, size, start, -1);
-	for (int i = 0; i < size; i++)
+	int newSize = size;
+	int nextIndex = start + size;
+	if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
+	{
+		newSize += mainMemory[nextIndex]->size;
+		delete mainMemory[nextIndex];
+	}
+
+	Process *p = new Process(' ', 0, newSize, start, -1);
+	for (int i = 0; i < newSize; i++)
 	{
 //		p = &myProcess;
 //		p->name = ' ';
@@ -1046,19 +1054,23 @@ void compaction()
 		targetProcess->size = MAX_MEMORY;
 		//cout << "a1" << endl;
 		//cout << "a2" << endl;
-		for (int i = lastIndex; i > mainMemory[0]->size; i--)
+		int size;
+//		for (int i = lastIndex; i > mainMemory[0]->size; i--)
+		for (int i = mainMemory[0]->size; i < targetBlock.start; i += size)
 		{
+			size = mainMemory[i]->size;
 			//cout << "Inside 1st for " << i << endl;
-			if (mainMemory[i]->size == 0)
-			{
+//			if (mainMemory[i]->size == 0)
+//			{
 				//cout << "nothing" << endl;
-				; //do nothing
-			}
-			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
+//				; //do nothing
+//			}
+//			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
+			if (mainMemory[i]->name != ' ' && mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
 			{
 				targetProcess = mainMemory[i]; //can go to a hole towards the back
 				//cout << "2nd if " << targetProcess->size << endl;
-				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
+//				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
 		}
 		cout << "Finished for" << endl;
@@ -1088,7 +1100,7 @@ void compaction()
 		else
 		{
 			startBlock--; //if nothing can be moved go down to the next free block to start from
-			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
+//			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
 			cout << "start from " << lastIndex << endl;
 		}
 		cout << "Num of blocks: " << freeBlocks << endl;
