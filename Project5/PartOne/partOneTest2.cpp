@@ -38,11 +38,11 @@ struct Process {
 	Process(char name, ushort burst, ushort size, int start, int idleAt);
 };
 
-struct freeBlock {
+struct FreeBlock {
 	ushort size;
 	int start;
 
-	freeBlock(int start, ushort size);
+	FreeBlock(int start, ushort size);
 };
 //timeval stop, start;
 int usedMemory;
@@ -53,7 +53,7 @@ int freeBlocks;
 int largestFreeBlock;
 int smallestFreeBlock;
 vector<Process> vectOfProcesses;
-vector<freeBlock> vectOfFreeSpace;
+vector<FreeBlock> vectOfFreeSpace;
 deque<Process*> readyQueue;
 Process* mainMemory[MAX_MEMORY];
 Process myProcess;
@@ -556,7 +556,7 @@ void findFreeBlocks()
 				smallestFreeBlock = size;
 			}
 
-			vectOfFreeSpace.push_back(freeBlock(mainMemory[i]->start, size));
+			vectOfFreeSpace.push_back(FreeBlock(mainMemory[i]->start, size));
 		}
 //		else
 
@@ -698,7 +698,7 @@ void firstFit()
 			break;
 		}
 
-		freeBlock best(-1, 0);
+		FreeBlock best(-1, 0);
 
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
@@ -827,7 +827,7 @@ void worstFit()
 			break;
 		}
 
-		freeBlock largest(-1, 0);
+		FreeBlock largest(-1, 0);
 
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
@@ -927,7 +927,7 @@ void bestFit()
 			break;
 		}
 
-		freeBlock smallest(-1, MAX_MEMORY + 1);
+		FreeBlock smallest(-1, MAX_MEMORY + 1);
 
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
@@ -1022,7 +1022,7 @@ void compaction()
 	while (startBlock > -1)
 	{
 		//cout << "Inside while" << endl;
-		freeBlock targetBlock = vectOfFreeSpace[startBlock];
+		FreeBlock targetBlock = vectOfFreeSpace[startBlock];
 		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
 		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
 		//cout << "2nd target" << endl;
@@ -1082,7 +1082,7 @@ void compaction()
 	}
 	printMemoryMap();
 	findFreeBlocks();
-	freeBlock targetBlock = vectOfFreeSpace[0];
+	FreeBlock targetBlock = vectOfFreeSpace[0];
 	int unload = 0;
 	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY)
 	{
@@ -1216,7 +1216,7 @@ Process::Process(char name, ushort burst, ushort size, int start, int idleAt) : 
 
 }
 
-freeBlock::freeBlock(int start, ushort size) : size(size), start(start)
+FreeBlock::FreeBlock(int start, ushort size) : size(size), start(start)
 {
 
 }
