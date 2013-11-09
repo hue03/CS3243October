@@ -1028,22 +1028,21 @@ void bestFit()
 
 void compaction()
 {
-	int startBlock = vectOfFreeSpace.size() - 1;
-	int lastIndex = vectOfFreeSpace[startBlock].start - 1;
-	while (startBlock > -1)
+	int oldVectFreeSize = vectOfFreeSpace.size();
+	int startBlock = vectOfFreeSpace.size() - 1; //element/position number to indicate which free block to fill
+	int lastIndex = vectOfFreeSpace[startBlock].start - 1; //the starting index position where the loops will start from. subtract by 1 to move off of the free process.
+	while (startBlock > -1) //begin first part of compaction. move smallest things to the end free block.
 	{
 		//cout << "Inside while" << endl;
 		FreeBlock targetBlock = vectOfFreeSpace[startBlock];
 		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
-		//freeBlock lastTargetBlock = vectOfFreeSpace[0];
 		//cout << "2nd target" << endl;
-		Process *targetProcess, *secondTargetProcess;
+		Process *targetProcess;
 		//cout << "Declare" << endl;
 		Process tempProcess;
-		targetProcess = secondTargetProcess = &tempProcess;
+		targetProcess = &tempProcess;
 		targetProcess->size = MAX_MEMORY;
 		//cout << "a1" << endl;
-		secondTargetProcess->size = MAX_MEMORY;
 		//cout << "a2" << endl;
 		for (int i = lastIndex; i > mainMemory[0]->size; i--)
 		{
@@ -1055,7 +1054,7 @@ void compaction()
 			}
 			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
 			{
-				targetProcess = mainMemory[i]; //can go to a hole towards the front
+				targetProcess = mainMemory[i]; //can go to a hole towards the back
 				//cout << "2nd if " << targetProcess->size << endl;
 				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
@@ -1076,17 +1075,19 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
-			startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes. not efficient
-			lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
+			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
+			{
+				oldVectFreeSize = vectOfFreeSpace.size();
+				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
+				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			}
 		}
 		else
 		{
-			startBlock--;
-			//if (vectOfFreeSpace[startBlock].start - 1 < lastIndex)
-			//{
-				lastIndex = vectOfFreeSpace[startBlock].start - 1;
-				cout << "start from " << lastIndex << endl;
-			//}
+			startBlock--; //if nothing can be moved go down to the next free block to start from
+			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
+			cout << "start from " << lastIndex << endl;
 		}
 		cout << "Num of blocks: " << freeBlocks << endl;
 		printMemoryMap();
@@ -1095,7 +1096,7 @@ void compaction()
 	findFreeBlocks();
 	FreeBlock targetBlock = vectOfFreeSpace[0];
 	int unload = 0;
-	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY)
+	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY) //begin second part of compaction. move the first process found from the first block and move that into the first free block
 	{
 		//freeBlock targetBlock = vectOfFreeSpace[0];
 		for (int m = (targetBlock.start + targetBlock.size); m < MAX_MEMORY; m++)
@@ -1104,9 +1105,10 @@ void compaction()
 			if (mainMemory[m]->size > 0)
 			{
 				cout << "found " << mainMemory[m]->name << endl;
-				Process* targetProcess = mainMemory[m];
-				int start = mainMemory[m]->start;
-				if (targetProcess->size > targetBlock.size)
+				//Process* targetProcess = mainMemory[m];
+				int start = mainMemory[m]->start; //saving the start location to use for deletion. the start is going to change in the else clause
+				//if (targetProcess->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
+				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
 					cout << "unload here" << endl;
@@ -1116,10 +1118,12 @@ void compaction()
 				}
 				else
 				{
-					for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++)
+					//for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++) //begin moving into the frontmost empty block
+					for (int n = targetBlock.start; n < (targetBlock.start + mainMemory[m]->size); n++) //begin moving into the frontmost empty block
 					{
 						cout << "insert " << n << endl;
-						mainMemory[n] = targetProcess;
+						//mainMemory[n] = targetProcess;
+						mainMemory[n] = mainMemory[m];
 						cout << mainMemory[n]->name << endl;
 						mainMemory[n]->start = targetBlock.start;
 					}
@@ -1140,7 +1144,7 @@ void compaction()
 			}
 		}
 	}
-	if (unload > 0)
+	if (unload > 0) //begin third optional part. bring the removed process back into memory at the end of all the processes
 	{
 		cout << "special case" << endl;
 		recoverToMemory(unload);
