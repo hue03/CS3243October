@@ -4,20 +4,20 @@
 #include <sys/time.h>
 #include <iostream>
 #include <vector>
-#include <deque>  
+#include <deque>
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 50
-#define MIN_BURST 5
-#define MAX_BURST 15
-#define MIN_MEMORY_PER_PROC 4
-#define MAX_MEMORY_PER_PROC 160
+#define PROCESS_COUNT 60
+#define MIN_BURST 10
+#define MAX_BURST 200
+#define MIN_MEMORY_PER_PROC 15
+#define MAX_MEMORY_PER_PROC 280
 #define MAX_MEMORY 1040
-#define MAX_BLOCK_PROC_RATIO 0.30
-#define PRINT_INTERVAL 5
-#define MAX_QUANTA 50
-#define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-#define SEED 2
+#define MAX_BLOCK_PROC_RATIO 0.5
+#define PRINT_INTERVAL 100
+#define MAX_QUANTA 50000
+#define ENABLE_COMPACTION false //flags whether the program will run the compaction algorithm
+#define SEED 0
 
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
@@ -36,6 +36,7 @@ struct Process {
 
 	Process();
 	Process(char name, ushort burst, ushort size, int start, int idleAt);
+	Process(int start, ushort size);
 };
 
 struct FreeBlock {
@@ -54,7 +55,8 @@ int freeBlocks;
 int largestFreeBlock;
 int smallestFreeBlock;
 vector<Process> vectOfProcesses;
-vector<FreeBlock> vectOfFreeSpace;
+vector<Process*> vectOfFreeBlocks;
+//vector<FreeBlock> vectOfFreeSpace;
 deque<Process*> readyQueue;
 Process* mainMemory[MAX_MEMORY];
 Process myProcess;
@@ -78,6 +80,9 @@ void printMemoryMap(void);
 
 int main()
 {
+#ifdef _DEBUG
+	cout << "blah";
+#endif
 //	assignName();
 	srand(SEED);
 //	assignSize();
@@ -138,16 +143,16 @@ int main()
 //	while (runTime < MAX_QUANTA)
 	for (runTime = 0; runTime < MAX_QUANTA; ++runTime)
 	{
-		findFreeBlocks();
+//		findFreeBlocks();
 		//print list of free blocks
 //		if (printCount % PRINT_INTERVAL == 0)
 		if (runTime % PRINT_INTERVAL == 0)
 		{
 			//print list of free blocks
 			cout << "List of free blocks" << endl;
-			for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+			for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
 			{
-				cout << "Block start: " << vectOfFreeSpace[i].start << " Block size: " << vectOfFreeSpace[i].size << endl;
+				cout << "Block start: " << vectOfFreeBlocks[i]->start << " Block size: " << vectOfFreeBlocks[i]->size << endl;
 			}
 			cout << "--------------------------------------------------------------------------------" << endl;
 
@@ -399,6 +404,10 @@ void createProcesses(void)
 		readyQueue.push_back(&vectOfProcesses.back());
 //		readyQueue.push_back(&process);
 	}
+
+	// TODO test output
+	cout << "Processes\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << "\t\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].start << endl;
+	cout << "Ready Queue\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
 }
 
 //void loadQueue()
@@ -422,6 +431,7 @@ void zeroFillMemory(int start, int size)
 	int newStart = start;
 	int newSize = size;
 	int prevIndex = start - 1;
+	bool checkFreeBlocks = false;
 	if (prevIndex >= 0 && ' ' == mainMemory[prevIndex]->name)
 	{
 		newStart -= mainMemory[prevIndex]->size;
@@ -429,12 +439,14 @@ void zeroFillMemory(int start, int size)
 
 		if (' ' == mainMemory[start]->name)
 		{
+			checkFreeBlocks = true;
 			delete mainMemory[start];
 		}
 	}
 	int nextIndex = start + size;
 	if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
 	{
+		checkFreeBlocks = true;
 		newSize += mainMemory[nextIndex]->size;
 		delete mainMemory[nextIndex];
 	}
@@ -444,7 +456,9 @@ void zeroFillMemory(int start, int size)
 
 	if (NULL == mainMemory[start] || mainMemory[start]->name != ' ')
 	{
+		checkFreeBlocks = true;
 		p = new Process(' ', 0, newSize, start, -1);
+		vectOfFreeBlocks.push_back(p);
 	}
 	else
 	{
@@ -461,6 +475,14 @@ void zeroFillMemory(int start, int size)
 //		p->idleAt = 0;
 		mainMemory[newStart + i] = p;
 		//cout << "i0: " << i << endl;
+	}
+
+	// TODO test output
+	cout << "Free Blocks\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < vectOfFreeBlocks.size(); ++i) cout << i << "\t\t" << vectOfFreeBlocks[i]->burst << "\t\t" << vectOfFreeBlocks[i]->idleAt << "\t\t" << vectOfFreeBlocks[i]->name << "\t\t" << vectOfFreeBlocks[i]->size << "\t\t" << vectOfFreeBlocks[i]->start << endl;
+
+	if (checkFreeBlocks)
+	{
+		findFreeBlocks();
 	}
 }
 
@@ -527,20 +549,10 @@ void removeIdle()
 			//cout << "i: " << i << endl;
 			//cout << "size: " << tempSize << endl;
 			readyQueue.push_back(mainMemory[i]);
-//			zeroFillMemory(mainMemory[i]->start, tempSize);
+			zeroFillMemory(mainMemory[i]->start, tempSize);
+			// TODO test output
+			cout << "Ready Queue\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
 
-			int nextIndex = mainMemory[i]->start + tempSize;
-
-			if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
-			{
-				Process *p = mainMemory[nextIndex];
-				zeroFillMemory(mainMemory[i]->start, tempSize + p->size);
-				delete p;
-			}
-			else
-			{
-				zeroFillMemory(mainMemory[i]->start, tempSize);
-			}
 			//Process *p;
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
 			{
@@ -565,45 +577,52 @@ void removeIdle()
 //		}
 	}
 
-	findFreeBlocks();
+//	findFreeBlocks();
 }
 
 void findFreeBlocks()
 {
 //	vectOfFreeSpace.erase(vectOfFreeSpace.begin(), vectOfFreeSpace.begin() + vectOfFreeSpace.size());
-	vectOfFreeSpace.clear();
+//	vectOfFreeBlocks.clear();
 //	largestFreeBlock = 0;
 //	smallestFreeBlock = 0;
 //	int count = 0;
 //	bool found = false;
 //	int start;
 	int size;
+
+	if (vectOfFreeBlocks.size() > 0)
+	{
+		largestFreeBlock = vectOfFreeBlocks[0]->size;
+		smallestFreeBlock = vectOfFreeBlocks[0]->size;
+	}
+	else
+	{
+		largestFreeBlock = 0;
+		smallestFreeBlock = 0;
+	}
 //	int i;
 //	for (i = 0; i < MAX_MEMORY; i++)
-	for (int i = 0; i < MAX_MEMORY; i += size)
+//	for (int i = 0; i < MAX_MEMORY; i += size)
+	for (uint i = 1; i < vectOfFreeBlocks.size(); i++)
 	{
 		size = mainMemory[i]->size;
 //		if (mainMemory[i]->size == 0)
-		if (mainMemory[i]->name == ' ')
-		{
+//		if (mainMemory[i]->name == ' ')
+//		{
 //			int size = mainMemory[i]->size;
 
-			if (vectOfFreeSpace.empty())
-			{
-				largestFreeBlock = size;
-				smallestFreeBlock = size;
-			}
-			else if (size > largestFreeBlock)
-			{
-				largestFreeBlock = size;
-			}
-			else if (size < smallestFreeBlock)
-			{
-				smallestFreeBlock = size;
-			}
-
-			vectOfFreeSpace.push_back(FreeBlock(mainMemory[i]->start, size));
+		if (size > largestFreeBlock)
+		{
+			largestFreeBlock = size;
 		}
+		else if (size < smallestFreeBlock)
+		{
+			smallestFreeBlock = size;
+		}
+
+//			vectOfFreeBlocks.push_back(Process(mainMemory[i]->start, size));
+//		}
 //		else
 
 //		i += mainMemory[i]->size - 1;
@@ -664,7 +683,7 @@ void findFreeBlocks()
 //		}
 	}
 
-	freeBlocks = vectOfFreeSpace.size();
+	freeBlocks = vectOfFreeBlocks.size();
 
 //	if (count != 0) //handles the case where you go past the end of memory or else the data won't be saved
 //	{
@@ -686,6 +705,8 @@ void findFreeBlocks()
 //		}
 //		freeBlocks = vectOfFreeSpace.size();
 //	}
+	// TODO test output
+	printMemoryMap();
 }
 
 //Algorithm derived from www.algolist.net/Algorithms/Sorting/Quicksort
@@ -696,7 +717,7 @@ void sortByIdle(int left, int right)
 	int pivot = readyQueue[(left + right) / 2]->idleAt;
 
 	/* partition */
-	while (i <= j) 
+	while (i <= j)
 	{
 		while (readyQueue[i]->idleAt < pivot)
 		{
@@ -738,32 +759,39 @@ void firstFit()
 	{
 		Process *process = readyQueue.front();
 		int processSize = process->size;
+		bool checkFreeBlocks = false;
 
 		if (processSize > largestFreeBlock)
 		{
 			break;
 		}
 
-		FreeBlock best(-1, 0);
+		Process *best = NULL;
 
-		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+		for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
 		{
 //			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
-			if (vectOfFreeSpace[i].size >= process->size)
+			if (vectOfFreeBlocks[i]->size >= process->size)
 			{
-				best = vectOfFreeSpace[i];
-				int start = best.start;
+				best = vectOfFreeBlocks[i];
+				int start = best->start;
 				process->start = start;
 				process->idleAt = runTime + process->burst;
 
-				if (process->size == best.size)
+				if (best->size == smallestFreeBlock || best->size == largestFreeBlock)
 				{
-					delete mainMemory[start];
+					checkFreeBlocks = true;
+				}
+
+				if (process->size == best->size)
+				{
+					delete best;
+					vectOfFreeBlocks.erase(vectOfFreeBlocks.begin() + i);
 				}
 				else
 				{
-					mainMemory[start]->start += process->size;
-					mainMemory[start]->size -= process->size;
+					best->start += process->size;
+					best->size -= process->size;
 				}
 
 				//cout << "free space: " << vectOfFreeSpace[i].size << endl;
@@ -782,7 +810,14 @@ void firstFit()
 				loadedProc++;
 //				readyQueue.erase(readyQueue.begin());
 				readyQueue.pop_front();
-				findFreeBlocks();
+
+				// TODO test output
+				cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
+
+				if (checkFreeBlocks)
+				{
+					findFreeBlocks();
+				}
 				//tempSize = readyQueue[0];
 
 				break;
@@ -799,11 +834,11 @@ void firstFit()
 //			queueSize = readyQueue.size();
 //		}
 
-		if (-1 == best.start) {
+		if (NULL == best) {
 			break;
 		}
 	}
-	
+
 	/*int startIndex = 0;
 	bool flag = true;
 	uint queueSize = readyQueue.size();
@@ -867,36 +902,43 @@ void worstFit()
 	{
 		Process *process = readyQueue.front();
 		int processSize = process->size;
+		bool checkFreeBlocks = false;
 
 		if (processSize > largestFreeBlock)
 		{
 			break;
 		}
 
-		FreeBlock largest(-1, 0);
+		Process *largest = NULL;
 
-		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+		for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
 		{
 //			if (vectOfFreeSpace[i].size > tempSize)
-			if (vectOfFreeSpace[i].size == largestFreeBlock)
+			if (vectOfFreeBlocks[i]->size == largestFreeBlock)
 			{
 //				tempSize = vectOfFreeSpace[i].size;
 //				tempStart = vectOfFreeSpace[i].start;
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
 
-				largest = vectOfFreeSpace[i];
-				int start = largest.start;
+				largest = vectOfFreeBlocks[i];
+				int start = largest->start;
 				process->start = start;
 				process->idleAt = runTime + process->burst;
 
-				if (process->size == largest.size)
+				if (largest->size == largestFreeBlock || largest->size == largestFreeBlock)
 				{
-					delete mainMemory[start];
+					checkFreeBlocks = true;
+				}
+
+				if (process->size == largest->size)
+				{
+					delete largest;
+					vectOfFreeBlocks.erase(vectOfFreeBlocks.begin() + i);
 				}
 				else
 				{
-					mainMemory[start]->start += process->size;
-					mainMemory[start]->size -= process->size;
+					largest->start += process->size;
+					largest->size -= process->size;
 				}
 
 				for (int j = 0; j < process->size; j++)
@@ -907,7 +949,14 @@ void worstFit()
 				usedMemory += process->size;
 				loadedProc++;
 				readyQueue.pop_front();
-				findFreeBlocks();
+
+				// TODO test output
+				cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
+
+				if (checkFreeBlocks)
+				{
+					findFreeBlocks();
+				}
 
 				break;
 			}
@@ -948,7 +997,7 @@ void worstFit()
 //			tempStart = 0;
 //		}
 
-		if (-1 == largest.start) {
+		if (NULL == largest) {
 			break;
 		}
 	}
@@ -973,14 +1022,16 @@ void bestFit()
 			break;
 		}
 
-		FreeBlock smallest(-1, MAX_MEMORY + 1);
+		Process *smallest = NULL;
+		int indexOfSmallest = -1;
+		bool checkFreeBlocks = false;
 
-		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+		for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
 		{
-			int freeSize = vectOfFreeSpace[i].size;
+			int freeSize = vectOfFreeBlocks[i]->size;
 
 //			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
-			if (processSize <= freeSize && freeSize < smallest.size)
+			if (processSize <= freeSize && (smallest == NULL || freeSize < smallest->size))
 			{
 //				if (tempSize == 0)
 //				{
@@ -994,7 +1045,8 @@ void bestFit()
 					//cout << "start: " << tempStart << " size: " << tempSize << endl;
 //				}
 
-				smallest = vectOfFreeSpace[i];
+				smallest = vectOfFreeBlocks[i];
+				indexOfSmallest = i;
 
 				if (freeSize == smallestFreeBlock || freeSize == processSize)
 				{
@@ -1003,25 +1055,31 @@ void bestFit()
 			}
 		}
 
-		if (-1 == smallest.start)
+		if (NULL == smallest)
 		{
 			break;
 		}
 //		if (tempSize >= readyQueue[0]->size)
 		else
 		{
-			int start = smallest.start;
+			int start = smallest->start;
 			process->start = start;
 			process->idleAt = runTime + process->burst;
 
-			if (process->size == smallest.size)
+			if (smallest->size == smallestFreeBlock || smallest->size == largestFreeBlock)
 			{
-				delete mainMemory[start];
+				checkFreeBlocks = true;
+			}
+
+			if (process->size == smallest->size)
+			{
+				vectOfFreeBlocks.erase(vectOfFreeBlocks.begin() + indexOfSmallest);
+				delete smallest;
 			}
 			else
 			{
-				mainMemory[start]->start += process->size;
-				mainMemory[start]->size -= process->size;
+				smallest->start += process->size;
+				smallest->size -= process->size;
 			}
 
 			//cout << "beginfor loop" << endl;
@@ -1043,7 +1101,14 @@ void bestFit()
 			loadedProc++;
 //			readyQueue.erase(readyQueue.begin());
 			readyQueue.pop_front();
-			findFreeBlocks();
+
+			// TODO test output
+			cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
+
+			if (checkFreeBlocks)
+			{
+				findFreeBlocks();
+			}
 		}
 		//cout << "outside for loop" << endl;
 
@@ -1063,13 +1128,13 @@ void bestFit()
 
 void compaction()
 {
-	int oldVectFreeSize = vectOfFreeSpace.size();
-	int startBlock = vectOfFreeSpace.size() - 1; //element/position number to indicate which free block to fill
-	int lastIndex = vectOfFreeSpace[startBlock].start - 1; //the starting index position where the loops will start from. subtract by 1 to move off of the free process.
+	int oldVectFreeSize = vectOfFreeBlocks.size();
+	int startBlock = vectOfFreeBlocks.size() - 1; //element/position number to indicate which free block to fill
+	int lastIndex = vectOfFreeBlocks[startBlock]->start - 1; //the starting index position where the loops will start from. subtract by 1 to move off of the free process.
 	while (startBlock > -1) //begin first part of compaction. move smallest things to the end free block.
 	{
 		//cout << "Inside while" << endl;
-		FreeBlock targetBlock = vectOfFreeSpace[startBlock];
+		Process *targetBlock = vectOfFreeBlocks[startBlock];
 		//cout << "1st target " << targetBlock.start << " " << targetBlock.size << endl;
 		//cout << "2nd target" << endl;
 		Process *targetProcess;
@@ -1081,7 +1146,7 @@ void compaction()
 		//cout << "a2" << endl;
 		int size;
 //		for (int i = lastIndex; i > mainMemory[0]->size; i--)
-		for (int i = mainMemory[0]->size; i < targetBlock.start; i += size)
+		for (int i = mainMemory[0]->size; i < targetBlock->start; i += size)
 		{
 			size = mainMemory[i]->size;
 			//cout << "Inside 1st for " << i << endl;
@@ -1091,7 +1156,7 @@ void compaction()
 //				; //do nothing
 //			}
 //			else if (mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
-			if (mainMemory[i]->name != ' ' && mainMemory[i]->size <= targetBlock.size && mainMemory[i]->size < targetProcess->size)
+			if (mainMemory[i]->name != ' ' && mainMemory[i]->size <= targetBlock->size && mainMemory[i]->size < targetProcess->size)
 			{
 				targetProcess = mainMemory[i]; //can go to a hole towards the back
 				//cout << "2nd if " << targetProcess->size << endl;
@@ -1104,8 +1169,8 @@ void compaction()
 			cout << "moving 1" << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
 			//targetProcess->start = targetBlock.start;
-			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
-			int fillStart = targetBlock.start + targetBlock.size - 1;
+			cout <<"Target " << targetBlock->size - 1 << " " << targetBlock->start << endl;
+			int fillStart = targetBlock->start + targetBlock->size - 1;
 			targetProcess->start = fillStart - targetProcess->size + 1;
 			cout << targetProcess->start << endl;
 //			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
@@ -1114,13 +1179,13 @@ void compaction()
 				cout << "j: " << j << endl;
 				mainMemory[fillStart - j] = targetProcess;
 			}
-			zeroFillMemory(targetBlock.start, targetBlock.size - targetProcess->size);
+			zeroFillMemory(targetBlock->start, targetBlock->size - targetProcess->size);
 			findFreeBlocks();
 			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
-			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
+			if ((uint)oldVectFreeSize != vectOfFreeBlocks.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
 			{
-				oldVectFreeSize = vectOfFreeSpace.size();
-				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
+				oldVectFreeSize = vectOfFreeBlocks.size();
+				startBlock = vectOfFreeBlocks.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
 //				lastIndex = vectOfFreeSpace[startBlock].start - 1;
 			}
 		}
@@ -1135,12 +1200,12 @@ void compaction()
 	}
 	printMemoryMap();
 	findFreeBlocks();
-	FreeBlock targetBlock = vectOfFreeSpace[0];
+	Process *targetBlock = vectOfFreeBlocks[0];
 	int unload = 0;
-	while ((targetBlock.start + targetBlock.size) < MAX_MEMORY) //begin second part of compaction. move the first process found from the first block and move that into the first free block
+	while ((targetBlock->start + targetBlock->size) < MAX_MEMORY) //begin second part of compaction. move the first process found from the first block and move that into the first free block
 	{
 		//freeBlock targetBlock = vectOfFreeSpace[0];
-		for (int m = (targetBlock.start + targetBlock.size); m < MAX_MEMORY; m++)
+		for (int m = (targetBlock->start + targetBlock->size); m < MAX_MEMORY; m++)
 		{
 			cout << m << endl;
 			if (mainMemory[m]->size > 0)
@@ -1149,7 +1214,7 @@ void compaction()
 				//Process* targetProcess = mainMemory[m];
 				int start = mainMemory[m]->start; //saving the start location to use for deletion. the start is going to change in the else clause
 				//if (targetProcess->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
-				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
+				if (mainMemory[m]->size > targetBlock->size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
 					cout << "unload here" << endl;
@@ -1160,25 +1225,25 @@ void compaction()
 				else
 				{
 					//for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++) //begin moving into the frontmost empty block
-					for (int n = targetBlock.start; n < (targetBlock.start + mainMemory[m]->size); n++) //begin moving into the frontmost empty block
+					for (int n = targetBlock->start; n < (targetBlock->start + mainMemory[m]->size); n++) //begin moving into the frontmost empty block
 					{
 						cout << "insert " << n << endl;
 						//mainMemory[n] = targetProcess;
 						mainMemory[n] = mainMemory[m];
 						cout << mainMemory[n]->name << endl;
-						mainMemory[n]->start = targetBlock.start;
+						mainMemory[n]->start = targetBlock->start;
 					}
 					cout << "main " << start << " " << mainMemory[m]->size << endl;
 					zeroFillMemory(start, mainMemory[m]->size);
 					findFreeBlocks();
 				}
 				printMemoryMap();
-				for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+				for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
 				{
-					cout << "Block: " << vectOfFreeSpace[i].start << " " << vectOfFreeSpace[i].size << endl;
+					cout << "Block: " << vectOfFreeBlocks[i]->start << " " << vectOfFreeBlocks[i]->size << endl;
 				}
-				targetBlock = vectOfFreeSpace[0];
-				cout << "start " << targetBlock.start << endl;
+				targetBlock = vectOfFreeBlocks[0];
+				cout << "start " << targetBlock->start << endl;
 				cout << "Num of blocks: " << freeBlocks << endl;
 				printMemoryMap();
 				break;
@@ -1192,17 +1257,17 @@ void compaction()
 		printMemoryMap();
 		findFreeBlocks();
 	}
-	cout << "End of code " << targetBlock.start + targetBlock.size << endl;
+	cout << "End of code " << targetBlock->start + targetBlock->size << endl;
 }
 
 void recoverToMemory(int end)
 {
 	for (int i = 0; i < end; i++)
 	{
-		readyQueue[i]->start = vectOfFreeSpace[0].start; //careful here vectOfFreeSpace[0] might not exist
+		readyQueue[i]->start = vectOfFreeBlocks[0]->start; //careful here vectOfFreeSpace[0] might not exist
 		for (int j = 0; j < readyQueue[i]->size; j++)
 		{
-			mainMemory[vectOfFreeSpace[0].start + j] = readyQueue[i]; //careful here vectOfFreeSpace[0] might not exist
+			mainMemory[vectOfFreeBlocks[0]->start + j] = readyQueue[i]; //careful here vectOfFreeSpace[0] might not exist
 		}
 		readyQueue.pop_front();
 	}
@@ -1268,6 +1333,11 @@ Process::Process() : name(' '), burst(0), size(0), start(-1), idleAt(-1)
 }
 
 Process::Process(char name, ushort burst, ushort size, int start, int idleAt) : name(name), burst(burst), size(size), start(start), idleAt(idleAt)
+{
+
+}
+
+Process::Process(int start, ushort size) : name(' '), burst(-1), size(size), start(start), idleAt(-1)
 {
 
 }
