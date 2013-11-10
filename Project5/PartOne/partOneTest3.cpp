@@ -1,10 +1,17 @@
+// CS3243 Operating Systems
+// Fall 2013
+// Project 5: Memory Swapping and Paging, Part 1
+// Steven Ng and Hue Moua
+// Date: 11/6/2013
+// File: partone.cpp
+
 #include <cstdlib>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <iostream>
 #include <vector>
-#include <deque>
+#include <deque>  
 
 #define MAX_PROCESSES 60
 #define PROCESS_COUNT 60
@@ -57,9 +64,9 @@ int smallestFreeBlock;
 vector<Process> vectOfProcesses;
 vector<Process*> vectOfFreeBlocks;
 //vector<FreeBlock> vectOfFreeSpace;
-deque<Process*> readyQueue;
-Process* mainMemory[MAX_MEMORY];
-Process myProcess;
+deque<Process*> readyQueue; //a queue of pointers to the elements in the vectOfProcesses
+Process* mainMemory[MAX_MEMORY]; //gets filled with pointers to the elements in the vectOfProcesses
+Process myProcess; //the empty process object
 
 //void assignName();
 //void assignSize();
@@ -77,12 +84,10 @@ void worstFit();
 void compaction();
 void recoverToMemory(int);
 void printMemoryMap(void);
+void removeFreeBlock(Process *block);
 
 int main()
 {
-#ifdef _DEBUG
-	cout << "blah";
-#endif
 //	assignName();
 	srand(SEED);
 //	assignSize();
@@ -259,6 +264,7 @@ int main()
 //
 //		myProcess.name = name;
 //		vectOfProcesses.push_back(myProcess);
+void sortByIdle(int left, int right);
 //	}
 //}
 //
@@ -292,6 +298,7 @@ int main()
 //		ushort tempSize;
 //
 //		if (0 == i)
+void sortByIdle(int left, int right);
 //		{
 //			tempSize = 120;
 //		}
@@ -344,7 +351,7 @@ void createProcesses(void)
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	int highByteSizeRange = (int)(memoryPerProcSizeRange - medByteSizeRange - lowByteSizeRange);
-
+	
 	int burstRange = MAX_BURST - MIN_BURST + 1;
 
 	char name = '?';
@@ -406,8 +413,8 @@ void createProcesses(void)
 	}
 
 	// TODO test output
-	cout << "Processes\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << "\t\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].start << endl;
-	cout << "Ready Queue\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
+	cout << "Processes\ni\tName\tStart\tSize\tBurst\tIdle At\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].start << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << endl; cout << endl;
+	cout << "Ready Queue\nName\tSize\n"; for (int i = readyQueue.size() - 1; i >= 0; --i) cout << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << endl; cout << endl;
 }
 
 //void loadQueue()
@@ -427,45 +434,54 @@ void zeroFillMemory(int start, int size)
 {
 //	Process process = new Process(' ', 0, size, start, -1);
 
-//	Process *p;
-	int newStart = start;
-	int newSize = size;
+	Process *p = NULL;
 	int prevIndex = start - 1;
 	bool checkFreeBlocks = false;
+	if (mainMemory[start] != NULL && mainMemory[start]->name == ' ')
+	{
+		p = mainMemory[start];
+	}
+
 	if (prevIndex >= 0 && ' ' == mainMemory[prevIndex]->name)
 	{
-		newStart -= mainMemory[prevIndex]->size;
-		newSize += mainMemory[prevIndex]->size;
-
-		if (' ' == mainMemory[start]->name)
+		if (p != NULL)
 		{
 			checkFreeBlocks = true;
-			delete mainMemory[start];
+			removeFreeBlock(p);
+			delete p;
 		}
+
+		p = mainMemory[prevIndex];
+		p->size += size;
 	}
 	int nextIndex = start + size;
 	if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
 	{
-		checkFreeBlocks = true;
-		newSize += mainMemory[nextIndex]->size;
-		delete mainMemory[nextIndex];
+		if (p != NULL)
+		{
+			p->size += mainMemory[nextIndex]->size;
+			checkFreeBlocks = true;
+			removeFreeBlock(mainMemory[nextIndex]);
+			delete mainMemory[nextIndex];
+		}
+		else
+		{
+			p = mainMemory[nextIndex];
+			p->start = start;
+			p->size += size;
+		}
 	}
 
 //	Process *p = new Process(' ', 0, newSize, start, -1);
-	Process *p;
 
-	if (NULL == mainMemory[start] || mainMemory[start]->name != ' ')
+	if (p == NULL)
 	{
 		checkFreeBlocks = true;
-		p = new Process(' ', 0, newSize, start, -1);
+		p = new Process(' ', 0, size, start, -1);
 		vectOfFreeBlocks.push_back(p);
 	}
-	else
-	{
-		p = mainMemory[newStart];
-	}
 
-	for (int i = 0; i < newSize; i++)
+	for (int i = 0; i < p->size; i++)
 	{
 //		p = &myProcess;
 //		p->name = ' ';
@@ -473,17 +489,19 @@ void zeroFillMemory(int start, int size)
 //		p->burst = 0;
 //		p->start = start;
 //		p->idleAt = 0;
-		mainMemory[newStart + i] = p;
+		mainMemory[p->start + i] = p;
 		//cout << "i0: " << i << endl;
 	}
 
 	// TODO test output
-	cout << "Free Blocks\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < vectOfFreeBlocks.size(); ++i) cout << i << "\t\t" << vectOfFreeBlocks[i]->burst << "\t\t" << vectOfFreeBlocks[i]->idleAt << "\t\t" << vectOfFreeBlocks[i]->name << "\t\t" << vectOfFreeBlocks[i]->size << "\t\t" << vectOfFreeBlocks[i]->start << endl;
+	cout << "Free Blocks\ni\tStart\tSize\n"; for (size_t i = 0; i < vectOfFreeBlocks.size(); ++i) cout << i << "\t" << vectOfFreeBlocks[i]->start << "\t\t" << vectOfFreeBlocks[i]->size << endl; cout << endl;
 
 	if (checkFreeBlocks)
 	{
 		findFreeBlocks();
 	}
+
+	if (!checkFreeBlocks) printMemoryMap();
 }
 
 void fillMemory()
@@ -526,11 +544,12 @@ void fillMemory()
 			//	break;
 			//}
 		}
-	if ((MAX_MEMORY - usedMemory) < 11)
-	{
-		cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE PROCESSES NEAR THE END OF THE QUEUE HAS A SIZE OF >=11!!!" << endl;
-		break;
-	}
+
+		if ((MAX_MEMORY - usedMemory) < 11)
+		{
+			cout << "Stop filling in memory. Free space is <11. CAUTION: THIS IS ASSUMING THAT THE PROCESSES NEAR THE END OF THE QUEUE HAS A SIZE OF >=11!!!" << endl;
+			break;
+		}
 	}
 }
 
@@ -551,7 +570,8 @@ void removeIdle()
 			readyQueue.push_back(mainMemory[i]);
 			zeroFillMemory(mainMemory[i]->start, tempSize);
 			// TODO test output
-			cout << "Ready Queue\ni\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
+			cout << "Processes\ni\tName\tStart\tSize\tBurst\tIdle At\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].start << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << endl; cout << endl;
+			cout << "Ready Queue\nName\tSize\n"; for (int i = readyQueue.size() - 1; i >= 0; --i) cout << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << endl; cout << endl;
 
 			//Process *p;
 			/*for (int j = mainMemory[i]->start; j < mainMemory[i]->start + tempSize; j++)
@@ -606,7 +626,7 @@ void findFreeBlocks()
 //	for (int i = 0; i < MAX_MEMORY; i += size)
 	for (uint i = 1; i < vectOfFreeBlocks.size(); i++)
 	{
-		size = mainMemory[i]->size;
+		size = vectOfFreeBlocks[i]->size;
 //		if (mainMemory[i]->size == 0)
 //		if (mainMemory[i]->name == ' ')
 //		{
@@ -773,6 +793,9 @@ void firstFit()
 //			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
 			if (vectOfFreeBlocks[i]->size >= process->size)
 			{
+				// TODO test output
+				cout << "Ready Queue\nName\tSize\n"; for (int j = readyQueue.size() - 1; j >= 0; --j) cout << readyQueue[j]->name << "\t\t" << readyQueue[j]->size << endl; cout << endl;
+
 				best = vectOfFreeBlocks[i];
 				int start = best->start;
 				process->start = start;
@@ -811,14 +834,15 @@ void firstFit()
 //				readyQueue.erase(readyQueue.begin());
 				readyQueue.pop_front();
 
-				// TODO test output
-				cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
-
 				if (checkFreeBlocks)
 				{
 					findFreeBlocks();
 				}
 				//tempSize = readyQueue[0];
+
+				// TODO test output
+				if (!checkFreeBlocks) printMemoryMap();
+				cout << "Processes\ni\tName\tStart\tSize\tBurst\tIdle At\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].start << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << endl; cout << endl;
 
 				break;
 			}
@@ -916,6 +940,9 @@ void worstFit()
 //			if (vectOfFreeSpace[i].size > tempSize)
 			if (vectOfFreeBlocks[i]->size == largestFreeBlock)
 			{
+				// TODO test output
+				cout << "Ready Queue\nName\tSize\n"; for (int j = readyQueue.size() - 1; j >= 0; --j) cout << readyQueue[j]->name << "\t\t" << readyQueue[j]->size << endl; cout << endl;
+
 //				tempSize = vectOfFreeSpace[i].size;
 //				tempStart = vectOfFreeSpace[i].start;
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
@@ -950,13 +977,14 @@ void worstFit()
 				loadedProc++;
 				readyQueue.pop_front();
 
-				// TODO test output
-				cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
-
 				if (checkFreeBlocks)
 				{
 					findFreeBlocks();
 				}
+
+				// TODO test output
+				if (!checkFreeBlocks) printMemoryMap();
+				cout << "Processes\ni\tName\tStart\tSize\tBurst\tIdle At\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].start << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << endl; cout << endl;
 
 				break;
 			}
@@ -1062,6 +1090,9 @@ void bestFit()
 //		if (tempSize >= readyQueue[0]->size)
 		else
 		{
+			// TODO test output
+			cout << "Ready Queue\nName\tSize\n"; for (int i = readyQueue.size() - 1; i >= 0; --i) cout << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << endl; cout << endl;
+
 			int start = smallest->start;
 			process->start = start;
 			process->idleAt = runTime + process->burst;
@@ -1094,7 +1125,6 @@ void bestFit()
 //				mainMemory[j] = readyQueue[0];
 				mainMemory[start + j] = process;
 			}
-
 			//cout << readyQueue[0]->name << endl;
 //			usedMemory += readyQueue[0]->size;
 			usedMemory += process->size;
@@ -1102,13 +1132,14 @@ void bestFit()
 //			readyQueue.erase(readyQueue.begin());
 			readyQueue.pop_front();
 
-			// TODO test output
-			cout << "ReadyQueuei\tBurst\tIdleAt\tName\tSize\tStart\n"; for (size_t i = 0; i < readyQueue.size(); ++i) cout << i << "\t\t" << readyQueue[i]->burst << "\t\t" << readyQueue[i]->idleAt << "\t\t" << readyQueue[i]->name << "\t\t" << readyQueue[i]->size << "\t\t" << readyQueue[i]->start << endl;
-
 			if (checkFreeBlocks)
 			{
 				findFreeBlocks();
 			}
+
+			// TODO test output
+			if (!checkFreeBlocks) printMemoryMap();
+			cout << "Processes\ni\tName\tStart\tSize\tBurst\tIdle At\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) cout << i << "\t" << vectOfProcesses[i].name << "\t\t" << vectOfProcesses[i].start << "\t\t" << vectOfProcesses[i].size << "\t\t" << vectOfProcesses[i].burst << "\t\t" << vectOfProcesses[i].idleAt << endl; cout << endl;
 		}
 		//cout << "outside for loop" << endl;
 
@@ -1270,6 +1301,17 @@ void recoverToMemory(int end)
 			mainMemory[vectOfFreeBlocks[0]->start + j] = readyQueue[i]; //careful here vectOfFreeSpace[0] might not exist
 		}
 		readyQueue.pop_front();
+	}
+}
+
+void removeFreeBlock(Process *block)
+{
+	for (uint i = 0; i < vectOfFreeBlocks.size(); i++)
+	{
+		if (block->start == vectOfFreeBlocks[i]->start)
+		{
+			vectOfFreeBlocks.erase(vectOfFreeBlocks.begin() + i);
+		}
 	}
 }
 
