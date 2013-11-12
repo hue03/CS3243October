@@ -678,7 +678,7 @@ void compaction()
 		cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
 		{
-			cout << "moving " << targetProces->name << endl;
+			cout << "moving " << targetProcess->name << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
 			//targetProcess->start = targetBlock.start;
 			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
