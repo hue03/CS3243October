@@ -24,7 +24,7 @@
 #define PRINT_INTERVAL 5
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-#define SEED time(NULL)
+#define SEED 1384393582
 #define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
@@ -78,6 +78,7 @@ void printMemoryMap(void);
 int main()
 {
 	srand(SEED);
+	cout << "Seed " << SEED << endl;
 	createProcesses();
 	zeroFillMemory(0, MAX_MEMORY);
 	void (*fit)(void);
@@ -498,6 +499,7 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
+			cout << "start from " << lastIndex << endl;
 			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
 			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
 			{
