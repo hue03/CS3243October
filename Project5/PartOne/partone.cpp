@@ -24,7 +24,7 @@
 #define PRINT_INTERVAL 5
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-#define SEED 2
+#define SEED time(NULL)
 #define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
@@ -291,61 +291,15 @@ void findFreeBlocks()
 			vectOfFreeSpace.push_back(freeBlock(start, size));
 
 			found = false;
-
-//			if (count != 0)
-//			{
-//				freeBlock block;
-//				block.size = count;
-//				block.start = i - count;
-//				vectOfFreeSpace.push_back(block);
-//				if (count > largestFreeBlock)
-//				{
-//					largestFreeBlock = count;
-//					if (smallestFreeBlock == 0)
-//					{
-//						smallestFreeBlock = count;
-//					}
-//				}
-//				else if (count < smallestFreeBlock)
-//				{
-//					smallestFreeBlock = count;
-//				}
-//				freeBlocks = vectOfFreeSpace.size();
-//			}
-//			i += mainMemory[i]->size - 1; //offset by 1 because loop will increment i
-//			count = 0;
 		}
 	}
 
 	freeBlocks = vectOfFreeSpace.size();
-
-//	if (count != 0) //handles the case where you go past the end of memory or else the data won't be saved
-//	{
-//		freeBlock block;
-//		block.size = count;
-//		block.start = i - count;
-//		vectOfFreeSpace.push_back(block);
-//		if (count > largestFreeBlock)
-//		{
-//			largestFreeBlock = count;
-//			if (smallestFreeBlock == 0)
-//			{
-//				smallestFreeBlock = count;
-//			}
-//		}
-//		else if (count < smallestFreeBlock)
-//		{
-//			smallestFreeBlock = count;
-//		}
-//		freeBlocks = vectOfFreeSpace.size();
-//	}
 }
 
 void firstFit()
 {
-//	bool flag = true;
-//	uint queueSize = readyQueue.size();
-//	while (flag && queueSize > 0)
+
 	while (readyQueue.size() > 0)
 	{
 		Process *process = readyQueue.front();
@@ -357,10 +311,10 @@ void firstFit()
 		}
 
 		freeBlock best(-1, 0);
-
+		cout << "First Fit Start" << endl;
+		printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-//			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
 			if (vectOfFreeSpace[i].size >= process->size)
 			{
 				best = vectOfFreeSpace[i];
@@ -370,101 +324,27 @@ void firstFit()
 
 				//cout << "free space: " << vectOfFreeSpace[i].size << endl;
 				//cout << "process in Q size: " << readyQueue[0]->size << endl;
-//				for (int j = vectOfFreeSpace[i].start; j < (vectOfFreeSpace[i].start + readyQueue[0]->size); j++)
 				for (int j = 0; j < process->size; j++)
 				{
-					//cout << "j: " << j << endl;
-//					readyQueue[0]->start = vectOfFreeSpace[i].start;
-//					readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
-//					mainMemory[j] = readyQueue[0];
 					mainMemory[start + j] = process;
 				}
-//				usedMemory += readyQueue[0]->size;
 				usedMemory += process->size;
 				loadedProc++;
-//				readyQueue.erase(readyQueue.begin());
 				readyQueue.pop_front();
 				findFreeBlocks();
-				//tempSize = readyQueue[0];
-
+				cout << "Name: " << process->name << endl;
+				printMemoryMap();
 				break;
 			}
 		}
-		//cout << "outside for loop" << endl;
-//		if (queueSize == readyQueue.size())
-//		{
-			//cout << "Q " << queueSize << endl;
-//			flag = false;
-//		}
-//		else
-//		{
-//			queueSize = readyQueue.size();
-//		}
-
 		if (-1 == best.start) {
 			break;
 		}
 	}
-	
-	/*int startIndex = 0;
-	bool flag = true;
-	uint queueSize = readyQueue.size();
-	while (flag && queueSize > 0)
-	{
-		short tempSize = readyQueue[0]->size;
-		//cout << "Q " << queueSize << endl;
-		for (int j = startIndex; j < MAX_MEMORY; j++)
-		{
-		//cout << tempSize << endl;
-			if (tempSize < 0)
-			{
-				//cout << "Enough space." << endl;
-				short range = startIndex + readyQueue[0]->size;
-				readyQueue[0]->start = startIndex;
-				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
-				for (int k = startIndex; k < range; k++)
-				{
-					mainMemory[k] = readyQueue[0];
-				}
-				startIndex = --j; //offset by 1 because j is past the beginning of the first spot of free space
-				usedMemory += readyQueue[0]->size;
-				loadedProc++;
-				readyQueue.erase(readyQueue.begin());
-				//i--; //makes the first process in queue next because the queue shrunk and would get skipped
-				break;
-			}
-			else if (mainMemory[j]->size == 0)
-			{
-				tempSize--;
-				//cout << "Empty space" << endl;
-			}
-			else
-			{
-				tempSize = readyQueue[0]->size; //reset the tempSize counter because there is not enough contiguous memory
-                j += mainMemory[j]->size - 1; //offset by 1 because loop will increment after this
-                startIndex = j + 1; //set the start index to where j will be after it gets changed
-			}
-		}
-		//cout << "outside for loop" << endl;
-		if (queueSize == readyQueue.size())
-		{
-			//cout << "Q " << queueSize << endl;
-			flag = false;
-		}
-		else
-		{
-			queueSize = readyQueue.size();
-		}
-	}*/
 }
 
 void worstFit()
 {
-//	bool flag = true;
-//	int tempSize = 0;
-//	int tempStart = 0;
-//	uint queueSize = readyQueue.size();
-//	while (flag && queueSize > 0)
 	while (readyQueue.size() > 0)
 	{
 		Process *process = readyQueue.front();
@@ -476,14 +356,12 @@ void worstFit()
 		}
 
 		freeBlock largest(-1, 0);
-
+		cout << "Worst Fit Start" << endl;
+		printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
-//			if (vectOfFreeSpace[i].size > tempSize)
 			if (vectOfFreeSpace[i].size == largestFreeBlock)
 			{
-//				tempSize = vectOfFreeSpace[i].size;
-//				tempStart = vectOfFreeSpace[i].start;
 				//cout << "start: " << tempStart << " size: " << tempSize << endl;
 
 				largest = vectOfFreeSpace[i];
@@ -500,46 +378,11 @@ void worstFit()
 				loadedProc++;
 				readyQueue.pop_front();
 				findFreeBlocks();
-
+				cout << "Name: " << process->name << endl;
+				printMemoryMap();
 				break;
 			}
 		}
-
-//		if (tempSize >= readyQueue[0]->size)
-//		{
-			//cout << "beginfor loop" << endl;
-//			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
-//			for (int j = 0; j < process->size; j++)
-//			{
-				//cout << "inside for loop" << endl;
-//				readyQueue[0]->start = tempStart;
-				//cout << "1" << endl;
-//				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
-				//cout << "j: " << j << endl;
-//				mainMemory[j] = readyQueue[0];
-//			}
-			//cout << readyQueue[0]->name << endl;
-//			usedMemory += readyQueue[0]->size;
-//			usedMemory += process->size;
-//			loadedProc++;
-//			readyQueue.erase(readyQueue.begin());
-//			readyQueue.pop_front();
-//			findFreeBlocks();
-//		}
-
-		//cout << "outside for loop" << endl;
-//		if (queueSize == readyQueue.size())
-//		{
-			//cout << "Q " << queueSize << endl;
-//			flag = false;
-//		}
-//		else
-//		{
-//			queueSize = readyQueue.size();
-//			tempSize = 0;
-//			tempStart = 0;
-//		}
-
 		if (-1 == largest.start) {
 			break;
 		}
@@ -548,11 +391,6 @@ void worstFit()
 
 void bestFit()
 {
-//	bool flag = true;
-//	int tempSize = 0;
-//	int tempStart = 0;
-//	uint queueSize = readyQueue.size();
-//	while (flag && queueSize > 0)
 	while (readyQueue.size() > 0)
 	{
 		//cout << "Free space vect size" << vectOfFreeSpace.size() << endl;
@@ -566,26 +404,13 @@ void bestFit()
 		}
 
 		freeBlock smallest(-1, MAX_MEMORY + 1);
-
+		cout << "Best Fit Start" << endl;
+		printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
 			int freeSize = vectOfFreeSpace[i].size;
-
-//			if (vectOfFreeSpace[i].size >= readyQueue[0]->size)
 			if (processSize <= freeSize && freeSize < smallest.size)
 			{
-//				if (tempSize == 0)
-//				{
-//					tempSize = vectOfFreeSpace[i].size;
-//					tempStart = vectOfFreeSpace[i].start;
-//				}
-//				else if (vectOfFreeSpace[i].size < tempSize)
-//				{
-//					tempSize = vectOfFreeSpace[i].size;
-//					tempStart = vectOfFreeSpace[i].start;
-					//cout << "start: " << tempStart << " size: " << tempSize << endl;
-//				}
-
 				smallest = vectOfFreeSpace[i];
 
 				if (freeSize == smallestFreeBlock || freeSize == processSize)
@@ -599,7 +424,6 @@ void bestFit()
 		{
 			break;
 		}
-//		if (tempSize >= readyQueue[0]->size)
 		else
 		{
 			int start = smallest.start;
@@ -607,38 +431,21 @@ void bestFit()
 			process->idleAt = runTime + process->burst;
 
 			//cout << "beginfor loop" << endl;
-//			for (int j = tempStart; j < (tempStart + readyQueue[0]->size); j++)
 			for (int j = 0; j < process->size; j++)
 			{
 				//cout << "inside for loop" << endl;
-//				readyQueue[0]->start = tempStart;
 				//cout << "1" << endl;
-//				readyQueue[0]->idleAt = runTime + readyQueue[0]->burst;
 				//cout << "j: " << j << endl;
-//				mainMemory[j] = readyQueue[0];
 				mainMemory[start + j] = process;
 			}
 			//cout << readyQueue[0]->name << endl;
-//			usedMemory += readyQueue[0]->size;
 			usedMemory += process->size;
 			loadedProc++;
-//			readyQueue.erase(readyQueue.begin());
 			readyQueue.pop_front();
 			findFreeBlocks();
+			cout << "Name: " << process->name << endl;
+			printMemoryMap();
 		}
-		//cout << "outside for loop" << endl;
-
-//		if (queueSize == readyQueue.size())
-//		{
-			//cout << "Q " << queueSize << endl;
-//			flag = false;
-//		}
-//		else
-//		{
-//			queueSize = readyQueue.size();
-//			tempSize = 0;
-//			tempStart = 0;
-//		}
 	}
 }
 
