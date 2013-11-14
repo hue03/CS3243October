@@ -23,7 +23,9 @@
 #define PRINT_INTERVAL 5
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-#define SEED 1384393582
+//#define SEED 1384393582 //seed for error in 1st part compact
+#define SEED 1384394623 //seed for error in 2nd part compact
+//#define SEED time(NULL)
 #define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
@@ -499,7 +501,7 @@ void compaction()
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
-			cout << "start from " << lastIndex << endl;
+			//cout << "start from " << lastIndex << endl;
 			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
 			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
 			{
@@ -510,8 +512,8 @@ void compaction()
 			else
 			{
 				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+				//cout << "start from " << lastIndex << endl;
 			}
-			cout << "start from " << lastIndex << endl;
 		}
 		else
 		{
@@ -541,7 +543,7 @@ void compaction()
 				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
-					cout << "unload here" << endl;
+					cout << "Unload here: " << mainMemory[m]->name << endl;
 					readyQueue.push_front(mainMemory[m]);
 					zeroFillMemory(start, mainMemory[m]->size);
 					findFreeBlocks();
@@ -576,8 +578,30 @@ void compaction()
 	}
 	if (unload > 0) //begin third optional part. bring the removed process back into memory at the end of all the processes
 	{
-		cout << "special case" << endl;
+		cout << "Special case: removed " << unload << " process/es from memory." << endl;
+		cout << "List of processes in the readyQueue:" << endl;
+		for (uint i = 0; i < readyQueue.size(); i++)
+		{
+			cout << readyQueue[i]->name << ":";
+			cout << "Size: " << readyQueue[i]->size << " ";
+			cout << "Start: " << readyQueue[i]->start << " ";
+			cout << "Burst time: " << readyQueue[i]->burst << " ";
+			cout << "Idle at: " <<  readyQueue[i]->idleAt;
+			cout << endl;
+		}
+		cout << "--------------------------------------------------------------------------------" << endl;
 		recoverToMemory(unload);
+		cout << "List of processes in the readyQueue:" << endl;
+		for (uint i = 0; i < readyQueue.size(); i++)
+		{
+			cout << readyQueue[i]->name << ":";
+			cout << "Size: " << readyQueue[i]->size << " ";
+			cout << "Start: " << readyQueue[i]->start << " ";
+			cout << "Burst time: " << readyQueue[i]->burst << " ";
+			cout << "Idle at: " <<  readyQueue[i]->idleAt;
+			cout << endl;
+		}
+		cout << "--------------------------------------------------------------------------------" << endl;
 		printMemoryMap();
 		findFreeBlocks();
 	}
@@ -586,14 +610,17 @@ void compaction()
 
 void recoverToMemory(int end)
 {
-	for (int i = 0; i < end; i++)
+	while (end > 0)
 	{
-		readyQueue[i]->start = vectOfFreeSpace[0].start; //careful here vectOfFreeSpace[0] might not exist
-		for (int j = 0; j < readyQueue[i]->size; j++)
+		readyQueue[0]->start = vectOfFreeSpace[0].start; //careful here vectOfFreeSpace[0] might not exist
+		for (int j = 0; j < readyQueue[0]->size; j++)
 		{
-			mainMemory[vectOfFreeSpace[0].start + j] = readyQueue[i]; //careful here vectOfFreeSpace[0] might not exist
+			mainMemory[vectOfFreeSpace[0].start + j] = readyQueue[0]; //careful here vectOfFreeSpace[0] might not exist
 		}
+		printMemoryMap();
+		findFreeBlocks();
 		readyQueue.pop_front();
+		end--;
 	}
 }
 
