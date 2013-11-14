@@ -8,7 +8,6 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include <iostream>
 #include <vector>
 #include <deque>  
@@ -31,7 +30,7 @@
 //#define HIGHBYTE_PERCENT 5
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 5 //computes the upper range of the size for the low byte interval
 #define MEDBYTE_SIZE_INTERVAL_PERCENT 57 //computes the upper range of the size for the med byte interval based on the upper range of the low byte size
-
+#define SLEEPTIME 100
 using namespace std;
 
 struct Process {
@@ -148,6 +147,7 @@ int main()
 		}
 		cout << "Runtime: " << runTime << endl;
 		cout << "--------------------------------------------------------------------------------" << endl;
+		usleep(SLEEPTIME);
 	}
 }
 
@@ -486,7 +486,7 @@ void compaction()
 		cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
 		{
-			cout << "moving 1" << endl;
+			cout << "moving " << targetProcess->name << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
 			//targetProcess->start = targetBlock.start;
 			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
@@ -507,6 +507,11 @@ void compaction()
 				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
 				lastIndex = vectOfFreeSpace[startBlock].start - 1;
 			}
+			else
+			{
+				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+			}
+			cout << "start from " << lastIndex << endl;
 		}
 		else
 		{

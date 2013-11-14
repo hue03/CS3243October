@@ -44,6 +44,7 @@ struct FreeBlock {
 
 	FreeBlock(int start, ushort size);
 };
+
 //timeval stop, start;
 int usedMemory;
 int loadedProc;
@@ -61,7 +62,7 @@ Process myProcess;
 //void assignName();
 //void assignSize();
 //void assignBurst();
-void loadQueue();
+//void loadQueue();
 void createProcesses(void);
 void zeroFillMemory(int start, int end);
 void fillMemory();
@@ -82,7 +83,7 @@ int main()
 //	assignSize();
 //	assignBurst();
 	createProcesses();
-	loadQueue();
+//	loadQueue();
 	zeroFillMemory(0, MAX_MEMORY);
 //	findFreeBlocks();
 	//fillMemory();
@@ -343,6 +344,8 @@ void createProcesses(void)
 
 	char name = '?';
 
+	vectOfProcesses.reserve(PROCESS_COUNT);
+
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
 		switch(name)
@@ -388,36 +391,47 @@ void createProcesses(void)
 			burst = rand() % burstRange + MIN_BURST;
 			size= rand() % highByteSizeRange + MIN_MEMORY_PER_PROC + lowByteSizeRange + medByteSizeRange;
 		}
-
 //		Process process(name, burst, size, 0, 0);
 
 		vectOfProcesses.push_back(Process(name, burst, size, 0, 0));
 //		vectOfProcesses.push_back(process);
 
-//		readyQueue.push_back(&vectOfProcesses.back());
+		readyQueue.push_back(&vectOfProcesses.back());
 //		readyQueue.push_back(&process);
 	}
 }
 
-void loadQueue()
-{
+//void loadQueue()
+//{
 //	Process *proc_ptr;
-	for (uint i = 0; i < PROCESS_COUNT; i++)
-	{
+//	for (uint i = 0; i < PROCESS_COUNT; i++)
+//	{
 //		vectOfProcesses[i].start = 0;
 //		vectOfProcesses[i].idleAt = 0;
 //		proc_ptr = &vectOfProcesses[i];
 //		readyQueue.push_back(proc_ptr);
-		readyQueue.push_back(&vectOfProcesses.at(i));
-	}
-}
+//		readyQueue.push_back(&vectOfProcesses.at(i));
+//	}
+//}
 
 void zeroFillMemory(int start, int size)
 {
 //	Process process = new Process(' ', 0, size, start, -1);
 
 //	Process *p;
+	int newStart = start;
 	int newSize = size;
+	int prevIndex = start - 1;
+	if (prevIndex >= 0 && ' ' == mainMemory[prevIndex]->name)
+	{
+		newStart -= mainMemory[prevIndex]->size;
+		newSize += mainMemory[prevIndex]->size;
+
+		if (' ' == mainMemory[start]->name)
+		{
+			delete mainMemory[start];
+		}
+	}
 	int nextIndex = start + size;
 	if (nextIndex < MAX_MEMORY && ' ' == mainMemory[nextIndex]->name)
 	{
@@ -425,7 +439,18 @@ void zeroFillMemory(int start, int size)
 		delete mainMemory[nextIndex];
 	}
 
-	Process *p = new Process(' ', 0, newSize, start, -1);
+//	Process *p = new Process(' ', 0, newSize, start, -1);
+	Process *p;
+
+	if (NULL == mainMemory[start] || mainMemory[start]->name != ' ')
+	{
+		p = new Process(' ', 0, newSize, start, -1);
+	}
+	else
+	{
+		p = mainMemory[newStart];
+	}
+
 	for (int i = 0; i < newSize; i++)
 	{
 //		p = &myProcess;
@@ -434,7 +459,7 @@ void zeroFillMemory(int start, int size)
 //		p->burst = 0;
 //		p->start = start;
 //		p->idleAt = 0;
-		mainMemory[start + i] = p;
+		mainMemory[newStart + i] = p;
 		//cout << "i0: " << i << endl;
 	}
 }
@@ -563,7 +588,7 @@ void findFreeBlocks()
 		{
 //			int size = mainMemory[i]->size;
 
-			if (vectOfFreeSpace.size() == 0)
+			if (vectOfFreeSpace.empty())
 			{
 				largestFreeBlock = size;
 				smallestFreeBlock = size;
@@ -1083,18 +1108,20 @@ void compaction()
 			int fillStart = targetBlock.start + targetBlock.size - 1;
 			targetProcess->start = fillStart - targetProcess->size + 1;
 			cout << targetProcess->start << endl;
-			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
+//			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
+			for (int j = 0; j < targetProcess->size; j++)
 			{
 				cout << "j: " << j << endl;
-				mainMemory[j] = targetProcess;
+				mainMemory[fillStart - j] = targetProcess;
 			}
+			zeroFillMemory(targetBlock.start, targetBlock.size - targetProcess->size);
 			findFreeBlocks();
 			/*if vector shrinks in size the target block is now the one to the right. could be ok that is why less than instead of != */
 			if ((uint)oldVectFreeSize != vectOfFreeSpace.size()) //reduce the times going to the last free block. if the vector grew start over again in case.
 			{
 				oldVectFreeSize = vectOfFreeSpace.size();
 				startBlock = vectOfFreeSpace.size() - 1; //restart back at the end free block in case the vect of free blocks changes size. not efficient
-				lastIndex = vectOfFreeSpace[startBlock].start - 1;
+//				lastIndex = vectOfFreeSpace[startBlock].start - 1;
 			}
 		}
 		else
