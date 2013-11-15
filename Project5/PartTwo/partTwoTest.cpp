@@ -26,6 +26,7 @@
 #define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define MAX_QUANTA 50000	// # quanta to run before ending simulation
 #define SLEEP_LENGTH 250000
+//#define SEED 1384543729 // bugged seed time for process page creation
 #define SEED time(NULL)
 using namespace std;
  
@@ -51,6 +52,7 @@ struct Process
 		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 		{
 			pageTable[i] = p[i];
+			cout << p[i]->suffix << " " << endl;
 		}
 		
 	};
@@ -73,6 +75,7 @@ void createProcesses(void);
 int main()
 {
 	srand(SEED);
+	cout << SEED << endl;
 	zeroFillMemory(0, MAX_FRAMES);
 	findFreeFrames();
 	createProcesses();
@@ -123,6 +126,7 @@ void findFreeFrames(void)
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
+	//int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
 	char name = '?';
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
@@ -149,58 +153,64 @@ void createProcesses(void)
 		int timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
 		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
+		//int numSubRoutine = 4; 
 		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 		int j;
 		for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 		{
 			//cout << "creating process loop" << endl;
+			cout << "j: " << j << endl;
 			if (j < 2)
 			{
 				Page tempPage = Page(0, 0, false, -1);
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];//point to the last element in the backingStore
 			}
 			else if (j < 5)
 			{
 				Page tempPage = Page(1, 0, false, -1);
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if (j < 10)
 			{
 				Page tempPage = Page(2, 0, false, -1);
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 2)
 			{
 				Page tempPage = Page(3, 0, false, -1);
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 4)
 			{
 				Page tempPage = Page(4, 0, false, -1);
+				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 6)
 			{
 				Page tempPage = Page(5, 0, false, -1);
+				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 8)
 			{
 				Page tempPage = Page(6, 0, false, -1);
+				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 10)
 			{
 				Page tempPage = Page(7, 0, false, -1);
+				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[j];
+				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 		}
 		if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
