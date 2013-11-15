@@ -47,8 +47,9 @@ struct Process
 {
 	char name;
 	int lifeTime;
+	int deathTime;
 	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS]; //this is giving a problem. i forget if you can assign an array to array. gives error saying Page* cannot go into Page* [20] don't know why the [20] is there
-	Process(char n, int l, Page* p[MAX_NUM_PAGES_PER_PROCESS]):name(n), lifeTime(l){ //need help on the struct creation
+	Process(char n, int l, int d, Page* p[MAX_NUM_PAGES_PER_PROCESS]):name(n), lifeTime(l){ //need help on the struct creation
 		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 		{
 			pageTable[i] = p[i];
@@ -150,7 +151,14 @@ void createProcesses(void)
 			break;
 		}
 		//need to make a case for kernel initialization
-		int timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
+		if (i == 0)
+		{
+			int timeOfLife = MAX_QUANTA;
+		}
+		else 
+		{
+			int timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
+		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
 		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
 		//int numSubRoutine = 4; 
@@ -187,28 +195,24 @@ void createProcesses(void)
 			else if ((j % 10) < 4)
 			{
 				Page tempPage = Page(4, 0, false, -1);
-				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 6)
 			{
 				Page tempPage = Page(5, 0, false, -1);
-				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 8)
 			{
 				Page tempPage = Page(6, 0, false, -1);
-				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 10)
 			{
 				Page tempPage = Page(7, 0, false, -1);
-				cout << "hello" << endl;
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
@@ -224,7 +228,7 @@ void createProcesses(void)
 				tempTable[k] = &myPage;
 			}
 		}
-		Process process = Process(name, timeOfLife, tempTable);
+		Process process = Process(name, timeOfLife, 0, tempTable);
 		vectOfProcesses.push_back(process);
 	}
 }
