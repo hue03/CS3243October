@@ -13,7 +13,7 @@
 #include <deque>  
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 1	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 2	// useful when debugging to limit # of procs
 #define MIN_DEATH_INTERVAL 20
 #define MAX_DEATH_INTERVAL 300
 #define MAX_FRAMES 280
@@ -86,13 +86,17 @@ int main()
 	
 	//createProcesses();
 	cout << vectOfProcesses.size() << endl;
-	cout << vectOfProcesses[0].name << " " << vectOfProcesses[0].lifeTime << endl;
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	for (uint h = 0; h < vectOfProcesses.size(); h++)
 	{
-		cout << "Suffix: " << vectOfProcesses[0].pageTable[i]->suffix << endl;
-		cout << "Ref: " << vectOfProcesses[0].pageTable[i]->refByte << endl;
-		cout << "Valid: " << vectOfProcesses[0].pageTable[i]->valid << endl;
-		cout << "Frame: " << vectOfProcesses[0].pageTable[i]->frameNum << endl;
+		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[0].lifeTime << endl;
+		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+		{
+			cout << "Suffix: " << vectOfProcesses[h].pageTable[i]->suffix << endl;
+			cout << "Ref: " << vectOfProcesses[h].pageTable[i]->refByte << endl;
+			cout << "Valid: " << vectOfProcesses[h].pageTable[i]->valid << endl;
+			cout << "Frame: " << vectOfProcesses[h].pageTable[i]->frameNum << endl;
+			cout << "--------------------------------------------------------------------------------" << endl;
+		}
 	}
 }
 
@@ -120,7 +124,6 @@ void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
 	char name = '?';
-	int timeOfLife = 0;
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
 		switch(name)
@@ -143,14 +146,14 @@ void createProcesses(void)
 			break;
 		}
 		//need to make a case for kernel initialization
-		timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
+		int timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
 		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
 		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 		int j;
 		for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 		{
-			cout << "creating process loop" << endl;
+			//cout << "creating process loop" << endl;
 			if (j < 2)
 			{
 				Page tempPage = Page(0, 0, false, -1);
