@@ -24,15 +24,15 @@
 #define MAX_QUANTA 50
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
 //#define SEED 1384393582 //seed for error in 1st part compact
-#define SEED 1384394623 //seed for error in 2nd part compact
-//#define SEED time(NULL)
+//#define SEED 1384394623 //seed for error in 2nd part compact
+#define SEED time(NULL)
 #define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 #define LOWBYTE_PERCENT 50
 #define MEDBYTE_PERCENT 45
 //#define HIGHBYTE_PERCENT 5
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 5 //computes the upper range of the size for the low byte interval
 #define MEDBYTE_SIZE_INTERVAL_PERCENT 57 //computes the upper range of the size for the med byte interval based on the upper range of the low byte size
-#define SLEEPTIME 100
+#define SLEEPTIME 250000
 using namespace std;
 
 struct Process {
@@ -102,7 +102,7 @@ int main()
 		}
 	} while (input < 1 || input > 3);
 	
-	for (runTime = 0; runTime < MAX_QUANTA; ++runTime)
+	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
 		findFreeBlocks();
 		if (runTime % PRINT_INTERVAL == 0)
