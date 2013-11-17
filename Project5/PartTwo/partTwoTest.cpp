@@ -79,7 +79,7 @@ void zeroFillMemory(int start, int size);
 void findFreeFrames(void);
 void createProcesses(void);
 void touchProcess(void);
-void fifo(vector<Page> v, int pid);
+void fifo(vector<Page*> v, int pid);
 void printProcessPageTable(Process p);
 
 int main()
@@ -108,7 +108,7 @@ int main()
 	}
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
-		cout << mainMemory[i].suffix;
+		cout << mainMemory[i]->suffix;
 	}
 }
 
@@ -117,7 +117,7 @@ void zeroFillMemory(int start, int size)
 	for (int i = 0; i < size; i++)
 	{
 		myPage.frameNum = i;
-		mainMemory[start + i] = myPage;
+		mainMemory[start + i] = &myPage;
 	}
 }
 
@@ -125,7 +125,7 @@ void findFreeFrames(void)
 {
 	for (int i = MAX_FRAMES - 1; i >= 0; i--)//first frame is last so it pops out first when inserting pages
 	{
-		if (mainMemory[i].suffix == -1)
+		if (mainMemory[i]->suffix == -1)
 		{
 			freeFrames.push_back(i);
 		}
@@ -277,7 +277,7 @@ void touchProcess(void)
 	//fifo(pagesToLoad, selectedIndex);	
 }
 
-void fifo(vector<Page> v, int pid)
+void fifo(vector<Page*> v, int pid)
 {
 	cout << "process index " << pid << endl;
 	vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
@@ -289,6 +289,8 @@ void fifo(vector<Page> v, int pid)
 		}
 		else
 		{
+			// TODO handle pointers
+			// TODO handle deathTime
 			v.back()->frameNum = freeFrames.back();
 			v.back()->valid = true;
 			mainMemory[freeFrames.back()] = v.back();
