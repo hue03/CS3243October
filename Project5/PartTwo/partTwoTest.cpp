@@ -117,7 +117,7 @@ int main()
 			cout << "Memory Map " << runTime << endl;
 			for (int i = 0; i < MAX_FRAMES; i++)
 			{
-				cout << mainMemory[i]->processName << mainMemory[i]->suffix;
+				cout << mainMemory[i]->processName << mainMemory[i]->frameNum;
 			}
 		}
 	}
@@ -127,14 +127,14 @@ void zeroFillMemory(int start, int size)
 {
 	for (int i = 0; i < size; i++)
 	{
-		myPage.frameNum = i;
+		//myPage.frameNum = i;
 		mainMemory[start + i] = &myPage;
 	}
 }
 
 void zeroFillMemory(int start)
 {
-	myPage.frameNum = start;
+	//myPage.frameNum = start;
 	mainMemory[start] = &myPage;
 }
 
@@ -267,6 +267,35 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
+	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	{
+		if (vectOfProcesses[i].deathTime == runTime)
+		{
+			//vectOfProcesses[i].isAlive = false;
+			for (int j = 0; j < MAX_FRAMES; j++)
+			{
+				if (mainMemory[j]->processName == vectOfProcesses[i].name)//removing the process's pages from memory
+				{
+					mainMemory[j]->valid = false;
+					zeroFillMemory(j);
+				}
+			}
+			
+			for (int k = 0; k < MAX_NUM_PAGES_PER_PROCESS; k++)//fill with "empty" pages in the process's page table 
+			{
+				vectOfProcesses[i].pageTable[k] = &myPage; 
+			}
+			
+			for (uint l = 0; l < backingStore.size(); l++)//removing the process's pages from the backing store
+			{
+				if (backingStore[l].processName == vectOfProcesses[i].name)
+				{
+					backingStore.erase(backingStore.begin() + l); //verify this
+				}
+			}
+		}
+	}
+	
 }
 
 void touchProcess(void)
