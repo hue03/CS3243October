@@ -101,6 +101,10 @@ int main()
 		cout << " Deathtime: " << vectOfProcesses[h].deathTime << endl;
 		printProcessPageTable(vectOfProcesses[h]);
 	}
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		cout << mainMemory[i].suffix;
+	}
 }
 
 void zeroFillMemory(int start, int size)
@@ -157,7 +161,7 @@ void createProcesses(void)
 		}
 		else 
 		{
-			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
+			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
 		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
 		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
@@ -246,7 +250,7 @@ void touchProcess(void)
 			pagesToLoad.push_back(*(tempTable[i])); //gets the pages from backingstore using process's page table
 		}
 	}
-	int subRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a random subroutine to run
+	int subRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
 	switch(subRoutine)
 	{
 		case 1: pagesToLoad.push_back(*(tempTable[10]));
@@ -283,7 +287,6 @@ void fifo(vector<Page> v, int pid)
 			mainMemory[freeFrames.back()] = v.back();
 			freeFrames.pop_back();
 			v.pop_back();
-			break;
 		}
 	}
 }
