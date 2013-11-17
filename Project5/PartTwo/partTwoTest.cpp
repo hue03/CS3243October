@@ -58,8 +58,7 @@ struct Process
 			pageTable[i] = p[i];
 			cout << p[i]->suffix << " " << endl;	// TODO test output
 		}
-		
-	};
+	}
 };
 
 Page mainMemory[MAX_FRAMES];
