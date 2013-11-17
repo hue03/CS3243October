@@ -49,7 +49,7 @@ struct Process
 	int lifeTime;
 	int deathTime;
 	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS]; //this is giving a problem. i forget if you can assign an array to array. gives error saying Page* cannot go into Page* [20] don't know why the [20] is there
-	Process(char n, int l, int d, Page* p[MAX_NUM_PAGES_PER_PROCESS]):name(n), lifeTime(l){ //need help on the struct creation
+	Process(char n, int l, int d, Page* p[MAX_NUM_PAGES_PER_PROCESS]):name(n), lifeTime(l), deathTime(d){ //need help on the struct creation
 		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 		{
 			pageTable[i] = p[i];
@@ -64,6 +64,7 @@ vector<Process> vectOfProcesses;
 vector<int> freeFrames;
 deque<Page> backingStore;
 Page myPage;
+int runTime;
 int usedFrames;
 int loadPages;
 int loadedProc;
@@ -73,34 +74,32 @@ int refBitClear;
 void zeroFillMemory(int, int);
 void findFreeFrames(void);
 void createProcesses(void);
+void touchProcess(void);
+void fifo(vector<Page>, int);
+void printProcessPageTable(Process p);
 int main()
 {
 	srand(SEED);
 	cout << SEED << endl;
+	runTime = 0;
 	zeroFillMemory(0, MAX_FRAMES);
 	findFreeFrames();
 	createProcesses();
-	cout << "--------------------------------------------------------------------------------" << endl;
+	/*cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "List of Free Frames:" << endl;
 	for (uint i = 0; i < freeFrames.size(); i++)
 	{
 		cout << "Frame " << freeFrames[i] << endl;
 	}
 	cout << "--------------------------------------------------------------------------------" << endl;
-	
-	//createProcesses();
-	cout << vectOfProcesses.size() << endl;
+	*/
+	cout << "Num of processes: " << vectOfProcesses.size() << endl;
+	touchProcess();
 	for (uint h = 0; h < vectOfProcesses.size(); h++)
 	{
-		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[0].lifeTime << endl;
-		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-		{
-			cout << "Suffix: " << vectOfProcesses[h].pageTable[i]->suffix << endl;
-			cout << "Ref: " << vectOfProcesses[h].pageTable[i]->refByte << endl;
-			cout << "Valid: " << vectOfProcesses[h].pageTable[i]->valid << endl;
-			cout << "Frame: " << vectOfProcesses[h].pageTable[i]->frameNum << endl;
-			cout << "--------------------------------------------------------------------------------" << endl;
-		}
+		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
+		cout << " Deathtime: " << vectOfProcesses[h].deathTime << endl;
+		printProcessPageTable(vectOfProcesses[h]);
 	}
 }
 
@@ -115,7 +114,7 @@ void zeroFillMemory(int start, int size)
 
 void findFreeFrames(void)
 {
-	for (int i = 0; i < MAX_FRAMES; i++)
+	for (int i = MAX_FRAMES - 1; i >= 0; i--)//first frame is last so it pops out first when inserting pages
 	{
 		if (mainMemory[i].suffix == -1)
 		{
@@ -151,13 +150,14 @@ void createProcesses(void)
 			break;
 		}
 		//need to make a case for kernel initialization
+		int timeOfLife = 0;
 		if (i == 0)
 		{
-			int timeOfLife = MAX_QUANTA;
+			timeOfLife = MAX_QUANTA;
 		}
 		else 
 		{
-			int timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
+			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL; //not randomizing time between process creation
 		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
 		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
@@ -232,3 +232,72 @@ void createProcesses(void)
 		vectOfProcesses.push_back(process);
 	}
 }
+
+void touchProcess(void)
+{
+	vector<Page> pagesToLoad;
+	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
+	cout << "process index " << selectedIndex << endl;
+	Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first. need to randomly select a subroutine
+	{
+		if (!(tempTable[i]->valid))
+		{
+			pagesToLoad.push_back(*(tempTable[i])); //gets the pages from backingstore using process's page table
+		}
+	}
+	int subRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a random subroutine to run
+	switch(subRoutine)
+	{
+		case 1: pagesToLoad.push_back(*(tempTable[10]));
+				pagesToLoad.push_back(*(tempTable[11]));
+				break;
+		case 2: pagesToLoad.push_back(*(tempTable[12]));
+				pagesToLoad.push_back(*(tempTable[13]));
+				break;
+		case 3: pagesToLoad.push_back(*(tempTable[14]));
+				pagesToLoad.push_back(*(tempTable[15]));
+				break;
+		case 4: pagesToLoad.push_back(*(tempTable[16]));
+				pagesToLoad.push_back(*(tempTable[17]));
+				break;
+		case 5: pagesToLoad.push_back(*(tempTable[18]));
+				pagesToLoad.push_back(*(tempTable[19]));
+				break;		
+	}
+	fifo(pagesToLoad, selectedIndex);	
+}
+
+void fifo(vector<Page> v, int pid)
+{
+	cout << "process index " << pid << endl;
+	vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
+	while (v.size() > 0)
+	{
+		if (freeFrames.size() == 0)
+		{
+			//need to handle the condition if no free frames.
+		}
+		else
+		{
+			mainMemory[freeFrames.back()] = v.back();
+			freeFrames.pop_back();
+			v.pop_back();
+			break;
+		}
+	}
+}
+
+void printProcessPageTable(Process p)
+{
+	Page** tempTable = p.pageTable;
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	{
+		cout << "Suffix: " << tempTable[i]->suffix << endl;
+		cout << "Ref: " << tempTable[i]->refByte << endl;
+		cout << "Valid: " << tempTable[i]->valid << endl;
+		cout << "Frame: " << tempTable[i]->frameNum << endl;
+		cout << "--------------------------------------------------------------------------------" << endl;
+	}
+}
+
