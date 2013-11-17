@@ -39,11 +39,12 @@ struct Page
 	bool valid;
 	short frameNum;
 	char processName;
+	int start;
 	
 	//Page();
 	//Page(short suffix, short refByte, bool valid, short frameNum); //need help on the struct creation
-	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME) {}
-	Page(short suffix, short refByte, bool valid, short frameNum, char processName) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName) {}
+	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME), start(-1) {}
+	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName), start(start){}
 };
 
 struct Process
@@ -77,6 +78,7 @@ int refBitSet;
 int refBitClear;
 
 void zeroFillMemory(int start, int size);
+void zeroFillMemory(int start);
 void findFreeFrames(void);
 void createProcesses(void);
 void touchProcess(void);
@@ -120,6 +122,12 @@ void zeroFillMemory(int start, int size)
 		myPage.frameNum = i;
 		mainMemory[start + i] = &myPage;
 	}
+}
+
+void zeroFillMemory(int start)
+{
+	myPage.frameNum = start;
+	mainMemory[start] = &myPage;
 }
 
 void findFreeFrames(void)
@@ -182,49 +190,49 @@ void createProcesses(void)
 			cout << "j: " << j << endl;
 			if (j < 2)
 			{
-				Page tempPage = Page(0, 0, false, -1, name);
+				Page tempPage = Page(0, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];//point to the last element in the backingStore
 			}
 			else if (j < 5)
 			{
-				Page tempPage = Page(1, 0, false, -1, name);
+				Page tempPage = Page(1, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if (j < 10)
 			{
-				Page tempPage = Page(2, 0, false, -1, name);
+				Page tempPage = Page(2, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 2)
 			{
-				Page tempPage = Page(3, 0, false, -1, name);
+				Page tempPage = Page(3, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 4)
 			{
-				Page tempPage = Page(4, 0, false, -1, name);
+				Page tempPage = Page(4, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 6)
 			{
-				Page tempPage = Page(5, 0, false, -1, name);
+				Page tempPage = Page(5, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 8)
 			{
-				Page tempPage = Page(6, 0, false, -1, name);
+				Page tempPage = Page(6, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 10)
 			{
-				Page tempPage = Page(7, 0, false, -1, name);
+				Page tempPage = Page(7, 0, false, -1, name, -1);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
@@ -283,18 +291,27 @@ void fifo(vector<Page*> v, int pid)
 	{
 		if (freeFrames.size() == 0)
 		{
-			//need to handle the condition if no free frames.
-
-			// TODO iterate through vectOfProcess
-			// TODO look for smallest start time
-			// TODO remove enough pages of that process === v.size()
-			// TODO iterate through that process and remove its pages from memory
-			// TODO freeFrames.push_back(index);
+			int victimIndex = -1;
+			for (uint i = 0; i < v.size(); i++)//loop enough times to free enough frames for the pages needed to be loaded
+			{
+				int smallestStart = MAX_QUANTA;
+				for (int j = 0; j < MAX_FRAMES; j++)
+				{
+					if (mainMemory[j]->start < smallestStart)
+					{
+						smallestStart = mainMemory[j]->start;
+						victimIndex = j;
+					}
+				}
+				mainMemory[victimIndex]->valid = false;
+				mainMemory[victimIndex]->frameNum = -1;
+				zeroFillMemory(victimIndex);
+				freeFrames.push_back(victimIndex);
+			}
 		}
 		else
 		{
-			// TODO handle pointers
-			// TODO handle deathTime
+			v.back()->start = runTime;
 			v.back()->frameNum = freeFrames.back();
 			v.back()->valid = true;
 			mainMemory[freeFrames.back()] = v.back();
