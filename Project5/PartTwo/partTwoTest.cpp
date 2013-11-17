@@ -11,21 +11,24 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 2	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 2	/*23*/	// useful when debugging to limit # of procs
 #define MIN_DEATH_INTERVAL 20
 #define MAX_DEATH_INTERVAL 300
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
+#define SHIFT_INTERVAL 10
+#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
+#define MAX_QUANTA 50000	// # quanta to run before ending simulation
+#define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
+							// cycles (makes reading screen in real-time easier!)
+
 #define MAX_NUM_PAGES_PER_PROCESS 20
 #define DEFAULT_NUM_PAGES_PER_PROCESS 10
 #define MAX_SUBROUTINES 5
 #define MIN_SUBROUTINES 1
-#define SHIFT_INTERVAL 10
-#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
-#define MAX_QUANTA 50000	// # quanta to run before ending simulation
-#define SLEEP_LENGTH 250000
-//#define SEED 1384543729 // bugged seed time for process page creation
+//#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
+
 using namespace std;
  
 struct Page
