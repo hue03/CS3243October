@@ -303,14 +303,14 @@ void fifo(vector<Page*> v, int pid)
 						victimIndex = j;
 					}
 				}
+				mainMemory[victimIndex]->valid = false;
+				mainMemory[victimIndex]->frameNum = -1;
 				zeroFillMemory(victimIndex);
 				freeFrames.push_back(victimIndex);
 			}
 		}
 		else
 		{
-			// TODO handle pointers
-			// TODO handle deathTime
 			v.back()->start = runTime;
 			v.back()->frameNum = freeFrames.back();
 			v.back()->valid = true;
