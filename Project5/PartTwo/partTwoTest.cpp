@@ -104,12 +104,12 @@ int main()
 	for (uint h = 0; h < vectOfProcesses.size(); h++)
 	{
 		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
-		cout << " Deathtime: " << vectOfProcesses[h].deathTime << " # Subroutines " << vectOfProcesses[h].subRoutines << endl;
+		cout << " Deathtime: " << vectOfProcesses[h].deathTime << " #Subroutines " << vectOfProcesses[h].subRoutines << endl;
 		printProcessPageTable(vectOfProcesses[h]);
 	}
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
-		cout << mainMemory[i]->suffix;
+		cout << mainMemory[i]->processName << mainMemory[i]->suffix;
 	}
 }
 
@@ -229,12 +229,12 @@ void createProcesses(void)
 		}
 		if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
 		{
-			numSubRoutine = (MAX_SUBROUTINES - numSubRoutine) * 2;
-			cout <<"Fill empty pages: " << j << " " << numSubRoutine << endl; //filling the temp page table with "empty" pages because of seg fault and garbage data
-			for (int k = j; k < j + numSubRoutine; k++)
+			int numEmptySubRoutine = (MAX_SUBROUTINES - numSubRoutine) * 2;
+			cout <<"Fill empty pages: " << j << " " << numEmptySubRoutine << endl; //filling the temp page table with "empty" pages because of seg fault and garbage data
+			for (int k = j; k < j + numEmptySubRoutine; k++)
 			{
-				myPage.frameNum = -1;
-				myPage.refByte = 0;
+				//myPage.frameNum = -1;
+				//myPage.refByte = 0;
 				tempTable[k] = &myPage;
 			}
 		}
@@ -247,7 +247,7 @@ void touchProcess(void)
 {
 	vector<Page*> pagesToLoad;
 	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
-	cout << "process index " << selectedIndex << endl;
+	cout << "Touching process at index " << selectedIndex << endl;
 	Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first. need to randomly select a subroutine
 	{
@@ -257,6 +257,7 @@ void touchProcess(void)
 		}
 	}
 	int subRoutine = rand() % (vectOfProcesses[selectedIndex].subRoutines - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
+	cout << "running subroutine " << subRoutine << endl;
 	switch(subRoutine)
 	{
 		case 1: pagesToLoad.push_back(tempTable[10]);
@@ -275,12 +276,12 @@ void touchProcess(void)
 				pagesToLoad.push_back(tempTable[19]);
 				break;		
 	}
-	//fifo(pagesToLoad, selectedIndex);	
+	fifo(pagesToLoad, selectedIndex);	
 }
 
 void fifo(vector<Page*> v, int pid)
 {
-	cout << "process index " << pid << endl;
+	//cout << "process index " << pid << endl;
 	vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
 	while (v.size() > 0)
 	{
