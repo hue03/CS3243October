@@ -28,6 +28,7 @@
 #define MIN_SUBROUTINES 1
 //#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
+#define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 
 using namespace std;
  
@@ -37,11 +38,12 @@ struct Page
 	short refByte;
 	bool valid;
 	short frameNum;
+	char processName;
 	
 	//Page();
 	//Page(short suffix, short refByte, bool valid, short frameNum); //need help on the struct creation
-	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1) {}
-	Page(short suffix, short refByte, bool valid, short frameNum) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum) {}
+	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME) {}
+	Page(short suffix, short refByte, bool valid, short frameNum, char processName) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName) {}
 };
 
 struct Process
@@ -61,7 +63,7 @@ struct Process
 	}
 };
 
-Page mainMemory[MAX_FRAMES];
+Page* mainMemory[MAX_FRAMES];
 vector<Process> vectOfProcesses;
 vector<int> freeFrames;
 deque<Page> backingStore;
@@ -133,7 +135,7 @@ void findFreeFrames(void)
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
-	//int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
+	int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
 	char name = '?';
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
@@ -167,7 +169,7 @@ void createProcesses(void)
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
 		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
-		int numSubRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;
+		int numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
 		//int numSubRoutine = 4; 
 		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 		int j;
@@ -177,49 +179,49 @@ void createProcesses(void)
 			cout << "j: " << j << endl;
 			if (j < 2)
 			{
-				Page tempPage = Page(0, 0, false, -1);
+				Page tempPage = Page(0, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];//point to the last element in the backingStore
 			}
 			else if (j < 5)
 			{
-				Page tempPage = Page(1, 0, false, -1);
+				Page tempPage = Page(1, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if (j < 10)
 			{
-				Page tempPage = Page(2, 0, false, -1);
+				Page tempPage = Page(2, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 2)
 			{
-				Page tempPage = Page(3, 0, false, -1);
+				Page tempPage = Page(3, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 4)
 			{
-				Page tempPage = Page(4, 0, false, -1);
+				Page tempPage = Page(4, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 6)
 			{
-				Page tempPage = Page(5, 0, false, -1);
+				Page tempPage = Page(5, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 8)
 			{
-				Page tempPage = Page(6, 0, false, -1);
+				Page tempPage = Page(6, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
 			else if ((j % 10) < 10)
 			{
-				Page tempPage = Page(7, 0, false, -1);
+				Page tempPage = Page(7, 0, false, -1, name);
 				backingStore.push_back(tempPage);
 				tempTable[j] = &backingStore[backingStore.size() - 1];
 			}
@@ -242,7 +244,7 @@ void createProcesses(void)
 
 void touchProcess(void)
 {
-	vector<Page> pagesToLoad;
+	vector<Page*> pagesToLoad;
 	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
 	cout << "process index " << selectedIndex << endl;
 	Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
@@ -250,7 +252,7 @@ void touchProcess(void)
 	{
 		if (!(tempTable[i]->valid))
 		{
-			pagesToLoad.push_back(*(tempTable[i])); //gets the pages from backingstore using process's page table
+			pagesToLoad.push_back(tempTable[i]); //gets the pages from backingstore using process's page table
 		}
 	}
 	int subRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
@@ -272,7 +274,7 @@ void touchProcess(void)
 				pagesToLoad.push_back(*(tempTable[19]));
 				break;		
 	}
-	fifo(pagesToLoad, selectedIndex);	
+	//fifo(pagesToLoad, selectedIndex);	
 }
 
 void fifo(vector<Page> v, int pid)
@@ -287,6 +289,8 @@ void fifo(vector<Page> v, int pid)
 		}
 		else
 		{
+			v.back()->frameNum = freeFrames.back();
+			v.back()->valid = true;
 			mainMemory[freeFrames.back()] = v.back();
 			freeFrames.pop_back();
 			v.pop_back();
@@ -299,6 +303,7 @@ void printProcessPageTable(Process p)
 	Page** tempTable = p.pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
+		cout << "Process: " << tempTable[i]->processName << endl;
 		cout << "Suffix: " << tempTable[i]->suffix << endl;
 		cout << "Ref: " << tempTable[i]->refByte << endl;
 		cout << "Valid: " << tempTable[i]->valid << endl;
