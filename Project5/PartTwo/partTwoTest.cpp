@@ -40,8 +40,8 @@ struct Page
 	
 	//Page();
 	//Page(short suffix, short refByte, bool valid, short frameNum); //need help on the struct creation
-	Page():suffix(-1), refByte(-1), valid(false), frameNum(-1){}
-	Page(short s, short r, bool v, short f):suffix(s), refByte(r), valid(v), frameNum(f){}	
+	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1) {}
+	Page(short suffix, short refByte, bool valid, short frameNum) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum) {}
 };
 
 struct Process
