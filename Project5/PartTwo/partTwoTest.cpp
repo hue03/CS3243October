@@ -86,7 +86,7 @@ void printProcessPageTable(Process p);
 int main()
 {
 	srand(SEED);
-	cout << SEED << endl;
+	cout << SEED << endl;	// TODO test output
 	runTime = 0;
 	zeroFillMemory(0, MAX_FRAMES);
 	findFreeFrames();
@@ -260,7 +260,7 @@ void touchProcess(void)
 	}
 
 	int subRoutine = rand() % vectOfProcesses[selectedIndex].subRoutines;
-	cout << "running subroutine " << subRoutine << endl;
+	cout << "running subroutine " << subRoutine << endl;	// TODO test output
 
 	if (!tempTable[2 * subRoutine + 10]->valid)
 	{
@@ -284,6 +284,12 @@ void fifo(vector<Page*> v, int pid)
 		if (freeFrames.size() == 0)
 		{
 			//need to handle the condition if no free frames.
+
+			// TODO iterate through vectOfProcess
+			// TODO look for smallest start time
+			// TODO remove enough pages of that process === v.size()
+			// TODO iterate through that process and remove its pages from memory
+			// TODO freeFrames.push_back(index);
 		}
 		else
 		{
