@@ -161,16 +161,18 @@ void createProcesses(void)
 		}
 		//need to make a case for kernel initialization
 		int timeOfLife = 0;
+		int numSubRoutine = 0;
 		if (i == 0)
 		{
 			timeOfLife = MAX_QUANTA;
+			numSubRoutine = 5;
 		}
 		else 
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
+			numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
 		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
-		int numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
 		//int numSubRoutine = 4; 
 		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 		int j;
@@ -260,20 +262,35 @@ void touchProcess(void)
 	cout << "running subroutine " << subRoutine << endl;
 	switch(subRoutine)
 	{
-		case 1: pagesToLoad.push_back(tempTable[10]);
-				pagesToLoad.push_back(tempTable[11]);
+		case 1: if (!(tempTable[10]->valid) || !(tempTable[11]->valid))//possible that only one of these pages will be in memory even though they come in pairs?
+				{
+					pagesToLoad.push_back(tempTable[10]);
+					pagesToLoad.push_back(tempTable[11]);
+				}
 				break;
-		case 2: pagesToLoad.push_back(tempTable[12]);
-				pagesToLoad.push_back(tempTable[13]);
+		case 2: if (!(tempTable[12]->valid) || !(tempTable[13]->valid))//possible that only one of these pages will be in memory even though they come in pairs?
+				{
+					pagesToLoad.push_back(tempTable[12]);
+					pagesToLoad.push_back(tempTable[13]);
+				}
 				break;
-		case 3: pagesToLoad.push_back(tempTable[14]);
-				pagesToLoad.push_back(tempTable[15]);
+		case 3: if (!(tempTable[14]->valid) || !(tempTable[15]->valid))//possible that only one of these pages will be in memory even though they come in pairs?
+				{
+					pagesToLoad.push_back(tempTable[14]);
+					pagesToLoad.push_back(tempTable[15]);
+				}
 				break;
-		case 4: pagesToLoad.push_back(tempTable[16]);
-				pagesToLoad.push_back(tempTable[17]);
+		case 4: if (!(tempTable[16]->valid) || !(tempTable[17]->valid))//possible that only one of these pages will be in memory even though they come in pairs?
+				{
+					pagesToLoad.push_back(tempTable[16]);
+					pagesToLoad.push_back(tempTable[17]);
+				}
 				break;
-		case 5: pagesToLoad.push_back(tempTable[18]);
-				pagesToLoad.push_back(tempTable[19]);
+		case 5: if (!(tempTable[18]->valid) || !(tempTable[19]->valid))//possible that only one of these pages will be in memory even though they come in pairs?
+				{
+					pagesToLoad.push_back(tempTable[18]);
+					pagesToLoad.push_back(tempTable[19]);
+				}
 				break;		
 	}
 	fifo(pagesToLoad, selectedIndex);	
