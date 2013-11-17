@@ -49,12 +49,14 @@ struct Process
 	char name;
 	int lifeTime;
 	int deathTime;
-	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS]; //this is giving a problem. i forget if you can assign an array to array. gives error saying Page* cannot go into Page* [20] don't know why the [20] is there
-	Process(char n, int l, int d, Page* p[MAX_NUM_PAGES_PER_PROCESS]):name(n), lifeTime(l), deathTime(d){ //need help on the struct creation
+	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS];
+
+	Process(char name, int lifeTime, int deathTime, Page* p[MAX_NUM_PAGES_PER_PROCESS]) : name(name), lifeTime(lifeTime), deathTime(deathTime)
+	{
 		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 		{
 			pageTable[i] = p[i];
-			cout << p[i]->suffix << " " << endl;
+			cout << p[i]->suffix << " " << endl;	// TODO test output
 		}
 		
 	};
