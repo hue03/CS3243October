@@ -73,12 +73,13 @@ int loadedProc;
 int refBitSet;
 int refBitClear;
 
-void zeroFillMemory(int, int);
+void zeroFillMemory(int start, int size);
 void findFreeFrames(void);
 void createProcesses(void);
 void touchProcess(void);
-void fifo(vector<Page>, int);
+void fifo(vector<Page> v, int pid);
 void printProcessPageTable(Process p);
+
 int main()
 {
 	srand(SEED);
