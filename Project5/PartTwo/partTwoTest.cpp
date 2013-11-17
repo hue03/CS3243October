@@ -51,7 +51,7 @@ struct Process
 	char name;
 	int lifeTime;
 	int deathTime;
-	int subRoutines
+	int subRoutines;
 	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int deathTime, int subRoutines, Page* p[MAX_NUM_PAGES_PER_PROCESS]) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines)
@@ -104,7 +104,7 @@ int main()
 	for (uint h = 0; h < vectOfProcesses.size(); h++)
 	{
 		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
-		cout << " Deathtime: " << vectOfProcesses[h].deathTime << endl;
+		cout << " Deathtime: " << vectOfProcesses[h].deathTime << " # Subroutines " << vectOfProcesses[h].subRoutines << endl;
 		printProcessPageTable(vectOfProcesses[h]);
 	}
 	for (int i = 0; i < MAX_FRAMES; i++)
@@ -238,7 +238,7 @@ void createProcesses(void)
 				tempTable[k] = &myPage;
 			}
 		}
-		Process process = Process(name, timeOfLife, 0, numOfSubRoutine, tempTable);
+		Process process = Process(name, timeOfLife, 0, numSubRoutine, tempTable);
 		vectOfProcesses.push_back(process);
 	}
 }
@@ -259,20 +259,20 @@ void touchProcess(void)
 	int subRoutine = rand() % (vectOfProcesses[selectedIndex].subRoutines - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
 	switch(subRoutine)
 	{
-		case 1: pagesToLoad.push_back(*(tempTable[10]));
-				pagesToLoad.push_back(*(tempTable[11]));
+		case 1: pagesToLoad.push_back(tempTable[10]);
+				pagesToLoad.push_back(tempTable[11]);
 				break;
-		case 2: pagesToLoad.push_back(*(tempTable[12]));
-				pagesToLoad.push_back(*(tempTable[13]));
+		case 2: pagesToLoad.push_back(tempTable[12]);
+				pagesToLoad.push_back(tempTable[13]);
 				break;
-		case 3: pagesToLoad.push_back(*(tempTable[14]));
-				pagesToLoad.push_back(*(tempTable[15]));
+		case 3: pagesToLoad.push_back(tempTable[14]);
+				pagesToLoad.push_back(tempTable[15]);
 				break;
-		case 4: pagesToLoad.push_back(*(tempTable[16]));
-				pagesToLoad.push_back(*(tempTable[17]));
+		case 4: pagesToLoad.push_back(tempTable[16]);
+				pagesToLoad.push_back(tempTable[17]);
 				break;
-		case 5: pagesToLoad.push_back(*(tempTable[18]));
-				pagesToLoad.push_back(*(tempTable[19]));
+		case 5: pagesToLoad.push_back(tempTable[18]);
+				pagesToLoad.push_back(tempTable[19]);
 				break;		
 	}
 	//fifo(pagesToLoad, selectedIndex);	
