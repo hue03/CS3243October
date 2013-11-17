@@ -6,11 +6,9 @@
 // File: parttwo.cpp
 
 #include <cstdlib>
-#include <stdio.h>
-#include <unistd.h>
+#include <deque>
 #include <iostream>
 #include <vector>
-#include <deque>  
 
 #define MAX_PROCESSES 52	// This will not ever change
 #define PROCESS_COUNT 2	// useful when debugging to limit # of procs
