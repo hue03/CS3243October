@@ -11,14 +11,14 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 2	/*23*/	// useful when debugging to limit # of procs
-#define MIN_DEATH_INTERVAL 20
-#define MAX_DEATH_INTERVAL 300
+#define PROCESS_COUNT /*2*/	23	// useful when debugging to limit # of procs
+#define MIN_DEATH_INTERVAL 5
+#define MAX_DEATH_INTERVAL 15
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 #define SHIFT_INTERVAL 10
-#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
-#define MAX_QUANTA 50000	// # quanta to run before ending simulation
+#define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
+#define MAX_QUANTA 50	// # quanta to run before ending simulation
 #define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
@@ -81,6 +81,7 @@ void zeroFillMemory(int start, int size);
 void zeroFillMemory(int start);
 void findFreeFrames(void);
 void createProcesses(void);
+void killProcess(void);
 void touchProcess(void);
 void fifo(vector<Page*> v, int pid);
 void printProcessPageTable(Process p);
@@ -102,16 +103,23 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	*/
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
-	touchProcess();
-	for (uint h = 0; h < vectOfProcesses.size(); h++)
+	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
-		cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
-		cout << " Deathtime: " << vectOfProcesses[h].deathTime << " #Subroutines " << vectOfProcesses[h].subRoutines << endl;
-		printProcessPageTable(vectOfProcesses[h]);
-	}
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		cout << mainMemory[i]->processName << mainMemory[i]->suffix;
+		touchProcess();
+		if (runTime % PRINT_INTERVAL == 0)
+		{
+			for (uint h = 0; h < vectOfProcesses.size(); h++)
+			{
+				cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
+				cout << " Deathtime: " << vectOfProcesses[h].deathTime << " #Subroutines " << vectOfProcesses[h].subRoutines << endl;
+				printProcessPageTable(vectOfProcesses[h]);
+			}
+			cout << "Memory Map " << runTime << endl;
+			for (int i = 0; i < MAX_FRAMES; i++)
+			{
+				cout << mainMemory[i]->processName << mainMemory[i]->suffix;
+			}
+		}
 	}
 }
 
@@ -181,7 +189,6 @@ void createProcesses(void)
 			numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
 		}
 		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
-		//int numSubRoutine = 4; 
 		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 		int j;
 		for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
@@ -253,17 +260,27 @@ void createProcesses(void)
 	}
 }
 
+void killProcess(void)
+{
+	//TODO go through vectofprocess and check deathtime
+	//TODO when one needs to die, change its page entries process name to blank and set to invalid
+	//TODO go into memory and remove these invalid pages
+	//TODO now remove the pages from the backing store
+	//TODO make the process's page table have empty pages
+}
+
 void touchProcess(void)
 {
 	vector<Page*> pagesToLoad;
 	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
+																	//need to change this to choose a process name.
 	cout << "Touching process at index " << selectedIndex << endl;
 	Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first. need to randomly select a subroutine
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first
 	{
 		if (!(tempTable[i]->valid))
 		{
-			pagesToLoad.push_back(tempTable[i]); //gets the pages from backingstore using process's page table
+			pagesToLoad.push_back(tempTable[i]); //gets a pointer to the pages int the backingstore using process's page table
 		}
 	}
 
