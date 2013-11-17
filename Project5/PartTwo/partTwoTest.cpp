@@ -51,9 +51,10 @@ struct Process
 	char name;
 	int lifeTime;
 	int deathTime;
+	int subRoutines
 	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, Page* p[MAX_NUM_PAGES_PER_PROCESS]) : name(name), lifeTime(lifeTime), deathTime(deathTime)
+	Process(char name, int lifeTime, int deathTime, int subRoutines, Page* p[MAX_NUM_PAGES_PER_PROCESS]) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines)
 	{
 		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 		{
@@ -237,7 +238,7 @@ void createProcesses(void)
 				tempTable[k] = &myPage;
 			}
 		}
-		Process process = Process(name, timeOfLife, 0, tempTable);
+		Process process = Process(name, timeOfLife, 0, numOfSubRoutine, tempTable);
 		vectOfProcesses.push_back(process);
 	}
 }
@@ -255,7 +256,7 @@ void touchProcess(void)
 			pagesToLoad.push_back(tempTable[i]); //gets the pages from backingstore using process's page table
 		}
 	}
-	int subRoutine = rand() % (MAX_SUBROUTINES - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
+	int subRoutine = rand() % (vectOfProcesses[selectedIndex].subRoutines - MIN_SUBROUTINES + 1) + MIN_SUBROUTINES;//select a 1 random subroutine to run. need to get the actual max of subroutines the process has. may not actually have 5
 	switch(subRoutine)
 	{
 		case 1: pagesToLoad.push_back(*(tempTable[10]));
