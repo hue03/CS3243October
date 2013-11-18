@@ -11,7 +11,7 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT /*2*/	23	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 2	/*23*/	// useful when debugging to limit # of procs
 #define MIN_DEATH_INTERVAL 5
 #define MAX_DEATH_INTERVAL 15
 #define MAX_FRAMES 280
@@ -53,16 +53,9 @@ struct Process
 	int lifeTime;
 	int deathTime;
 	int subRoutines;
-	Page* pageTable[MAX_NUM_PAGES_PER_PROCESS];
+	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, int subRoutines, Page* p[MAX_NUM_PAGES_PER_PROCESS]) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines)
-	{
-		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-		{
-			pageTable[i] = p[i];
-			cout << p[i]->suffix << " " << endl;	// TODO test output
-		}
-	}
+	Process(char name, int lifeTime, int deathTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines){}
 };
 
 Page* mainMemory[MAX_FRAMES];
@@ -81,6 +74,7 @@ void zeroFillMemory(int start, int size);
 void zeroFillMemory(int start);
 void findFreeFrames(void);
 void createProcesses(void);
+void createPages(Process p);
 void killProcess(void);
 void touchProcess(void);
 void fifo(vector<Page*> v, int pid);
@@ -104,7 +98,9 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	*/
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
-	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
+	createPages(vectOfProcesses[0]);
+	printProcessPageTable(vectOfProcesses[0]);
+	/*for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
 		touchProcess();
 		if (runTime % PRINT_INTERVAL == 0)
@@ -121,7 +117,7 @@ int main()
 				cout << mainMemory[i]->processName << mainMemory[i]->frameNum;
 			}
 		}
-	}
+	}*/
 }
 
 void zeroFillMemory(int start, int size)
@@ -153,7 +149,6 @@ void findFreeFrames(void)
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
-	int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
 	char name = '?';
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
@@ -176,89 +171,105 @@ void createProcesses(void)
 			name +=1;
 			break;
 		}
-		//need to make a case for kernel initialization
 		int timeOfLife = 0;
-		int numSubRoutine = 0;
 		if (i == 0)
 		{
 			timeOfLife = MAX_QUANTA;
-			numSubRoutine = 5;
 		}
 		else 
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
-			numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
 		}
-		Page* tempTable[MAX_NUM_PAGES_PER_PROCESS];
-		cout << "Num of Sub Routines " <<  numSubRoutine << endl;
-		int j;
-		for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
-		{
-			//cout << "creating process loop" << endl;
-			cout << "j: " << j << endl;
-			if (j < 2)
-			{
-				Page tempPage = Page(0, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];//point to the last element in the backingStore
-			}
-			else if (j < 5)
-			{
-				Page tempPage = Page(1, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if (j < 10)
-			{
-				Page tempPage = Page(2, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if ((j % 10) < 2)
-			{
-				Page tempPage = Page(3, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if ((j % 10) < 4)
-			{
-				Page tempPage = Page(4, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if ((j % 10) < 6)
-			{
-				Page tempPage = Page(5, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if ((j % 10) < 8)
-			{
-				Page tempPage = Page(6, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-			else if ((j % 10) < 10)
-			{
-				Page tempPage = Page(7, 0, false, -1, name, -1);
-				backingStore.push_back(tempPage);
-				tempTable[j] = &backingStore[backingStore.size() - 1];
-			}
-		}
-		if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
-		{
-			int numEmptySubRoutine = (MAX_SUBROUTINES - numSubRoutine) * 2;
-			cout <<"Fill empty pages: " << j << " " << numEmptySubRoutine << endl; //filling the temp page table with "empty" pages because of seg fault and garbage data
-			for (int k = j; k < j + numEmptySubRoutine; k++)
-			{
-				//myPage.frameNum = -1;
-				//myPage.refByte = 0;
-				tempTable[k] = &myPage;
-			}
-		}
-		Process process = Process(name, timeOfLife, 0, numSubRoutine, tempTable);
+		Process process = Process(name, timeOfLife, 0, 0);
 		vectOfProcesses.push_back(process);
 	}
+}
+
+void createPages(Process p)
+{
+	int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
+	int numSubRoutine = 0;
+	if (p.name != '@')
+	{
+		numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
+	}
+	else
+	{
+		numSubRoutine = 5;
+	}
+	cout << "Num of Sub Routines " <<  numSubRoutine << endl;
+	int j;
+	int tempIndex[MAX_NUM_PAGES_PER_PROCESS];
+	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
+	{
+		//cout << "creating process loop" << endl;
+		cout << "j: " << j << endl;
+		if (j < 2)
+		{
+			Page tempPage = Page(0, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if (j < 5)
+		{
+			Page tempPage = Page(1, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if (j < 10)
+		{
+			Page tempPage = Page(2, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if ((j % 10) < 2)
+		{
+			Page tempPage = Page(3, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if ((j % 10) < 4)
+		{
+			Page tempPage = Page(4, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if ((j % 10) < 6)
+		{
+			Page tempPage = Page(5, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if ((j % 10) < 8)
+		{
+			Page tempPage = Page(6, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+		else if ((j % 10) < 10)
+		{
+			Page tempPage = Page(7, 0, false, -1, p.name, -1);
+			backingStore.push_back(tempPage);
+			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+		}
+	}
+	if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
+	{
+		int numEmptySubRoutine = (MAX_SUBROUTINES - numSubRoutine) * 2;
+		cout <<"Fill empty pages: " << j << " " << numEmptySubRoutine << endl; //filling the temp page table with "empty" pages because of seg fault and garbage data
+		for (int k = j; k < j + numEmptySubRoutine; k++)
+		{
+			//myPage.frameNum = -1;
+			//myPage.refByte = 0;
+			tempIndex[k] = -1;
+		}
+	}
+	//p.pageIndex[MAX_NUM_PAGES_PER_PROCESS] = tempIndex[MAX_NUM_PAGES_PER_PROCESS];
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	{
+		p.pageIndex[i] = tempIndex[i];
+	}
+	
 }
 
 void killProcess(void)
@@ -284,7 +295,7 @@ void killProcess(void)
 			
 			for (int k = 0; k < MAX_NUM_PAGES_PER_PROCESS; k++)//fill with "empty" pages in the process's page table 
 			{
-				vectOfProcesses[i].pageTable[k] = &myPage; 
+				//vectOfProcesses[i].pageTable[k] = &myPage; 
 			}
 			
 			for (uint l = 0; l < backingStore.size(); l++)//removing the process's pages from the backing store
@@ -305,7 +316,7 @@ void touchProcess(void)
 	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
 																	//need to change this to choose a process name.
 	cout << "Touching process at index " << selectedIndex << endl;
-	Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
+	/*Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first
 	{
 		if (!(tempTable[i]->valid))
@@ -325,7 +336,7 @@ void touchProcess(void)
 	if (!tempTable[2 * subRoutine + 10 + 1]->valid)
 	{
 		pagesToLoad.push_back(tempTable[2 * subRoutine + 10 + 1]);
-	}
+	}*/
 
 	fifo(pagesToLoad, selectedIndex);	
 }
@@ -370,16 +381,17 @@ void fifo(vector<Page*> v, int pid)
 
 void printProcessPageTable(Process p)
 {
-	Page** tempTable = p.pageTable;
+	//Page** tempTable = p.pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
-		cout << "Process: " << tempTable[i]->processName << endl;
-		cout << "Suffix: " << tempTable[i]->suffix << endl;
-		cout << "Ref: " << tempTable[i]->refByte << endl;
-		cout << "Valid: " << tempTable[i]->valid << endl;
-		cout << "Frame: " << tempTable[i]->frameNum << endl;
-		cout << "--------------------------------------------------------------------------------" << endl;
+		cout << "temp " << p.pageIndex[i] << endl;
 	}
+		//cout << "Process: " << tempTable[i]->processName << endl;
+		//cout << "Suffix: " << tempTable[i]->suffix << endl;
+		//cout << "Ref: " << tempTable[i]->refByte << endl;
+		//cout << "Valid: " << tempTable[i]->valid << endl;
+		//cout << "Frame: " << tempTable[i]->frameNum << endl;
+		//cout << "--------------------------------------------------------------------------------" << endl;
 }
 
 void printMemoryMap(void)
