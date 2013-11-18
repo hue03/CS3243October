@@ -98,6 +98,7 @@ struct MainMemory
 	}
 };
 
+vector<Process> vectOfProcesses;
 MainMemory memory;
 struct BackingStore
 {
@@ -168,32 +169,6 @@ int main()
 			}
 		}
 	}*/
-}
-
-void zeroFillMemory(int start, int size)
-{
-	for (int i = 0; i < size; i++)
-	{
-		//myPage.frameNum = i;
-		mainMemory[start + i] = &myPage;
-	}
-}
-
-void zeroFillMemory(int start)
-{
-	//myPage.frameNum = startTime;
-	mainMemory[start] = &myPage;
-}
-
-void findFreeFrames(void)
-{
-	for (int i = MAX_FRAMES - 1; i >= 0; i--)//first frame is last so it pops out first when inserting pages
-	{
-		if (mainMemory[i]->suffix == -1)
-		{
-			freeFrames.push_back(i);
-		}
-	}
 }
 
 void createProcesses(void)
@@ -322,7 +297,6 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
-
 }
 
 void touchProcess(void)
