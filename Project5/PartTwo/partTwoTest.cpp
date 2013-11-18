@@ -120,7 +120,6 @@ int loadedProc;
 int refBitSet;
 int refBitClear;
 
-void findFreeFrames(void);
 void createProcesses(void);
 void createPages(Process &p);
 void killProcess(void);
@@ -135,7 +134,6 @@ int main()
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
 	runTime = 0;
-	findFreeFrames();
 	createProcesses();
 	/*cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "List of Free Frames:" << endl;
