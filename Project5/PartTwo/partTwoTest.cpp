@@ -72,7 +72,7 @@ deque<Page> backingStore;
 Page myPage;
 int runTime;
 int usedFrames;
-int loadPages;
+int loadedPages;
 int loadedProc;
 int refBitSet;
 int refBitClear;
@@ -85,6 +85,7 @@ void killProcess(void);
 void touchProcess(void);
 void fifo(vector<Page*> v, int pid);
 void printProcessPageTable(Process p);
+void printMemoryMap(void);
 
 int main()
 {
@@ -381,3 +382,41 @@ void printProcessPageTable(Process p)
 	}
 }
 
+void printMemoryMap(void)
+{
+	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
+	int numFreeFrames = MAX_FRAMES - usedFrames;
+	float freeFramesPercentage = 100.0 * freeFrames.size() / MAX_FRAMES;
+	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
+	int unloadedProc = PROCESS_COUNT - loadedProc;
+	float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
+
+	cout << "QUANTA ELAPSED: " << runTime << endl;
+	cout << "FRAMES: " << MAX_FRAMES << "f\t" << "USED: " << usedFrames << "f (" << usedFramesPercentage << "%)\tFREE:" << numFreeFrames << "f (" << freeFramesPercentage << "%)" << endl;
+	cout << "SWAP SPACE: " << MAX_FRAMES << "\tPAGES: " <<  backingStore.size() << "\tLoaded: " << loadedPages << "\tFREE: " << freeFrames.size() << endl;
+	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
+	cout << "        04        09        14        19        24        29        34" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 0; i < 35; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "        39        44        49        54        59        64        69" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 35; i < 70; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "        74        79        84        89        94        99       104" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 70; i < 105; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "       109       114       119       124       129       134       139" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 105; i < 140; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "       144       149       154       159       164       169       174" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 140; i < 175; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "       179       184       189       194       199       204       209" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 175; i < 210; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "       214       219       224       229       234       239       244" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 210; i < 245; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	cout << "       249       254       259       264       269       274       279" << endl;
+	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	for (size_t i = 245; i < 280; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+}
