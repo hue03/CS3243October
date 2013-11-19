@@ -6,7 +6,7 @@
 // File: parttwo.cpp
 
 #include <cstdlib>
-#include <deque>
+//#include <deque>
 #include <iostream>
 #include <vector>
 
@@ -31,7 +31,7 @@
 #define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
 
 using namespace std;
- 
+
 struct Page
 {
 	short suffix;
@@ -40,9 +40,10 @@ struct Page
 	short frameNum;
 	char processName;
 	int startTime;
-	
+
 	Page();
-	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start);
+	Page(short suffix, short refByte, bool valid, short frameNum,
+	        char processName, int start);
 	void initialize(short suffix, char processName);
 };
 
@@ -55,19 +56,22 @@ struct Process
 	bool isAlive;
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive);
+	Process(char name, int lifeTime, int deathTime, int subRoutines,
+	        bool isAlive);
 };
+
 vector<Process> vectOfProcesses;
 
 struct MainMemory
 {
 	int freeIndex;
 	Page* memArray[MAX_FRAMES];
-	
+
 	MainMemory();
 	void emptyMemory(int p);
 	int getFreeFrame();
 };
+
 MainMemory memory;
 
 struct BackingStore
@@ -105,12 +109,14 @@ int main()
 	runTime = 0;
 	createProcesses();
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
+
 	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
 		touchProcess();
 		for (int i = 0; i < MAX_FRAMES; i++)
 		{
-			cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
+			cout << memory.memArray[i]->processName
+			        << memory.memArray[i]->suffix;
 		}
 		cout << endl;
 	}
@@ -121,9 +127,10 @@ void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
 	char name = '?';
+
 	for (int i = 0; i < PROCESS_COUNT; i++)
 	{
-		switch(name)
+		switch (name)
 		{
 		case '@':
 			name = '1';
@@ -139,18 +146,21 @@ void createProcesses(void)
 			name += 2;
 			break;
 		default:
-			name +=1;
+			name += 1;
 			break;
 		}
+
 		int timeOfLife = 0;
+
 		if (i == 0)
 		{
 			timeOfLife = MAX_QUANTA;
 		}
-		else 
+		else
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
 		}
+
 		Process process = Process(name, timeOfLife, 0, 0, false);
 		vectOfProcesses.push_back(process);
 	}
@@ -170,7 +180,7 @@ void createPages(Process &p)
 		numSubRoutine = 5;
 		p.subRoutines = numSubRoutine;
 	}
-	cout << "Num of Sub Routines " <<  numSubRoutine << endl;
+	cout << "Num of Sub Routines " << numSubRoutine << endl;
 	int j;
 	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 	{
@@ -238,36 +248,39 @@ void killProcess(void)
 
 void touchProcess(void)
 {
-	int selectedProcess = 0;//choose the kernel at the start of the program
+	int selectedProcess = 0;	//choose the kernel at the start of the program
 	if (runTime != 0)
-	{	
+	{
 		selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
-	}																
+	}
 	cout << "Touching process at index " << selectedProcess << endl;
 	if (!(vectOfProcesses[selectedProcess].isAlive))
 	{
 		vectOfProcesses[selectedProcess].isAlive = true;
 		createPages(vectOfProcesses[selectedProcess]);
 	}
-	vectOfProcesses[selectedProcess].deathTime = runTime + vectOfProcesses[selectedProcess].lifeTime;
+	vectOfProcesses[selectedProcess].deathTime = runTime
+	        + vectOfProcesses[selectedProcess].lifeTime;
 	int selectedPage = -1;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
 	{
 		selectedPage = vectOfProcesses[selectedProcess].pageIndex[i];
 		if (!(backingStore.pages[selectedPage].valid))//bring the selected page into memory if necessary
-		{												
+		{
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
 	}
 	int subRoutine = -1;
 	if (runTime != 0)
-	{	
+	{
 		subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
-		cout << "running subroutine " << subRoutine << endl;	// TODO test output
+		cout << "running subroutine " << subRoutine << endl;// TODO test output
 
-		int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
-		int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
-		
+		int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2
+		        * subRoutine + 10];
+		int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2
+		        * subRoutine + 10 + 1];
+
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
@@ -287,9 +300,11 @@ void touchProcess(void)
 		for (int j = 0; j < 5; j++)
 		{
 			subRoutine = j;
-			selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
-			selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
-			
+			selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2
+			        * subRoutine + 10];
+			selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2
+			        * subRoutine + 10 + 1];
+
 			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
@@ -303,7 +318,7 @@ void touchProcess(void)
 			}
 		}
 	}
-	
+
 }
 
 void insertIntoMemory(Page &pg)
@@ -320,21 +335,22 @@ int fifo()
 {
 	int victimIndex = -1;
 	int smallestStart = MAX_QUANTA;
+
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
-		if (memory.memArray[j]->startTime < smallestStart && memory.memArray[j]->processName != '@')
+		if (memory.memArray[j]->startTime < smallestStart
+		        && memory.memArray[j]->processName != '@')
 		{
 			smallestStart = memory.memArray[j]->startTime;
 			victimIndex = j;
 		}
 	}
+
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
 	return victimIndex;
 }
-		
-
 
 void printProcessPageTable(Process p)
 {
@@ -343,57 +359,58 @@ void printProcessPageTable(Process p)
 	{
 		cout << p.name << "temp2 " << p.pageIndex[i] << endl;
 	}
-		//cout << "Process: " << tempTable[i]->processName << endl;
-		//cout << "Suffix: " << tempTable[i]->suffix << endl;
-		//cout << "Ref: " << tempTable[i]->refByte << endl;
-		//cout << "Valid: " << tempTable[i]->valid << endl;
-		//cout << "Frame: " << tempTable[i]->frameNum << endl;
-		//cout << "--------------------------------------------------------------------------------" << endl;
+	//cout << "Process: " << tempTable[i]->processName << endl;
+	//cout << "Suffix: " << tempTable[i]->suffix << endl;
+	//cout << "Ref: " << tempTable[i]->refByte << endl;
+	//cout << "Valid: " << tempTable[i]->valid << endl;
+	//cout << "Frame: " << tempTable[i]->frameNum << endl;
+	//cout << "--------------------------------------------------------------------------------" << endl;
 }
 
 void printMemoryMap(void)
 {
 	/*float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
-	int numFreeFrames = MAX_FRAMES - usedFrames;
-	float freeFramesPercentage = 100.0 * freeFrames.size() / MAX_FRAMES;
-	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
-	int unloadedProc = PROCESS_COUNT - loadedProc;
-	float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
+	 int numFreeFrames = MAX_FRAMES - usedFrames;
+	 float freeFramesPercentage = 100.0 * freeFrames.size() / MAX_FRAMES;
+	 float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
+	 int unloadedProc = PROCESS_COUNT - loadedProc;
+	 float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
 
-	cout << "QUANTA ELAPSED: " << runTime << endl;
-	cout << "FRAMES: " << MAX_FRAMES << "f\t" << "USED: " << usedFrames << "f (" << usedFramesPercentage << "%)\tFREE:" << numFreeFrames << "f (" << freeFramesPercentage << "%)" << endl;
-	cout << "SWAP SPACE: " << MAX_FRAMES << "\tPAGES: " << usedPages << "\tLoaded: " << loadedPages << "\tFREE: " << freeFrames.size() << endl;
-	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
-	cout << "        04        09        14        19        24        29        34" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 0; i < 35; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "        39        44        49        54        59        64        69" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 35; i < 70; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "        74        79        84        89        94        99       104" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 70; i < 105; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "       109       114       119       124       129       134       139" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 105; i < 140; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "       144       149       154       159       164       169       174" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 140; i < 175; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "       179       184       189       194       199       204       209" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 175; i < 210; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "       214       219       224       229       234       239       244" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 210; i < 245; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	cout << "       249       254       259       264       269       274       279" << endl;
-	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
-	for (size_t i = 245; i < 280; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
-	*/
+	 cout << "QUANTA ELAPSED: " << runTime << endl;
+	 cout << "FRAMES: " << MAX_FRAMES << "f\t" << "USED: " << usedFrames << "f (" << usedFramesPercentage << "%)\tFREE:" << numFreeFrames << "f (" << freeFramesPercentage << "%)" << endl;
+	 cout << "SWAP SPACE: " << MAX_FRAMES << "\tPAGES: " << usedPages << "\tLoaded: " << loadedPages << "\tFREE: " << freeFrames.size() << endl;
+	 cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
+	 cout << "        04        09        14        19        24        29        34" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 0; i < 35; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "        39        44        49        54        59        64        69" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 35; i < 70; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "        74        79        84        89        94        99       104" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 70; i < 105; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "       109       114       119       124       129       134       139" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 105; i < 140; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "       144       149       154       159       164       169       174" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 140; i < 175; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "       179       184       189       194       199       204       209" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 175; i < 210; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "       214       219       224       229       234       239       244" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 210; i < 245; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 cout << "       249       254       259       264       269       274       279" << endl;
+	 cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
+	 for (size_t i = 245; i < 280; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	 */
 }
 
 // TODO insert page function for BackingStore
 
-BackingStore::BackingStore() : freeIndex(0)
+BackingStore::BackingStore() :
+		freeIndex(0)
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
@@ -421,7 +438,7 @@ int BackingStore::getFreePage()
 	return freePage;
 }
 
-MainMemory::MainMemory() 
+MainMemory::MainMemory()
 {
 	freeIndex = 0;
 	for (int i = 0; i < MAX_FRAMES; i++)
@@ -453,11 +470,12 @@ Page::Page()
 	refByte = -1;
 	valid = false;
 	frameNum = -1;
-	processName = EMPTY_PROCESS_NAME; 
+	processName = EMPTY_PROCESS_NAME;
 	startTime = -1;
 }
 
-Page::Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start)
+Page::Page(short suffix, short refByte, bool valid, short frameNum,
+        char processName, int start)
 {
 	this->suffix = suffix;
 	this->refByte = refByte;
@@ -474,7 +492,8 @@ void Page::initialize(short suffix, char processName)
 	this->processName = processName;
 }
 
-Process::Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive)
+Process::Process(char name, int lifeTime, int deathTime, int subRoutines,
+        bool isAlive)
 {
 	this->name = name;
 	cout << name << endl;
