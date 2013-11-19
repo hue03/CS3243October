@@ -47,8 +47,8 @@ struct Page
 
 	Page();
 	Page(char processName, short suffix, short frameNum, bool valid,
-	        short refByte, int start);
-	void initialize(short suffix, char processName);
+	        short refByte, int startTime);
+	void initialize(char processName, short suffix);
 };
 
 struct Process
@@ -479,21 +479,17 @@ Page::Page()
 }
 
 Page::Page(char processName, short suffix, short frameNum, bool valid,
-        short refByte, int start)
+        short refByte, int startTime) :
+		processName(processName), suffix(suffix), frameNum(frameNum), valid(
+		        valid), refByte(refByte), startTime(startTime)
 {
-	this->suffix = suffix;
-	this->refByte = refByte;
-	this->valid = valid;
-	this->frameNum = frameNum;
-	this->processName = processName;
-	this->startTime = start;
 }
 
-void Page::initialize(short suffix, char processName)
+void Page::initialize(char processName, short suffix)
 {
+	this->processName = processName;
 	this->suffix = suffix;
 	this->valid = false;
-	this->processName = processName;
 }
 
 Process::Process(char name, int lifeTime, int deathTime, int subRoutines,
