@@ -111,17 +111,18 @@ int main(void)
 	createProcesses();
 	cout << "Name\tLife Time\tDeath Time\tNumber of Subroutines\tIs Alive\tPage Index\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) { cout << vectOfProcesses[i].name << "\t" << vectOfProcesses[i].lifeTime << "\t\t" << vectOfProcesses[i].deathTime << "\t\t" << vectOfProcesses[i].subRoutines << "\t\t\t" << vectOfProcesses[i].isAlive << "\t\t"; for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j) { if (0 == j) cout << '{'; else cout << ", "; cout << vectOfProcesses[i].pageIndex[j]; } cout << "}\n"; }	// TODO test output
 
-	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
+	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		touchProcess();
+
 		for (int i = 0; i < MAX_FRAMES; i++)
 		{
 			cout << memory.memArray[i]->processName
 			        << memory.memArray[i]->suffix;
 		}
+
 		cout << endl;
 	}
-
 }
 
 void createProcesses(void)
