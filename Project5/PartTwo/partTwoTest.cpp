@@ -493,14 +493,10 @@ void Page::initialize(char processName, short suffix)
 }
 
 Process::Process(char name, int lifeTime, int deathTime, int subRoutines,
-        bool isAlive)
+        bool isAlive) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines), isAlive(isAlive)
 {
-	this->name = name;
 	cout << name << endl;
-	this->lifeTime = lifeTime;
-	this->deathTime = deathTime;
-	this->subRoutines = subRoutines;
-	this->isAlive = isAlive;
+
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
