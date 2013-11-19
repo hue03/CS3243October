@@ -105,7 +105,15 @@ int main()
 	runTime = 0;
 	createProcesses();
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
-	touchProcess();
+	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
+	{
+		touchProcess();
+		for (int i = 0; i < MAX_FRAMES; i++)
+		{
+			cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
+		}
+		cout << endl;
+	}
 
 }
 
@@ -167,7 +175,7 @@ void createPages(Process &p)
 	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 	{
 		//cout << "creating process loop" << endl;
-		cout << "j: " << j << endl;
+		//cout << "j: " << j << endl;
 		if (j < 2)
 		{
 			int freeIndex = backingStore.getFreePage();
@@ -230,7 +238,11 @@ void killProcess(void)
 
 void touchProcess(void)
 {
-	int selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)																
+	int selectedProcess = 0;//choose the kernel at the start of the program
+	if (runTime != 0)
+	{	
+		selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
+	}																
 	cout << "Touching process at index " << selectedProcess << endl;
 	if (!(vectOfProcesses[selectedProcess].isAlive))
 	{
@@ -247,22 +259,49 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
 	}
-	int subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
-	cout << "running subroutine " << subRoutine << endl;	// TODO test output
+	int subRoutine = -1;
+	if (runTime != 0)
+	{	
+		subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
+		cout << "running subroutine " << subRoutine << endl;	// TODO test output
 
-	int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
-	int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
-	
-	if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
-	{
-		insertIntoMemory(backingStore.pages[selectedSubRoutine]);
-		cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
+		int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
+		int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
+		
+		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
+		{
+			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
+			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
+		}
+
+		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
+		{
+			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
+			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
+		}
 	}
-
-	if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
+	else //run all of the kernel's sub routine pages
 	{
-		insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
-		cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
+		int selectedSubRoutine;
+		int selectedSubRoutine2;
+		for (int j = 0; j < 5; j++)
+		{
+			subRoutine = j;
+			selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
+			selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
+			
+			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
+			{
+				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
+				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
+			}
+
+			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
+			{
+				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
+				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
+			}
+		}
 	}
 	
 }
@@ -283,7 +322,7 @@ int fifo()
 	int smallestStart = MAX_QUANTA;
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
-		if (memory.memArray[j]->startTime < smallestStart)
+		if (memory.memArray[j]->startTime < smallestStart && memory.memArray[j]->processName != '@')
 		{
 			smallestStart = memory.memArray[j]->startTime;
 			victimIndex = j;
@@ -420,12 +459,12 @@ Page::Page()
 
 Page::Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start)
 {
-	suffix = suffix;
-	refByte = refByte;
-	valid = valid;
-	frameNum = frameNum;
-	processName = processName;
-	startTime = start;
+	this->suffix = suffix;
+	this->refByte = refByte;
+	this->valid = valid;
+	this->frameNum = frameNum;
+	this->processName = processName;
+	this->startTime = start;
 }
 
 void Page::initialize(short suffix, char processName)
@@ -437,11 +476,12 @@ void Page::initialize(short suffix, char processName)
 
 Process::Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive)
 {
-	name = name;
-	lifeTime = lifeTime;
-	deathTime = deathTime;
-	subRoutines = subRoutines;
-	isAlive = isAlive;
+	this->name = name;
+	cout << name << endl;
+	this->lifeTime = lifeTime;
+	this->deathTime = deathTime;
+	this->subRoutines = subRoutines;
+	this->isAlive = isAlive;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
