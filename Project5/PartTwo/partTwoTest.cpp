@@ -46,6 +46,7 @@ struct Page
 	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME), start(-1) {}
 	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName), start(start){}
 };
+Page emptyPage;
 
 struct Process
 {
@@ -53,16 +54,52 @@ struct Process
 	int lifeTime;
 	int deathTime;
 	int subRoutines;
+	bool isAlive;
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines){}
+	Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines), isAlive(isAlive){
+		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+		{
+			pageIndex[i] = -1;
+		}
+	}
 };
 
-Page* mainMemory[MAX_FRAMES];
+struct MainMemory
+{
+	int freeIndex;
+	Page* memArray[MAX_FRAMES];
+	
+	MainMemory() : freeIndex(0) 
+	{
+		for (int i = 0; i < MAX_FRAMES; i++)
+		{
+			memArray[i] = &emptyPage;
+		}
+	}
+	
+	void emptyMemory(int p)
+	{
+		//myPage.frameNum = start;
+		memArray[p] = &emptyPage;
+	}
+	
+	int getFreeFrame()
+	{
+		for (int i = 0; i < MAX_FRAMES; i++)
+		{
+			if (memArray[i]->suffix == -1)
+			{
+				return i;
+			}
+		}
+		return -1; //fifo() returns an index value
+	}
+};
+
 vector<Process> vectOfProcesses;
-vector<int> freeFrames;
 deque<Page> backingStore;
-Page myPage;
+MainMemory memory;
 int runTime;
 int usedFrames;
 int loadedPages;
@@ -70,14 +107,13 @@ int loadedProc;
 int refBitSet;
 int refBitClear;
 
-void zeroFillMemory(int start, int size);
-void zeroFillMemory(int start);
 void findFreeFrames(void);
 void createProcesses(void);
-void createPages(Process p);
+void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
-void fifo(vector<Page*> v, int pid);
+void insertIntoMemory(void);
+void fifo(int index, int pid);
 void printProcessPageTable(Process p);
 void printMemoryMap(void);
 
@@ -86,7 +122,6 @@ int main()
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
 	runTime = 0;
-	zeroFillMemory(0, MAX_FRAMES);
 	findFreeFrames();
 	createProcesses();
 	/*cout << "--------------------------------------------------------------------------------" << endl;
@@ -98,6 +133,7 @@ int main()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	*/
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
+	printProcessPageTable(vectOfProcesses[0]);
 	createPages(vectOfProcesses[0]);
 	printProcessPageTable(vectOfProcesses[0]);
 	/*for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
@@ -118,32 +154,6 @@ int main()
 			}
 		}
 	}*/
-}
-
-void zeroFillMemory(int start, int size)
-{
-	for (int i = 0; i < size; i++)
-	{
-		//myPage.frameNum = i;
-		mainMemory[start + i] = &myPage;
-	}
-}
-
-void zeroFillMemory(int start)
-{
-	//myPage.frameNum = start;
-	mainMemory[start] = &myPage;
-}
-
-void findFreeFrames(void)
-{
-	for (int i = MAX_FRAMES - 1; i >= 0; i--)//first frame is last so it pops out first when inserting pages
-	{
-		if (mainMemory[i]->suffix == -1)
-		{
-			freeFrames.push_back(i);
-		}
-	}
 }
 
 void createProcesses(void)
@@ -180,12 +190,12 @@ void createProcesses(void)
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
 		}
-		Process process = Process(name, timeOfLife, 0, 0);
+		Process process = Process(name, timeOfLife, 0, 0, true);
 		vectOfProcesses.push_back(process);
 	}
 }
 
-void createPages(Process p)
+void createPages(Process &p)
 {
 	int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
 	int numSubRoutine = 0;
@@ -269,7 +279,6 @@ void createPages(Process p)
 	{
 		p.pageIndex[i] = tempIndex[i];
 	}
-	
 }
 
 void killProcess(void)
@@ -279,72 +288,45 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
-	for (uint i = 0; i < vectOfProcesses.size(); i++)
-	{
-		if (vectOfProcesses[i].deathTime == runTime)
-		{
-			//vectOfProcesses[i].isAlive = false;
-			for (int j = 0; j < MAX_FRAMES; j++)
-			{
-				if (mainMemory[j]->processName == vectOfProcesses[i].name)//removing the process's pages from memory
-				{
-					mainMemory[j]->valid = false;
-					zeroFillMemory(j);
-				}
-			}
-			
-			for (int k = 0; k < MAX_NUM_PAGES_PER_PROCESS; k++)//fill with "empty" pages in the process's page table 
-			{
-				//vectOfProcesses[i].pageTable[k] = &myPage; 
-			}
-			
-			for (uint l = 0; l < backingStore.size(); l++)//removing the process's pages from the backing store
-			{
-				if (backingStore[l].processName == vectOfProcesses[i].name)
-				{
-					backingStore.erase(backingStore.begin() + l); //verify this
-				}
-			}
-		}
-	}
 	
 }
 
 void touchProcess(void)
 {
-	vector<Page*> pagesToLoad;
-	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
-																	//need to change this to choose a process name.
+	//vector<Page*> pagesLoad;
+	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)																
 	cout << "Touching process at index " << selectedIndex << endl;
-	/*Page** tempTable = vectOfProcesses[selectedIndex].pageTable;
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++) //divide by 2 to load the necessary pages first
+	if (!(vectOfProcesses[selectedIndex].isAlive))
 	{
-		if (!(tempTable[i]->valid))
-		{
-			pagesToLoad.push_back(tempTable[i]); //gets a pointer to the pages int the backingstore using process's page table
-		}
+		createPages(vectOfProcesses[selectedIndex]);
+	}
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
+	{
+		int index = vectOfProcesses[selectedIndex].pageIndex[i];
+		//check the page is it invalid/valid
+		//bring into memory if necessary
 	}
 
 	int subRoutine = rand() % vectOfProcesses[selectedIndex].subRoutines;
 	cout << "running subroutine " << subRoutine << endl;	// TODO test output
 
-	if (!tempTable[2 * subRoutine + 10]->valid)
+	/*if (!tempTable[2 * subRoutine + 10]->valid)
 	{
-		pagesToLoad.push_back(tempTable[2 * subRoutine + 10]);
+		//TODO bring the subroutine page into memory
 	}
 
 	if (!tempTable[2 * subRoutine + 10 + 1]->valid)
 	{
-		pagesToLoad.push_back(tempTable[2 * subRoutine + 10 + 1]);
-	}*/
-
-	fifo(pagesToLoad, selectedIndex);	
+		//TODO bring the subroutine page into memory
+	}
+	*/
+	//fifo(pagesToLoad, selectedIndex);	
 }
 
 void fifo(vector<Page*> v, int pid)
 {
 	//cout << "process index " << pid << endl;
-	vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
+	/*vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
 	while (v.size() > 0)
 	{
 		if (freeFrames.size() == 0)
@@ -376,7 +358,7 @@ void fifo(vector<Page*> v, int pid)
 			freeFrames.pop_back();
 			v.pop_back();
 		}
-	}
+	}*/
 }
 
 void printProcessPageTable(Process p)
@@ -384,7 +366,7 @@ void printProcessPageTable(Process p)
 	//Page** tempTable = p.pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
-		cout << "temp " << p.pageIndex[i] << endl;
+		cout << p.name << "temp2 " << p.pageIndex[i] << endl;
 	}
 		//cout << "Process: " << tempTable[i]->processName << endl;
 		//cout << "Suffix: " << tempTable[i]->suffix << endl;
@@ -396,7 +378,7 @@ void printProcessPageTable(Process p)
 
 void printMemoryMap(void)
 {
-	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
+	/*float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
 	int numFreeFrames = MAX_FRAMES - usedFrames;
 	float freeFramesPercentage = 100.0 * freeFrames.size() / MAX_FRAMES;
 	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
@@ -431,4 +413,5 @@ void printMemoryMap(void)
 	cout << "       249       254       259       264       269       274       279" << endl;
 	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
 	for (size_t i = 245; i < 280; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
+	*/
 }
