@@ -64,8 +64,6 @@ struct Process
 	        bool isAlive);
 };
 
-vector<Process> vectOfProcesses;
-
 struct MainMemory
 {
 	int freeIndex;
@@ -76,8 +74,6 @@ struct MainMemory
 	int getFreeFrame();
 };
 
-MainMemory memory;
-
 struct BackingStore
 {
 	Page pages[MAX_PAGES];
@@ -87,6 +83,8 @@ struct BackingStore
 	int getFreePage();
 };
 
+vector<Process> vectOfProcesses;
+MainMemory memory;
 BackingStore backingStore;
 Page emptyPage;
 int runTime;
@@ -102,11 +100,11 @@ void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
-int fifo();
+int fifo(void);
 void printProcessPageTable(Process p);
 void printMemoryMap(void);
 
-int main()
+int main(void)
 {
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
