@@ -39,12 +39,13 @@ struct Page
 	bool valid;
 	short frameNum;
 	char processName;
-	int start;
+	int startTime;
 	
 	//Page();
 	//Page(short suffix, short refByte, bool valid, short frameNum); //need help on the struct creation
-	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME), start(-1) {}
-	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName), start(start){}
+	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME), startTime(-1) {}
+	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName), startTime(start){}
+	void initialize(short suffix, char processName);
 };
 Page emptyPage;
 
@@ -97,11 +98,29 @@ struct MainMemory
 	}
 };
 
+<<<<<<< HEAD
 vector<Process> vectOfProcesses;
 deque<Page> backingStore;
 MainMemory memory;
+=======
+struct BackingStore
+{
+	Page pages[MAX_PAGES];
+	int freeIndex;
+
+	BackingStore();
+	int getFreePage();
+};
+
+Page* mainMemory[MAX_FRAMES];
+vector<Process> vectOfProcesses;
+vector<int> freeFrames;
+BackingStore backingStore;
+Page myPage;
+>>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 int runTime;
 int usedFrames;
+int usedPages;
 int loadedPages;
 int loadedProc;
 int refBitSet;
@@ -156,6 +175,35 @@ int main()
 	}*/
 }
 
+<<<<<<< HEAD
+=======
+void zeroFillMemory(int start, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		//myPage.frameNum = i;
+		mainMemory[start + i] = &myPage;
+	}
+}
+
+void zeroFillMemory(int start)
+{
+	//myPage.frameNum = startTime;
+	mainMemory[start] = &myPage;
+}
+
+void findFreeFrames(void)
+{
+	for (int i = MAX_FRAMES - 1; i >= 0; i--)//first frame is last so it pops out first when inserting pages
+	{
+		if (mainMemory[i]->suffix == -1)
+		{
+			freeFrames.push_back(i);
+		}
+	}
+}
+
+>>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
@@ -209,58 +257,58 @@ void createPages(Process &p)
 	}
 	cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 	int j;
-	int tempIndex[MAX_NUM_PAGES_PER_PROCESS];
+//	int tempIndex[MAX_NUM_PAGES_PER_PROCESS];
 	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 	{
 		//cout << "creating process loop" << endl;
 		cout << "j: " << j << endl;
 		if (j < 2)
 		{
-			Page tempPage = Page(0, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(0, p.name);
 		}
 		else if (j < 5)
 		{
-			Page tempPage = Page(1, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(1, p.name);
 		}
 		else if (j < 10)
 		{
-			Page tempPage = Page(2, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(2, p.name);
 		}
 		else if ((j % 10) < 2)
 		{
-			Page tempPage = Page(3, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(3, p.name);
 		}
 		else if ((j % 10) < 4)
 		{
-			Page tempPage = Page(4, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(4, p.name);
 		}
 		else if ((j % 10) < 6)
 		{
-			Page tempPage = Page(5, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(5, p.name);
 		}
 		else if ((j % 10) < 8)
 		{
-			Page tempPage = Page(6, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(6, p.name);
 		}
 		else if ((j % 10) < 10)
 		{
-			Page tempPage = Page(7, 0, false, -1, p.name, -1);
-			backingStore.push_back(tempPage);
-			tempIndex[j] = backingStore.size() - 1;//index to the last element in the backingStore
+			int freeIndex = backingStore.getFreePage();
+			p.pageIndex[j] = freeIndex;
+			backingStore.pages[freeIndex].initialize(7, p.name);
 		}
 	}
 	if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
@@ -271,14 +319,22 @@ void createPages(Process &p)
 		{
 			//myPage.frameNum = -1;
 			//myPage.refByte = 0;
-			tempIndex[k] = -1;
+			p.pageIndex[k] = -1;
 		}
 	}
 	//p.pageIndex[MAX_NUM_PAGES_PER_PROCESS] = tempIndex[MAX_NUM_PAGES_PER_PROCESS];
+<<<<<<< HEAD
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		p.pageIndex[i] = tempIndex[i];
 	}
+=======
+//	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+//	{
+//		p.pageIndex[i] = tempIndex[i];
+//	}
+	
+>>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 }
 
 void killProcess(void)
@@ -288,7 +344,10 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
+<<<<<<< HEAD
 	
+=======
+>>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 }
 
 void touchProcess(void)
@@ -337,9 +396,9 @@ void fifo(vector<Page*> v, int pid)
 				int smallestStart = MAX_QUANTA;
 				for (int j = 0; j < MAX_FRAMES; j++)
 				{
-					if (mainMemory[j]->start < smallestStart)
+					if (mainMemory[j]->startTime < smallestStart)
 					{
-						smallestStart = mainMemory[j]->start;
+						smallestStart = mainMemory[j]->startTime;
 						victimIndex = j;
 					}
 				}
@@ -351,7 +410,7 @@ void fifo(vector<Page*> v, int pid)
 		}
 		else
 		{
-			v.back()->start = runTime;
+			v.back()->startTime = runTime;
 			v.back()->frameNum = freeFrames.back();
 			v.back()->valid = true;
 			mainMemory[freeFrames.back()] = v.back();
@@ -387,7 +446,7 @@ void printMemoryMap(void)
 
 	cout << "QUANTA ELAPSED: " << runTime << endl;
 	cout << "FRAMES: " << MAX_FRAMES << "f\t" << "USED: " << usedFrames << "f (" << usedFramesPercentage << "%)\tFREE:" << numFreeFrames << "f (" << freeFramesPercentage << "%)" << endl;
-	cout << "SWAP SPACE: " << MAX_FRAMES << "\tPAGES: " <<  backingStore.size() << "\tLoaded: " << loadedPages << "\tFREE: " << freeFrames.size() << endl;
+	cout << "SWAP SPACE: " << MAX_FRAMES << "\tPAGES: " << usedPages << "\tLoaded: " << loadedPages << "\tFREE: " << freeFrames.size() << endl;
 	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " (" << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " (" << unloadedProcPercentage << "%)" << endl;
 	cout << "        04        09        14        19        24        29        34" << endl;
 	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
@@ -414,4 +473,41 @@ void printMemoryMap(void)
 	cout << "--------++--------||--------++--------||--------++--------||--------++" << endl;
 	for (size_t i = 245; i < 280; ++i) cout << mainMemory[i]->processName << mainMemory[i]->suffix;	cout << endl;
 	*/
+}
+
+// TODO insert page function for BackingStore
+
+BackingStore::BackingStore() : freeIndex(0)
+{
+	for (size_t i = 0; i < MAX_PAGES; ++i)
+	{
+		pages[i] = Page();
+	}
+}
+
+int BackingStore::getFreePage()
+{
+	int freePage = freeIndex;
+
+	// Find the next free page in the backing store.
+	do
+	{
+		freeIndex = (freeIndex + 1) % MAX_PAGES;
+	} while (pages[freeIndex].suffix > 0 && freeIndex != freePage);
+
+	// If the do-while completely loops around the BackingStore, then there are no more free pages
+	if (freeIndex == freePage)
+	{
+		cerr << "The Backing Store is full" << endl;
+		return -1;
+	}
+
+	return freePage;
+}
+
+void Page::initialize(short suffix, char processName)
+{
+	this->suffix = suffix;
+	this->valid = false;
+	this->processName = processName;
 }
