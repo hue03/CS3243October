@@ -78,6 +78,7 @@ struct BackingStore
 	BackingStore();
 	int getFreePage();
 };
+
 BackingStore backingStore;
 Page emptyPage;
 int runTime;
@@ -233,8 +234,10 @@ void touchProcess(void)
 	cout << "Touching process at index " << selectedProcess << endl;
 	if (!(vectOfProcesses[selectedProcess].isAlive))
 	{
+		vectOfProcesses[selectedProcess].isAlive = true;
 		createPages(vectOfProcesses[selectedProcess]);
 	}
+	vectOfProcesses[selectedProcess].deathTime = runTime + vectOfProcesses[selectedProcess].lifeTime;
 	int selectedPage = -1;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
 	{
@@ -276,41 +279,23 @@ void insertIntoMemory(Page &pg)
 
 int fifo()
 {
-	//cout << "process index " << pid << endl;
-	/*vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
-	while (v.size() > 0)
+	int victimIndex = -1;
+	int smallestStart = MAX_QUANTA;
+	for (int j = 0; j < MAX_FRAMES; j++)
 	{
-		if (freeFrames.size() == 0)
+		if (memory.memArray[j]->startTime < smallestStart)
 		{
-			int victimIndex = -1;
-			for (uint i = 0; i < v.size(); i++)//loop enough times to free enough frames for the pages needed to be loaded
-			{
-				int smallestStart = MAX_QUANTA;
-				for (int j = 0; j < MAX_FRAMES; j++)
-				{
-					if (mainMemory[j]->startTime < smallestStart)
-					{
-						smallestStart = mainMemory[j]->startTime;
-						victimIndex = j;
-					}
-				}
-				mainMemory[victimIndex]->valid = false;
-				mainMemory[victimIndex]->frameNum = -1;
-				zeroFillMemory(victimIndex);
-				freeFrames.push_back(victimIndex);
-			}
+			smallestStart = memory.memArray[j]->startTime;
+			victimIndex = j;
 		}
-		else
-		{
-			v.back()->startTime = runTime;
-			v.back()->frameNum = freeFrames.back();
-			v.back()->valid = true;
-			mainMemory[freeFrames.back()] = v.back();
-			freeFrames.pop_back();
-			v.pop_back();
-		}
-	}*/
+	}
+	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->frameNum = -1;
+	memory.emptyMemory(victimIndex);
+	return victimIndex;
 }
+		
+
 
 void printProcessPageTable(Process p)
 {
@@ -420,7 +405,7 @@ int MainMemory::getFreeFrame()
 			return i;
 		}
 	}
-	return -1; //fifo() returns an index value
+	return fifo(); //returns an index value of the recently freed frame
 }
 
 Page::Page()
