@@ -60,7 +60,7 @@ struct Process
 	bool isAlive;
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime);
+	Process(char name, int lifeTime, int subRoutines);
 };
 
 struct MainMemory
@@ -109,7 +109,7 @@ int main(void)
 	cout << SEED << endl;	// TODO test output
 	runTime = 0;
 	createProcesses();
-	cout << "Num of processes: " << vectOfProcesses.size() << endl;
+	cout << "Name\tLife Time\tDeath Time\tNumber of Subroutines\tIs Alive\tPage Index\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) { cout << vectOfProcesses[i].name << "\t" << vectOfProcesses[i].lifeTime << "\t\t" << vectOfProcesses[i].deathTime << "\t\t" << vectOfProcesses[i].subRoutines << "\t\t\t" << vectOfProcesses[i].isAlive << "\t\t"; for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j) { if (0 == j) cout << '{'; else cout << ", "; cout << vectOfProcesses[i].pageIndex[j]; } cout << "}\n"; }	// TODO test output
 
 	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
@@ -166,9 +166,7 @@ void createProcesses(void)
 			numSubRoutines = rand() % subRoutinesRange + MIN_SUBROUTINES;
 		}
 
-		cout << "Num of Sub Routines " << numSubRoutines << endl;
-
-		vectOfProcesses.push_back(Process(name, timeOfLife));
+		vectOfProcesses.push_back(Process(name, timeOfLife, numSubRoutines));
 	}
 }
 
@@ -481,10 +479,8 @@ void Page::initialize(char processName, short suffix)
 	this->valid = false;
 }
 
-Process::Process(char name, int lifeTime) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(0), isAlive(false)
+Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
 {
-	cout << name << endl;
-
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
