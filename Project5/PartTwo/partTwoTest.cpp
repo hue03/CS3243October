@@ -11,7 +11,7 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 2	/*23*/	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 5	/*23*/	// useful when debugging to limit # of procs
 #define MIN_DEATH_INTERVAL 5
 #define MAX_DEATH_INTERVAL 15
 #define MAX_FRAMES 280
@@ -41,13 +41,10 @@ struct Page
 	char processName;
 	int startTime;
 	
-	//Page();
-	//Page(short suffix, short refByte, bool valid, short frameNum); //need help on the struct creation
-	Page() : suffix(-1), refByte(-1), valid(false), frameNum(-1), processName(EMPTY_PROCESS_NAME), startTime(-1) {}
-	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start) : suffix(suffix), refByte(refByte), valid(valid), frameNum(frameNum), processName(processName), startTime(start){}
+	Page();
+	Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start);
 	void initialize(short suffix, char processName);
 };
-Page emptyPage;
 
 struct Process
 {
@@ -58,12 +55,7 @@ struct Process
 	bool isAlive;
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines), isAlive(isAlive){
-		for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-		{
-			pageIndex[i] = -1;
-		}
-	}
+	Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive);
 };
 vector<Process> vectOfProcesses;
 
@@ -72,31 +64,9 @@ struct MainMemory
 	int freeIndex;
 	Page* memArray[MAX_FRAMES];
 	
-	MainMemory() : freeIndex(0) 
-	{
-		for (int i = 0; i < MAX_FRAMES; i++)
-		{
-			memArray[i] = &emptyPage;
-		}
-	}
-	
-	void emptyMemory(int p)
-	{
-		//myPage.frameNum = start;
-		memArray[p] = &emptyPage;
-	}
-	
-	int getFreeFrame()
-	{
-		for (int i = 0; i < MAX_FRAMES; i++)
-		{
-			if (memArray[i]->suffix == -1)
-			{
-				return i;
-			}
-		}
-		return -1; //fifo() returns an index value
-	}
+	MainMemory();
+	void emptyMemory(int p);
+	int getFreeFrame();
 };
 MainMemory memory;
 
@@ -109,7 +79,7 @@ struct BackingStore
 	int getFreePage();
 };
 BackingStore backingStore;
-
+Page emptyPage;
 int runTime;
 int usedFrames;
 int usedPages;
@@ -123,7 +93,7 @@ void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
-void fifo(int index, int pid);
+int fifo();
 void printProcessPageTable(Process p);
 void printMemoryMap(void);
 
@@ -134,9 +104,8 @@ int main()
 	runTime = 0;
 	createProcesses();
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
-	createPages(vectOfProcesses[0]);
-	insertIntoMemory(backingStore.pages[0]);
-	cout << memory.memArray[0]->processName << endl;
+	touchProcess();
+
 }
 
 void createProcesses(void)
@@ -173,7 +142,7 @@ void createProcesses(void)
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
 		}
-		Process process = Process(name, timeOfLife, 0, 0, true);
+		Process process = Process(name, timeOfLife, 0, 0, false);
 		vectOfProcesses.push_back(process);
 	}
 }
@@ -185,10 +154,12 @@ void createPages(Process &p)
 	if (p.name != '@')
 	{
 		numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
+		p.subRoutines = numSubRoutine;
 	}
 	else
 	{
 		numSubRoutine = 5;
+		p.subRoutines = numSubRoutine;
 	}
 	cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 	int j;
@@ -258,7 +229,6 @@ void killProcess(void)
 
 void touchProcess(void)
 {
-	//vector<Page*> pagesLoad;
 	int selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)																
 	cout << "Touching process at index " << selectedProcess << endl;
 	if (!(vectOfProcesses[selectedProcess].isAlive))
@@ -274,7 +244,6 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
 	}
-
 	int subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
 	cout << "running subroutine " << subRoutine << endl;	// TODO test output
 
@@ -284,11 +253,13 @@ void touchProcess(void)
 	if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 	{
 		insertIntoMemory(backingStore.pages[selectedSubRoutine]);
+		cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 	}
 
 	if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 	{
 		insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
+		cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 	}
 	
 }
@@ -296,10 +267,14 @@ void touchProcess(void)
 void insertIntoMemory(Page &pg)
 {
 	Page *pageLocation = &pg;
-	memory.memArray[memory.getFreeFrame()] = pageLocation;
+	int frame = memory.getFreeFrame();
+	pageLocation->valid = true;
+	pageLocation->frameNum = frame;
+	pageLocation->startTime = runTime;
+	memory.memArray[frame] = pageLocation;
 }
 
-void fifo(vector<Page*> v, int pid)
+int fifo()
 {
 	//cout << "process index " << pid << endl;
 	/*vectOfProcesses[pid].deathTime = runTime + vectOfProcesses[pid].lifeTime;
@@ -422,9 +397,68 @@ int BackingStore::getFreePage()
 	return freePage;
 }
 
+MainMemory::MainMemory() 
+{
+	freeIndex = 0;
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		memArray[i] = &emptyPage;
+	}
+}
+
+void MainMemory::emptyMemory(int p)
+{
+	this->memArray[p] = &emptyPage;
+}
+
+int MainMemory::getFreeFrame()
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		if (memArray[i]->suffix == -1)
+		{
+			return i;
+		}
+	}
+	return -1; //fifo() returns an index value
+}
+
+Page::Page()
+{
+	suffix = -1;
+	refByte = -1;
+	valid = false;
+	frameNum = -1;
+	processName = EMPTY_PROCESS_NAME; 
+	startTime = -1;
+}
+
+Page::Page(short suffix, short refByte, bool valid, short frameNum, char processName, int start)
+{
+	suffix = suffix;
+	refByte = refByte;
+	valid = valid;
+	frameNum = frameNum;
+	processName = processName;
+	startTime = start;
+}
+
 void Page::initialize(short suffix, char processName)
 {
 	this->suffix = suffix;
 	this->valid = false;
 	this->processName = processName;
+}
+
+Process::Process(char name, int lifeTime, int deathTime, int subRoutines, bool isAlive)
+{
+	name = name;
+	lifeTime = lifeTime;
+	deathTime = deathTime;
+	subRoutines = subRoutines;
+	isAlive = isAlive;
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	{
+		pageIndex[i] = -1;
+	}
 }
