@@ -28,11 +28,11 @@
 
 #define MAX_NUM_PAGES_PER_PROCESS 20
 #define DEFAULT_NUM_PAGES_PER_PROCESS 10
-#define MAX_SUBROUTINES 5
 #define MIN_SUBROUTINES 1
+#define MAX_SUBROUTINES 5
 //#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
-#define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
+#define EMPTY_PROCESS_NAME ' ' //need ascii value. could use chars.
 
 using namespace std;
 
