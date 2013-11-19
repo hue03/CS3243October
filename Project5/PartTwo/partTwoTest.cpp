@@ -9,6 +9,7 @@
 //#include <deque>
 #include <iostream>
 #include <stdio.h>
+#include <string.h>
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
@@ -494,22 +495,25 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 // TODO test output
 void Process::print(void)
 {
-	string pageIndex = "";
+	string index = "";
+
+	printf("%4c | %4i | %5i | %11i | %5i | {", name, lifeTime, deathTime, subRoutines, isAlive);
 
 	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
 	{
-		pageIndex += (i > 0 ? ", " : "") + pageIndex[i];
+		printf("%s%i", (i > 0 ? ", " : ""), pageIndex[i]);
 	}
 
-	printf("%-4c | %-4i | %-5i | %-11i | %-5i | {%-5s}\n", name, lifeTime, deathTime, subRoutines, isAlive, pageIndex.c_str());
+	printf("}\n");
 }
 
 //TODO test output
 void printProcesses(void)
 {
-	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "Name", "Life", "Death", "Number", "Is", "Page");
-	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "", "Time", "Time", "of", "Alive", "Index");
-	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "", "", "", "Subroutines", "", "");
+	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "", "", "Number", "", "");
+	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "Life", "Death", "of", "Is", "Page");
+	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "Name", "Time", "Time", "Subroutines", "Alive", "Index");
+	printf("-----+------+-------+-------------+-------+-------\n");
 
 	for (size_t i = 0; i < vectOfProcesses.size(); ++i)
 	{
