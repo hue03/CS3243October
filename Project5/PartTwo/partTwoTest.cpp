@@ -109,8 +109,6 @@ struct BackingStore
 	int getFreePage();
 };
 
-Page* mainMemory[MAX_FRAMES];
-vector<Process> vectOfProcesses;
 vector<int> freeFrames;
 BackingStore backingStore;
 Page myPage;
