@@ -98,11 +98,7 @@ struct MainMemory
 	}
 };
 
-<<<<<<< HEAD
-vector<Process> vectOfProcesses;
-deque<Page> backingStore;
 MainMemory memory;
-=======
 struct BackingStore
 {
 	Page pages[MAX_PAGES];
@@ -117,7 +113,6 @@ vector<Process> vectOfProcesses;
 vector<int> freeFrames;
 BackingStore backingStore;
 Page myPage;
->>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 int runTime;
 int usedFrames;
 int usedPages;
@@ -175,8 +170,6 @@ int main()
 	}*/
 }
 
-<<<<<<< HEAD
-=======
 void zeroFillMemory(int start, int size)
 {
 	for (int i = 0; i < size; i++)
@@ -203,7 +196,6 @@ void findFreeFrames(void)
 	}
 }
 
->>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
@@ -257,7 +249,6 @@ void createPages(Process &p)
 	}
 	cout << "Num of Sub Routines " <<  numSubRoutine << endl;
 	int j;
-//	int tempIndex[MAX_NUM_PAGES_PER_PROCESS];
 	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
 	{
 		//cout << "creating process loop" << endl;
@@ -322,19 +313,6 @@ void createPages(Process &p)
 			p.pageIndex[k] = -1;
 		}
 	}
-	//p.pageIndex[MAX_NUM_PAGES_PER_PROCESS] = tempIndex[MAX_NUM_PAGES_PER_PROCESS];
-<<<<<<< HEAD
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-	{
-		p.pageIndex[i] = tempIndex[i];
-	}
-=======
-//	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-//	{
-//		p.pageIndex[i] = tempIndex[i];
-//	}
-	
->>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
 }
 
 void killProcess(void)
@@ -344,10 +322,7 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
-<<<<<<< HEAD
-	
-=======
->>>>>>> c38ab2eb4bad075fd7c76e3c035fae8ef227b533
+
 }
 
 void touchProcess(void)
