@@ -60,8 +60,7 @@ struct Process
 	bool isAlive;
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
-	Process(char name, int lifeTime, int deathTime, int subRoutines,
-	        bool isAlive);
+	Process(char name, int lifeTime);
 };
 
 struct MainMemory
@@ -128,6 +127,7 @@ int main(void)
 void createProcesses(void)
 {
 	int lifeRange = MAX_DEATH_INTERVAL - MIN_DEATH_INTERVAL + 1;
+	int subRoutinesRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
 	char name = '?';
 
 	for (int i = 0; i < PROCESS_COUNT; i++)
@@ -152,39 +152,30 @@ void createProcesses(void)
 			break;
 		}
 
-		int timeOfLife = 0;
+		int timeOfLife;
+		int numSubRoutines;
 
 		if (i == 0)
 		{
 			timeOfLife = MAX_QUANTA;
+			numSubRoutines = 5;
 		}
 		else
 		{
 			timeOfLife = rand() % lifeRange + MIN_DEATH_INTERVAL;
+			numSubRoutines = rand() % subRoutinesRange + MIN_SUBROUTINES;
 		}
 
-		Process process = Process(name, timeOfLife, 0, 0, false);
-		vectOfProcesses.push_back(process);
+		cout << "Num of Sub Routines " << numSubRoutines << endl;
+
+		vectOfProcesses.push_back(Process(name, timeOfLife));
 	}
 }
 
 void createPages(Process &p)
 {
-	int subRoutineRange = MAX_SUBROUTINES - MIN_SUBROUTINES + 1;
-	int numSubRoutine = 0;
-	if (p.name != '@')
-	{
-		numSubRoutine = rand() % subRoutineRange + MIN_SUBROUTINES;
-		p.subRoutines = numSubRoutine;
-	}
-	else
-	{
-		numSubRoutine = 5;
-		p.subRoutines = numSubRoutine;
-	}
-	cout << "Num of Sub Routines " << numSubRoutine << endl;
 	int j;
-	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + numSubRoutine * 2); j++)
+	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + p.subRoutines * 2); j++)
 	{
 		//cout << "creating process loop" << endl;
 		//cout << "j: " << j << endl;
@@ -490,8 +481,7 @@ void Page::initialize(char processName, short suffix)
 	this->valid = false;
 }
 
-Process::Process(char name, int lifeTime, int deathTime, int subRoutines,
-        bool isAlive) : name(name), lifeTime(lifeTime), deathTime(deathTime), subRoutines(subRoutines), isAlive(isAlive)
+Process::Process(char name, int lifeTime) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(0), isAlive(false)
 {
 	cout << name << endl;
 
