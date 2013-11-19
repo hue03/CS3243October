@@ -442,9 +442,8 @@ int BackingStore::getFreePage()
 	return freePage;
 }
 
-MainMemory::MainMemory()
+MainMemory::MainMemory() : freeIndex(0)
 {
-	freeIndex = 0;
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
 		memArray[i] = &emptyPage;
@@ -453,7 +452,7 @@ MainMemory::MainMemory()
 
 void MainMemory::emptyMemory(int p)
 {
-	this->memArray[p] = &emptyPage;
+	memArray[p] = &emptyPage;
 }
 
 int MainMemory::getFreeFrame()
@@ -465,7 +464,8 @@ int MainMemory::getFreeFrame()
 			return i;
 		}
 	}
-	return fifo(); //returns an index value of the recently freed frame
+
+	return fifo();	// returns an index value of the recently freed frame
 }
 
 Page::Page()
