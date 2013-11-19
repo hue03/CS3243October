@@ -11,14 +11,18 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 5	/*23*/	// useful when debugging to limit # of procs
+//#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 5	// useful when debugging to limit # of procs
+//#define MIN_DEATH_INTERVAL 20
 #define MIN_DEATH_INTERVAL 5
+//#define MAX_DEATH_INTERVAL 300
 #define MAX_DEATH_INTERVAL 15
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 #define SHIFT_INTERVAL 10
+//#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
-#define MAX_QUANTA 50	// # quanta to run before ending simulation
+#define MAX_QUANTA 50 /* 50000 */	// # quanta to run before ending simulation
 #define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
@@ -34,16 +38,16 @@ using namespace std;
 
 struct Page
 {
-	short suffix;
-	short refByte;
-	bool valid;
-	short frameNum;
 	char processName;
+	short suffix;
+	short frameNum;
+	bool valid;
+	short refByte;
 	int startTime;
 
 	Page();
-	Page(short suffix, short refByte, bool valid, short frameNum,
-	        char processName, int start);
+	Page(char processName, short suffix, short frameNum, bool valid,
+	        short refByte, int start);
 	void initialize(short suffix, char processName);
 };
 
@@ -474,8 +478,8 @@ Page::Page()
 	startTime = -1;
 }
 
-Page::Page(short suffix, short refByte, bool valid, short frameNum,
-        char processName, int start)
+Page::Page(char processName, short suffix, short frameNum, bool valid,
+        short refByte, int start)
 {
 	this->suffix = suffix;
 	this->refByte = refByte;
