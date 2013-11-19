@@ -8,6 +8,7 @@
 #include <cstdlib>
 //#include <deque>
 #include <iostream>
+#include <stdio.h>
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
@@ -61,6 +62,7 @@ struct Process
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int subRoutines);
+	void print(void);	// TODO test output
 };
 
 struct MainMemory
@@ -102,6 +104,7 @@ void insertIntoMemory(Page &pg);
 int fifo(void);
 void printProcessPageTable(Process p);
 void printMemoryMap(void);
+void printProcesses(void);	// TODO test output
 
 int main(void)
 {
@@ -109,7 +112,7 @@ int main(void)
 	cout << SEED << endl;	// TODO test output
 	runTime = 0;
 	createProcesses();
-	cout << "Name\tLife Time\tDeath Time\tNumber of Subroutines\tIs Alive\tPage Index\n"; for (size_t i = 0; i < vectOfProcesses.size(); ++i) { cout << vectOfProcesses[i].name << "\t" << vectOfProcesses[i].lifeTime << "\t\t" << vectOfProcesses[i].deathTime << "\t\t" << vectOfProcesses[i].subRoutines << "\t\t\t" << vectOfProcesses[i].isAlive << "\t\t"; for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j) { if (0 == j) cout << '{'; else cout << ", "; cout << vectOfProcesses[i].pageIndex[j]; } cout << "}\n"; }	// TODO test output
+	printProcesses();	// TODO test output
 
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
@@ -485,5 +488,31 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
+	}
+}
+
+// TODO test output
+void Process::print(void)
+{
+	string pageIndex = "";
+
+	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
+	{
+		pageIndex += (i > 0 ? ", " : "") + pageIndex[i];
+	}
+
+	printf("%-4c | %-4i | %-5i | %-11i | %-5i | {%-5s}\n", name, lifeTime, deathTime, subRoutines, isAlive, pageIndex.c_str());
+}
+
+//TODO test output
+void printProcesses(void)
+{
+	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "Name", "Life", "Death", "Number", "Is", "Page");
+	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "", "Time", "Time", "of", "Alive", "Index");
+	printf("%-4s | %-4s | %-5s | %-11s | %-5s | %-5s\n", "", "", "", "Subroutines", "", "");
+
+	for (size_t i = 0; i < vectOfProcesses.size(); ++i)
+	{
+		vectOfProcesses[i].print();
 	}
 }
