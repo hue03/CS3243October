@@ -65,6 +65,7 @@ struct Process
 		}
 	}
 };
+vector<Process> vectOfProcesses;
 
 struct MainMemory
 {
@@ -97,9 +98,8 @@ struct MainMemory
 		return -1; //fifo() returns an index value
 	}
 };
-
-vector<Process> vectOfProcesses;
 MainMemory memory;
+
 struct BackingStore
 {
 	Page pages[MAX_PAGES];
@@ -108,10 +108,8 @@ struct BackingStore
 	BackingStore();
 	int getFreePage();
 };
-
-vector<int> freeFrames;
 BackingStore backingStore;
-Page myPage;
+
 int runTime;
 int usedFrames;
 int usedPages;
@@ -124,7 +122,7 @@ void createProcesses(void);
 void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
-void insertIntoMemory(void);
+void insertIntoMemory(Page &pg);
 void fifo(int index, int pid);
 void printProcessPageTable(Process p);
 void printMemoryMap(void);
@@ -135,36 +133,10 @@ int main()
 	cout << SEED << endl;	// TODO test output
 	runTime = 0;
 	createProcesses();
-	/*cout << "--------------------------------------------------------------------------------" << endl;
-	cout << "List of Free Frames:" << endl;
-	for (uint i = 0; i < freeFrames.size(); i++)
-	{
-		cout << "Frame " << freeFrames[i] << endl;
-	}
-	cout << "--------------------------------------------------------------------------------" << endl;
-	*/
 	cout << "Num of processes: " << vectOfProcesses.size() << endl;
-	printProcessPageTable(vectOfProcesses[0]);
 	createPages(vectOfProcesses[0]);
-	printProcessPageTable(vectOfProcesses[0]);
-	/*for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
-	{
-		touchProcess();
-		if (runTime % PRINT_INTERVAL == 0)
-		{
-			for (uint h = 0; h < vectOfProcesses.size(); h++)
-			{
-				cout << "Process: " << vectOfProcesses[h].name << " LifeTime: " << vectOfProcesses[h].lifeTime;
-				cout << " Deathtime: " << vectOfProcesses[h].deathTime << " #Subroutines " << vectOfProcesses[h].subRoutines << endl;
-				printProcessPageTable(vectOfProcesses[h]);
-			}
-			cout << "Memory Map " << runTime << endl;
-			for (int i = 0; i < MAX_FRAMES; i++)
-			{
-				cout << mainMemory[i]->processName << mainMemory[i]->frameNum;
-			}
-		}
-	}*/
+	insertIntoMemory(backingStore.pages[0]);
+	cout << memory.memArray[0]->processName << endl;
 }
 
 void createProcesses(void)
@@ -273,17 +245,6 @@ void createPages(Process &p)
 			backingStore.pages[freeIndex].initialize(7, p.name);
 		}
 	}
-	if (numSubRoutine != 5)//can make this better. need a way to initialize page table without this.
-	{
-		int numEmptySubRoutine = (MAX_SUBROUTINES - numSubRoutine) * 2;
-		cout <<"Fill empty pages: " << j << " " << numEmptySubRoutine << endl; //filling the temp page table with "empty" pages because of seg fault and garbage data
-		for (int k = j; k < j + numEmptySubRoutine; k++)
-		{
-			//myPage.frameNum = -1;
-			//myPage.refByte = 0;
-			p.pageIndex[k] = -1;
-		}
-	}
 }
 
 void killProcess(void)
@@ -298,33 +259,44 @@ void killProcess(void)
 void touchProcess(void)
 {
 	//vector<Page*> pagesLoad;
-	int selectedIndex = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)																
-	cout << "Touching process at index " << selectedIndex << endl;
-	if (!(vectOfProcesses[selectedIndex].isAlive))
+	int selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)																
+	cout << "Touching process at index " << selectedProcess << endl;
+	if (!(vectOfProcesses[selectedProcess].isAlive))
 	{
-		createPages(vectOfProcesses[selectedIndex]);
+		createPages(vectOfProcesses[selectedProcess]);
 	}
+	int selectedPage = -1;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
 	{
-		int index = vectOfProcesses[selectedIndex].pageIndex[i];
-		//check the page is it invalid/valid
-		//bring into memory if necessary
+		selectedPage = vectOfProcesses[selectedProcess].pageIndex[i];
+		if (!(backingStore.pages[selectedPage].valid))//bring the selected page into memory if necessary
+		{												
+			insertIntoMemory(backingStore.pages[selectedPage]);
+		}
 	}
 
-	int subRoutine = rand() % vectOfProcesses[selectedIndex].subRoutines;
+	int subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
 	cout << "running subroutine " << subRoutine << endl;	// TODO test output
 
-	/*if (!tempTable[2 * subRoutine + 10]->valid)
+	int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10];
+	int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2 * subRoutine + 10 + 1];
+	
+	if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 	{
-		//TODO bring the subroutine page into memory
+		insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 	}
 
-	if (!tempTable[2 * subRoutine + 10 + 1]->valid)
+	if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 	{
-		//TODO bring the subroutine page into memory
+		insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 	}
-	*/
-	//fifo(pagesToLoad, selectedIndex);	
+	
+}
+
+void insertIntoMemory(Page &pg)
+{
+	Page *pageLocation = &pg;
+	memory.memArray[memory.getFreeFrame()] = pageLocation;
 }
 
 void fifo(vector<Page*> v, int pid)
