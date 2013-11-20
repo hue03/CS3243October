@@ -5,11 +5,10 @@
 // Date: 11/13/2013
 // File: parttwo.cpp
 
+#include <stdio.h>
 #include <cstdlib>
 //#include <deque>
 #include <iostream>
-#include <stdio.h>
-#include <string.h>
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
@@ -24,17 +23,18 @@
 #define SHIFT_INTERVAL 10
 //#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
-#define MAX_QUANTA 50 /* 50000 */	// # quanta to run before ending simulation
+//#define MAX_QUANTA 50000	// # quanta to run before ending simulation
+#define MAX_QUANTA 50	// # quanta to run before ending simulation
 #define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
-#define MAX_NUM_PAGES_PER_PROCESS 20
+#define EMPTY_PROCESS_NAME ' '	// need ascii value. could use chars.
 #define DEFAULT_NUM_PAGES_PER_PROCESS 10
+#define MAX_NUM_PAGES_PER_PROCESS 20
 #define MIN_SUBROUTINES 1
 #define MAX_SUBROUTINES 5
 //#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
-#define EMPTY_PROCESS_NAME ' ' //need ascii value. could use chars.
 
 using namespace std;
 
@@ -353,7 +353,7 @@ int lru(void)
 {
 	int victimIndex = -1;
 	int smallestRef = 129;
-	
+
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
 		if (memory.memArray[j]->refByte < smallestRef
@@ -363,7 +363,7 @@ int lru(void)
 			victimIndex = j;
 		}
 	}
-	
+
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
@@ -557,7 +557,7 @@ void Page::removePage()
 	processName = EMPTY_PROCESS_NAME;
 	suffix = ' ';
 	frameNum = -1;
-	valid = false; 
+	valid = false;
 	refByte = 0;
 	startTime = -1;
 }
