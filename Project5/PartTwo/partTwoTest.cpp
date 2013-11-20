@@ -487,6 +487,7 @@ void BackingStore::printPages(void)
 {
 	printf("%5s | %7s | %6s\n", "", "Process", "");
 	printf("%5s | %7s | %6s\n", "Index", "Name", "Suffix");
+	printf("------+---------+--------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
