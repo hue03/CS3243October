@@ -143,7 +143,15 @@ int main(void)
 	}*/
 	createPages(vectOfProcesses[0]);
 	insertIntoMemory(backingStore.pages[0]);
+	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
 	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
+	backingStore.pages[0].refByte |= 128;
+	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
+	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
+	backingStore.pages[0].refByte >>= 1;
+	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
+	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
+	
 	printMemoryMap();
 }
 
@@ -240,6 +248,7 @@ void touchProcess(void)
 	Process *pickedProcess = &vectOfProcesses[processIndex];
 
 	cout << "Touching process at index " << processIndex << endl;	// TODO test output
+	cout << "Touching process " << pickedProcess->name << endl;	// TODO test output
 
 	if (!pickedProcess->isAlive)
 	{
@@ -258,6 +267,8 @@ void touchProcess(void)
 		{
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
+		backingStore.pages[selectedPage].refByte |= 128; //bit shift the refByte
+		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
 	}
 
 	int subRoutine = -1;
@@ -277,12 +288,15 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 		}
+		backingStore.pages[selectedSubRoutine].refByte | 128; //bit shift the refByte
+
 
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 		}
+		backingStore.pages[selectedSubRoutine2].refByte | 128; //bit shift the refByte
 	}
 	else //run all of the kernel's sub routine pages
 	{
@@ -319,7 +333,7 @@ void insertIntoMemory(Page &pg)
 	pageLocation->valid = true;
 	pageLocation->frameNum = frame;
 	pageLocation->startTime = runTime;
-	pageLocation->refByte = 128;
+	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
 }
 
@@ -347,7 +361,7 @@ int fifo(void)
 int lru(void)
 {
 	int victimIndex = -1;
-	int smallestRef = 129;
+	int smallestRef = 256; //biggest number that the refByte can be is 255 (1111 1111)
 
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
@@ -358,10 +372,11 @@ int lru(void)
 			victimIndex = j;
 		}
 	}
-
+	//cout << "removing " << memory.memArray[victimIndex]->processName << "j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
+	return victimIndex;
 }
 
 /*void printProcessPageTable(Process p)
@@ -474,6 +489,7 @@ void Page::initialize(char processName, char suffix)
 	this->processName = processName;
 	this->suffix = suffix;
 	this->valid = false;
+	this->refByte = 0;
 }
 
 void Page::removePage()
