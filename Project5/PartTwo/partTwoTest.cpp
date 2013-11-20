@@ -247,9 +247,8 @@ void touchProcess(void)
 	{
 		pickedProcess->isAlive = true;
 		createPages(*pickedProcess);
+		pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
 	}
-
-	pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
 
 	int selectedPage = -1;
 
