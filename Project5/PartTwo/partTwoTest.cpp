@@ -28,13 +28,13 @@
 #define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
-#define MAX_NUM_PAGES_PER_PROCESS 20
+#define EMPTY_PROCESS_NAME ' '	// need ascii value. could use chars.
 #define DEFAULT_NUM_PAGES_PER_PROCESS 10
+#define MAX_NUM_PAGES_PER_PROCESS 20
 #define MIN_SUBROUTINES 1
 #define MAX_SUBROUTINES 5
 //#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
-#define EMPTY_PROCESS_NAME ' ' //need ascii value. could use chars.
 
 using namespace std;
 
