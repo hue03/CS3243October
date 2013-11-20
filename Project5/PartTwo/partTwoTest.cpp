@@ -12,12 +12,12 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-//#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
-#define PROCESS_COUNT 5	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 50	// useful when debugging to limit # of procs
+//#define PROCESS_COUNT 5	// useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
-#define MIN_DEATH_INTERVAL 5
+#define MIN_DEATH_INTERVAL 45
 //#define MAX_DEATH_INTERVAL 300
-#define MAX_DEATH_INTERVAL 10
+#define MAX_DEATH_INTERVAL 49
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 #define SHIFT_INTERVAL 10
@@ -25,7 +25,7 @@
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
 //#define MAX_QUANTA 50000	// # quanta to run before ending simulation
 #define MAX_QUANTA 50	// # quanta to run before ending simulation
-#define SLEEP_LENGTH 2500	// Used with the usleep()to slow down sim between
+#define SLEEP_LENGTH 250000	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
 #define EMPTY_PROCESS_NAME ' '	// need ascii value. could use chars.
@@ -109,6 +109,7 @@ void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
+void shiftRefByte(void);
 int fifo(void);
 int lru(void);
 //void printProcessPageTable(Process p);
@@ -123,36 +124,52 @@ int main(void)
 	createProcesses();
 	printProcesses();	// TODO test output
 	backingStore.printPages();	// TODO test output
-
-	/*for (runTime = 0; runTime < MAX_QUANTA; runTime++)
+	char a;
+	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
-		killProcess();
-		touchProcess();
-		if (0 == runTime || runTime % PRINT_INTERVAL == 0)
+		if (runTime != 0)
 		{
-			cout << "Running Time" << runTime << endl;
+			killProcess();
+		}
+		if (runTime % SHIFT_INTERVAL == 0 && runTime != 0)
+		{
+			shiftRefByte();
+		}
+		
+		touchProcess();
+		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
 			backingStore.printPages();
-		}
-		for (int i = 0; i < MAX_FRAMES; i++)
+			printMemoryMap();
+		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
-			cout << memory.memArray[i]->processName
-			        << memory.memArray[i]->suffix;
-		}
-		cout << endl;
-	}*/
-	createPages(vectOfProcesses[0]);
-	insertIntoMemory(backingStore.pages[0]);
-	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
-	backingStore.pages[0].refByte |= 128;
-	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
-	backingStore.pages[0].refByte >>= 1;
-	cout << "ref: " << dec << backingStore.pages[0].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
+			cout << "Running Time: " << runTime << endl;
+			cout << "--------------------------------------------" << endl;
+			backingStore.printPages();
+			printMemoryMap();
+			usleep(SLEEP_LENGTH);
+		}*/
+		cout << "Press anything to continue" << endl;
+		cin >> a;
+	}
 	
+	/*Test refbyte stuff
+	createPages(vectOfProcesses[1]);
+	insertIntoMemory(backingStore.pages[1]);
+	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
+	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
+	backingStore.pages[1].refByte |= 128;
+	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
+	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
+	backingStore.pages[1].refByte >>= 1;
+	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
+	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
 	printMemoryMap();
+	cout << "valid " << backingStore.pages[1].valid << endl;
+	lru();
+	cout << "valid " << backingStore.pages[1].valid << endl;
+	printMemoryMap();
+	*/
 }
 
 void createProcesses(void)
@@ -288,7 +305,7 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine].refByte | 128; //bit shift the refByte
+		backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte //bit shift the refByte
 
 
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
@@ -296,7 +313,7 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine2].refByte | 128; //bit shift the refByte
+		backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte //bit shift the refByte
 	}
 	else //run all of the kernel's sub routine pages
 	{
@@ -315,12 +332,14 @@ void touchProcess(void)
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 			}
-
+			backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
+			
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 			}
+			backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte
 		}
 	}
 
@@ -337,8 +356,20 @@ void insertIntoMemory(Page &pg)
 	memory.memArray[frame] = pageLocation;
 }
 
+void shiftRefByte(void)
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		if (memory.memArray[i]->processName != '@')
+		{
+			memory.memArray[i]->refByte >>= 1; //bit shift right
+		}
+	}
+}
+
 int fifo(void)
 {
+	cout << "running fifo" << endl;
 	int victimIndex = -1;
 	int smallestStart = MAX_QUANTA;
 
@@ -351,7 +382,7 @@ int fifo(void)
 			victimIndex = j;
 		}
 	}
-
+	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
@@ -360,6 +391,7 @@ int fifo(void)
 
 int lru(void)
 {
+	cout << "running lru" << endl;
 	int victimIndex = -1;
 	int smallestRef = 256; //biggest number that the refByte can be is 255 (1111 1111)
 
@@ -372,7 +404,7 @@ int lru(void)
 			victimIndex = j;
 		}
 	}
-	//cout << "removing " << memory.memArray[victimIndex]->processName << "j: " << victimIndex << endl;
+	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
@@ -477,7 +509,9 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
-	return fifo();	// returns an index value of the recently freed frame
+	//return fifo();	// returns an index value of the recently freed frame
+	return lru();
+	//return secondChance();
 }
 
 Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
@@ -542,12 +576,12 @@ void printProcesses(void)
 // TODO test output
 void BackingStore::printPages(void)
 {
-	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "", "Process", "", "Frame", "Valid", "Reference", "Start");
-	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Name", "Suffix", "Number", "Bit", "Byte", "Time");
+	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "", "Assoc.", "", "Frame", "Valid", "Reference", "Start");
+	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Process", "Suffix", "Number", "Bit", "Byte", "Time");
 	printf("------+---------+--------+--------+-------+-----------+-------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %7c | %6c | %6i | %5d | %9i | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, pages[i].valid, pages[i].refByte, pages[i].startTime);
+		printf("%5lu | %7c | %6c | %6i | %5d | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, pages[i].valid, pages[i].refByte, pages[i].startTime);
 	}
 }
