@@ -18,7 +18,7 @@
 //#define MIN_DEATH_INTERVAL 20
 #define MIN_DEATH_INTERVAL 5
 //#define MAX_DEATH_INTERVAL 300
-#define MAX_DEATH_INTERVAL 15
+#define MAX_DEATH_INTERVAL 10
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 #define SHIFT_INTERVAL 10
@@ -51,6 +51,7 @@ struct Page
 	Page(char processName, char suffix, short frameNum, bool valid,
 	        short refByte, int startTime);
 	void initialize(char processName, char suffix);
+	void removePage();
 };
 
 struct Process
@@ -104,7 +105,8 @@ void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
 int fifo(void);
-void printProcessPageTable(Process p);
+int lru(void);
+//void printProcessPageTable(Process p);
 void printMemoryMap(void);
 void printProcesses(void);	// TODO test output
 
@@ -117,18 +119,26 @@ int main(void)
 	printProcesses();	// TODO test output
 	backingStore.printPages();	// TODO test output
 
-	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
+	/*for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
+		killProcess();
 		touchProcess();
-if (0 == runTime) backingStore.printPages();
+		if (0 == runTime || runTime % PRINT_INTERVAL == 0)
+		{
+			cout << "Running Time" << runTime << endl;
+			cout << "--------------------------------------------" << endl;
+			backingStore.printPages();
+		}
 		for (int i = 0; i < MAX_FRAMES; i++)
 		{
 			cout << memory.memArray[i]->processName
 			        << memory.memArray[i]->suffix;
 		}
-
 		cout << endl;
-	}
+	}*/
+	createPages(vectOfProcesses[0]);
+	insertIntoMemory(backingStore.pages[0]);
+	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
 }
 
 void createProcesses(void)
@@ -205,6 +215,26 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
+	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	{
+		if (vectOfProcesses[i].deathTime == runTime)
+		{
+			cout << "killing " << vectOfProcesses[i].name << endl;
+			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)//go through dying process's pageIndex
+			{
+				//cout << "hello1" << endl;
+				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid) //if the page is in a frame
+				{
+					//cout << "hello2" << endl;
+					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
+				}
+				//cout << "hello3" << endl;
+				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
+				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
+				//cout << "hello4" << endl;
+			}
+		}
+	}
 }
 
 void touchProcess(void)
@@ -220,9 +250,8 @@ void touchProcess(void)
 	{
 		pickedProcess->isAlive = true;
 		createPages(*pickedProcess);
+		pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
 	}
-
-	pickedProcess->deathTime = runTime + pickedProcess->lifeTime;
 
 	int selectedPage = -1;
 
@@ -295,10 +324,11 @@ void insertIntoMemory(Page &pg)
 	pageLocation->valid = true;
 	pageLocation->frameNum = frame;
 	pageLocation->startTime = runTime;
+	pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
 }
 
-int fifo()
+int fifo(void)
 {
 	int victimIndex = -1;
 	int smallestStart = MAX_QUANTA;
@@ -319,7 +349,27 @@ int fifo()
 	return victimIndex;
 }
 
-void printProcessPageTable(Process p)
+int lru(void)
+{
+	int victimIndex = -1;
+	int smallestRef = 129;
+	
+	for (int j = 0; j < MAX_FRAMES; j++)
+	{
+		if (memory.memArray[j]->refByte < smallestRef
+		        && memory.memArray[j]->processName != '@')
+		{
+			smallestRef = memory.memArray[j]->refByte;
+			victimIndex = j;
+		}
+	}
+	
+	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->frameNum = -1;
+	memory.emptyMemory(victimIndex);
+}
+
+/*void printProcessPageTable(Process p)
 {
 	//Page** tempTable = p.pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
@@ -332,7 +382,7 @@ void printProcessPageTable(Process p)
 	//cout << "Valid: " << tempTable[i]->valid << endl;
 	//cout << "Frame: " << tempTable[i]->frameNum << endl;
 	//cout << "--------------------------------------------------------------------------------" << endl;
-}
+}*/
 
 void printMemoryMap(void)
 {
@@ -484,7 +534,7 @@ int MainMemory::getFreeFrame()
 
 Page::Page() :
 		processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(
-		        -1), startTime(-1)
+		        0), startTime(-1)
 {
 }
 
@@ -500,6 +550,16 @@ void Page::initialize(char processName, char suffix)
 	this->processName = processName;
 	this->suffix = suffix;
 	this->valid = false;
+}
+
+void Page::removePage()
+{
+	processName = EMPTY_PROCESS_NAME;
+	suffix = ' ';
+	frameNum = -1;
+	valid = false; 
+	refByte = 0;
+	startTime = -1;
 }
 
 Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
@@ -544,7 +604,7 @@ void BackingStore::printPages(void)
 {
 	printf("%5s | %7s | %6s | %7s | %6s\n", "", "Process", "", "Frame", "Valid");
 	printf("%5s | %7s | %6s | %7s | %6s\n", "Index", "Name", "Suffix", "Number", "Bit");
-	printf("------+---------+--------\n");
+	printf("------+---------+--------+---------+--------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
