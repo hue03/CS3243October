@@ -209,37 +209,43 @@ void killProcess(void)
 
 void touchProcess(void)
 {
-	int selectedProcess = 0;	//choose the kernel at the start of the program
-	if (runTime != 0)
+	// Choose the kernel at the start of the program
+	// Otherwise, choose an index from 0 to (size - 1)
+	int processIndex = (runTime == 0 ? 0 : rand() % vectOfProcesses.size());
+	Process pickedProcess = vectOfProcesses[processIndex];
+
+	cout << "Touching process at index " << processIndex << endl;	// TODO test output
+
+	if (!pickedProcess.isAlive)
 	{
-		selectedProcess = rand() % ((vectOfProcesses.size() - 1) + 1);//choose an index from 0 - (size-1)
+		pickedProcess.isAlive = true;
+		createPages(pickedProcess);
 	}
-	cout << "Touching process at index " << selectedProcess << endl;
-	if (!(vectOfProcesses[selectedProcess].isAlive))
-	{
-		vectOfProcesses[selectedProcess].isAlive = true;
-		createPages(vectOfProcesses[selectedProcess]);
-	}
-	vectOfProcesses[selectedProcess].deathTime = runTime
-	        + vectOfProcesses[selectedProcess].lifeTime;
+
+	pickedProcess.deathTime = runTime + pickedProcess.lifeTime;
+
 	int selectedPage = -1;
+
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
 	{
-		selectedPage = vectOfProcesses[selectedProcess].pageIndex[i];
+		selectedPage = pickedProcess.pageIndex[i];
+
 		if (!(backingStore.pages[selectedPage].valid))//bring the selected page into memory if necessary
 		{
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
 	}
+
 	int subRoutine = -1;
+
 	if (runTime != 0)
 	{
-		subRoutine = rand() % vectOfProcesses[selectedProcess].subRoutines;
+		subRoutine = rand() % pickedProcess.subRoutines;
 		cout << "running subroutine " << subRoutine << endl;// TODO test output
 
-		int selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2
+		int selectedSubRoutine = pickedProcess.pageIndex[2
 		        * subRoutine + 10];
-		int selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2
+		int selectedSubRoutine2 = pickedProcess.pageIndex[2
 		        * subRoutine + 10 + 1];
 
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
@@ -261,9 +267,9 @@ void touchProcess(void)
 		for (int j = 0; j < 5; j++)
 		{
 			subRoutine = j;
-			selectedSubRoutine = vectOfProcesses[selectedProcess].pageIndex[2
+			selectedSubRoutine = pickedProcess.pageIndex[2
 			        * subRoutine + 10];
-			selectedSubRoutine2 = vectOfProcesses[selectedProcess].pageIndex[2
+			selectedSubRoutine2 = pickedProcess.pageIndex[2
 			        * subRoutine + 10 + 1];
 
 			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
