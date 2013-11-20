@@ -120,7 +120,7 @@ int main(void)
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		touchProcess();
-
+if (0 == runTime) backingStore.printPages();
 		for (int i = 0; i < MAX_FRAMES; i++)
 		{
 			cout << memory.memArray[i]->processName
@@ -182,7 +182,7 @@ void createPages(Process &p)
 	for (int i = 0; i < DEFAULT_NUM_PAGES_PER_PROCESS + 2 * p.subRoutines; i++)
 	{
 		// Set suffix of page based on the page index i
-		short suffix = ('@' == p.name ? '@' :
+		char suffix = ('@' == p.name ? '@' :
 					   (i <  2 ? '0' :
 					   (i <  5 ? '1' :
 					   (i < 10 ? '2' :
@@ -393,7 +393,7 @@ int BackingStore::getFreePage()
 	do
 	{
 		freeIndex = (freeIndex + 1) % MAX_PAGES;
-	} while (pages[freeIndex].suffix > 0 && freeIndex != freePage);
+	} while (pages[freeIndex].suffix == ' ' && freeIndex != freePage);
 
 	// If the do-while completely loops around the BackingStore, then there are no more free pages
 	if (freeIndex == freePage)
