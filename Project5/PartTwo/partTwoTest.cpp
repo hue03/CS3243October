@@ -105,6 +105,7 @@ void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
 int fifo(void);
+int lru(void);
 //void printProcessPageTable(Process p);
 void printMemoryMap(void);
 void printProcesses(void);	// TODO test output
@@ -118,7 +119,7 @@ int main(void)
 	printProcesses();	// TODO test output
 	backingStore.printPages();	// TODO test output
 
-	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
+	/*for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		killProcess();
 		touchProcess();
@@ -133,9 +134,11 @@ int main(void)
 			cout << memory.memArray[i]->processName
 			        << memory.memArray[i]->suffix;
 		}
-
 		cout << endl;
-	}
+	}*/
+	createPages(vectOfProcesses[0]);
+	insertIntoMemory(backingStore.pages[0]);
+	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
 }
 
 void createProcesses(void)
@@ -321,10 +324,11 @@ void insertIntoMemory(Page &pg)
 	pageLocation->valid = true;
 	pageLocation->frameNum = frame;
 	pageLocation->startTime = runTime;
+	pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
 }
 
-int fifo()
+int fifo(void)
 {
 	int victimIndex = -1;
 	int smallestStart = MAX_QUANTA;
@@ -343,6 +347,26 @@ int fifo()
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
 	return victimIndex;
+}
+
+int lru(void)
+{
+	int victimIndex = -1;
+	int smallestRef = 129;
+	
+	for (int j = 0; j < MAX_FRAMES; j++)
+	{
+		if (memory.memArray[j]->refByte < smallestRef
+		        && memory.memArray[j]->processName != '@')
+		{
+			smallestRef = memory.memArray[j]->refByte;
+			victimIndex = j;
+		}
+	}
+	
+	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->frameNum = -1;
+	memory.emptyMemory(victimIndex);
 }
 
 /*void printProcessPageTable(Process p)
@@ -459,7 +483,7 @@ int MainMemory::getFreeFrame()
 
 Page::Page() :
 		processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(
-		        -1), startTime(-1)
+		        0), startTime(-1)
 {
 }
 
@@ -483,7 +507,7 @@ void Page::removePage()
 	suffix = ' ';
 	frameNum = -1;
 	valid = false; 
-	refByte = -1;
+	refByte = 0;
 	startTime = -1;
 }
 
