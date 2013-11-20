@@ -393,7 +393,7 @@ int BackingStore::getFreePage()
 	do
 	{
 		freeIndex = (freeIndex + 1) % MAX_PAGES;
-	} while (pages[freeIndex].suffix == ' ' && freeIndex != freePage);
+	} while (pages[freeIndex].suffix != ' ' && freeIndex != freePage);
 
 	// If the do-while completely loops around the BackingStore, then there are no more free pages
 	if (freeIndex == freePage)
