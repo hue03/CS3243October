@@ -93,11 +93,16 @@ BackingStore backingStore;
 Page emptyPage;
 int runTime;
 int usedFrames;
-int usedPages;
+int pagesLoaded;
 int loadedPages;
 int loadedProc;
 int refBitSet;
 int refBitClear;
+int pagesUnloaded;
+int pagesFree;
+int numOfPages;
+int unloadedProc;
+int deadProc;
 
 void createProcesses(void);
 void createPages(Process &p);
@@ -139,6 +144,7 @@ int main(void)
 	createPages(vectOfProcesses[0]);
 	insertIntoMemory(backingStore.pages[0]);
 	cout << "ref: " << hex << backingStore.pages[0].refByte << endl;
+	printMemoryMap();
 }
 
 void createProcesses(void)
@@ -378,90 +384,34 @@ void printMemoryMap(void)
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
 	int numFreeFrames = MAX_FRAMES - usedFrames;
 	float freeFramesPercentage = 100.0 * numFreeFrames / MAX_FRAMES;
+	float numOfPagesPercentage = 100.0 * numOfPages / MAX_PAGES;
+	float pagesLoadedPercentage = 100.0 * pagesLoaded / MAX_PAGES;
+	float pagesUnloadedPercentage = 100.0 * pagesUnloaded / MAX_PAGES;
+	float pagesFreePercentage = 100.0 * pagesFree / MAX_PAGES;
 	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
-	int unloadedProc = PROCESS_COUNT - loadedProc;
 	float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
+	float deadProcPercentage = 100.0 * deadProc / PROCESS_COUNT;
 
-	printf("QUANTA ELAPSED: %i", runTime);
-	printf("FRAMES:%-4if         USED:%-4if (%4.1f%%    FREE:%-4if (%4.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
-	cout << "SWAP SPACE: " << MAX_PAGES << "\tPAGES: " << usedPages
-	        << "\tLOADED: " << loadedPages << "\tFREE: " << numFreeFrames
-	        << endl;
-	cout << "PROCESSES: " << PROCESS_COUNT << "\tLOADED: " << loadedProc << " ("
-	        << loadedProcPercentage << "%)\tUNLOADED: " << unloadedProc << " ("
-	        << unloadedProcPercentage << "%)" << endl;
-	cout
-	        << "        04        09        14        19        24        29        34"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 0; i < 35; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "        39        44        49        54        59        64        69"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 35; i < 70; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "        74        79        84        89        94        99       104"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 70; i < 105; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "       109       114       119       124       129       134       139"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 105; i < 140; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "       144       149       154       159       164       169       174"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 140; i < 175; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "       179       184       189       194       199       204       209"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 175; i < 210; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "       214       219       224       229       234       239       244"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 210; i < 245; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
-	cout
-	        << "       249       254       259       264       269       274       279"
-	        << endl;
-	cout
-	        << "--------++--------||--------++--------||--------++--------||--------++"
-	        << endl;
-	for (size_t i = 245; i < 280; ++i)
-		cout << memory.memArray[i]->processName << memory.memArray[i]->suffix;
-	cout << endl;
+	printf("QUANTA ELAPSED: %i\n", runTime);
+	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
+	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, pagesLoaded, pagesLoadedPercentage, pagesUnloaded, pagesUnloadedPercentage, pagesFree, pagesFreePercentage);
+	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLODAED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, unloadedProc, unloadedProcPercentage, deadProc, deadProcPercentage);
+	printf("\nPHYSICAL MEMORY (FRAMES)\n");
+	printf("        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i\n", 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59);
+	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	printf("        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i       %3i       %3i       %3i       %3i\n", 64, 69, 74, 79, 84, 89, 94, 99, 104, 109, 114, 119);
+	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 124, 129, 134, 139, 144, 149, 154, 159, 164, 169, 174, 179);
+	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 184, 189, 194, 199, 204, 209, 214, 219, 224, 229, 234, 239);
+	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 244, 249, 254, 259, 264, 269, 274, 279);
+	printf("--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
 }
 
 // TODO insert page function for BackingStore
