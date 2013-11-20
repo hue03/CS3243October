@@ -18,7 +18,7 @@
 //#define MIN_DEATH_INTERVAL 20
 #define MIN_DEATH_INTERVAL 5
 //#define MAX_DEATH_INTERVAL 300
-#define MAX_DEATH_INTERVAL 15
+#define MAX_DEATH_INTERVAL 10
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 #define SHIFT_INTERVAL 10
@@ -51,6 +51,7 @@ struct Page
 	Page(char processName, char suffix, short frameNum, bool valid,
 	        short refByte, int startTime);
 	void initialize(char processName, char suffix);
+	void removePage();
 };
 
 struct Process
@@ -119,6 +120,7 @@ int main(void)
 
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
+		killProcess();
 		touchProcess();
 		if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
@@ -210,6 +212,26 @@ void killProcess(void)
 	//TODO go into memory and remove these invalid pages
 	//TODO now remove the pages from the backing store
 	//TODO make the process's page table have empty pages
+	for (uint i = 0; i < vectOfProcesses.size(); i++)
+	{
+		if (vectOfProcesses[i].deathTime == runTime)
+		{
+			cout << "killing " << vectOfProcesses[i].name << endl;
+			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)//go through dying process's pageIndex
+			{
+				//cout << "hello1" << endl;
+				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid) //if the page is in a frame
+				{
+					//cout << "hello2" << endl;
+					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
+				}
+				//cout << "hello3" << endl;
+				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
+				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
+				//cout << "hello4" << endl;
+			}
+		}
+	}
 }
 
 void touchProcess(void)
@@ -227,7 +249,7 @@ void touchProcess(void)
 		createPages(*pickedProcess);
 	}
 
-	pickedProcess->deathTime = runTime + pickedProcess->lifeTime;
+	pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
 
 	int selectedPage = -1;
 
@@ -454,6 +476,16 @@ void Page::initialize(char processName, char suffix)
 	this->processName = processName;
 	this->suffix = suffix;
 	this->valid = false;
+}
+
+void Page::removePage()
+{
+	processName = EMPTY_PROCESS_NAME;
+	suffix = ' ';
+	frameNum = -1;
+	valid = false; 
+	refByte = -1;
+	startTime = -1;
 }
 
 Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
