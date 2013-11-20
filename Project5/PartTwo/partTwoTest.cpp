@@ -104,7 +104,7 @@ void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
 int fifo(void);
-void printProcessPageTable(Process p);
+//void printProcessPageTable(Process p);
 void printMemoryMap(void);
 void printProcesses(void);	// TODO test output
 
@@ -120,7 +120,12 @@ int main(void)
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		touchProcess();
-if (0 == runTime) backingStore.printPages();
+		if (0 == runTime || runTime % PRINT_INTERVAL == 0)
+		{
+			cout << "Running Time" << runTime << endl;
+			cout << "--------------------------------------------" << endl;
+			backingStore.printPages();
+		}
 		for (int i = 0; i < MAX_FRAMES; i++)
 		{
 			cout << memory.memArray[i]->processName
@@ -319,7 +324,7 @@ int fifo()
 	return victimIndex;
 }
 
-void printProcessPageTable(Process p)
+/*void printProcessPageTable(Process p)
 {
 	//Page** tempTable = p.pageTable;
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
@@ -332,7 +337,7 @@ void printProcessPageTable(Process p)
 	//cout << "Valid: " << tempTable[i]->valid << endl;
 	//cout << "Frame: " << tempTable[i]->frameNum << endl;
 	//cout << "--------------------------------------------------------------------------------" << endl;
-}
+}*/
 
 void printMemoryMap(void)
 {
@@ -493,7 +498,7 @@ void BackingStore::printPages(void)
 {
 	printf("%5s | %7s | %6s | %7s | %6s\n", "", "Process", "", "Frame", "Valid");
 	printf("%5s | %7s | %6s | %7s | %6s\n", "Index", "Name", "Suffix", "Number", "Bit");
-	printf("------+---------+--------\n");
+	printf("------+---------+--------+---------+--------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
