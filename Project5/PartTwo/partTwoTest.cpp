@@ -41,16 +41,17 @@ using namespace std;
 struct Page
 {
 	char processName;
-	short suffix;
+	char suffix;
 	short frameNum;
 	bool valid;
 	short refByte;
 	int startTime;
 
 	Page();
-	Page(char processName, short suffix, short frameNum, bool valid,
+	Page(char processName, char suffix, short frameNum, bool valid,
 	        short refByte, int startTime);
 	void initialize(char processName, short suffix);
+	void print(void);	// TODO test output
 };
 
 struct Process
@@ -177,59 +178,24 @@ void createProcesses(void)
 
 void createPages(Process &p)
 {
-	int j;
-	for (j = 0; j < (DEFAULT_NUM_PAGES_PER_PROCESS + p.subRoutines * 2); j++)
+	for (int i = 0; i < DEFAULT_NUM_PAGES_PER_PROCESS + 2 * p.subRoutines; i++)
 	{
-		//cout << "creating process loop" << endl;
-		//cout << "j: " << j << endl;
-		if (j < 2)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(0, p.name);
-		}
-		else if (j < 5)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(1, p.name);
-		}
-		else if (j < 10)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(2, p.name);
-		}
-		else if ((j % 10) < 2)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(3, p.name);
-		}
-		else if ((j % 10) < 4)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(4, p.name);
-		}
-		else if ((j % 10) < 6)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(5, p.name);
-		}
-		else if ((j % 10) < 8)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(6, p.name);
-		}
-		else if ((j % 10) < 10)
-		{
-			int freeIndex = backingStore.getFreePage();
-			p.pageIndex[j] = freeIndex;
-			backingStore.pages[freeIndex].initialize(7, p.name);
-		}
+		// Set suffix of page based on the page index i
+		short suffix = ('@' == p.name ? '@' :
+					   (i <  2 ? '0' :
+					   (i <  5 ? '1' :
+					   (i < 10 ? '2' :
+					   (i < 12 ? '3' :
+					   (i < 14 ? '4' :
+					   (i < 16 ? '5' :
+					   (i < 18 ? '6' : '7'))))))));
+
+		int freeIndex = backingStore.getFreePage();
+
+		p.pageIndex[i] = freeIndex;
+		backingStore.pages[freeIndex].initialize(p.name, suffix);
+
+		cout << "creating process loop\ni: " << i << endl;	// TODO test output
 	}
 }
 
@@ -470,7 +436,7 @@ Page::Page()
 	startTime = -1;
 }
 
-Page::Page(char processName, short suffix, short frameNum, bool valid,
+Page::Page(char processName, char suffix, short frameNum, bool valid,
         short refByte, int startTime) :
 		processName(processName), suffix(suffix), frameNum(frameNum), valid(
 		        valid), refByte(refByte), startTime(startTime)
