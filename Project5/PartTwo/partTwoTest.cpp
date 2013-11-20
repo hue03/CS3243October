@@ -50,7 +50,7 @@ struct Page
 	Page();
 	Page(char processName, char suffix, short frameNum, bool valid,
 	        short refByte, int startTime);
-	void initialize(char processName, short suffix);
+	void initialize(char processName, char suffix);
 };
 
 struct Process
@@ -212,23 +212,23 @@ void touchProcess(void)
 	// Choose the kernel at the start of the program
 	// Otherwise, choose an index from 0 to (size - 1)
 	int processIndex = (runTime == 0 ? 0 : rand() % vectOfProcesses.size());
-	Process pickedProcess = vectOfProcesses[processIndex];
+	Process *pickedProcess = &vectOfProcesses[processIndex];
 
 	cout << "Touching process at index " << processIndex << endl;	// TODO test output
 
-	if (!pickedProcess.isAlive)
+	if (!pickedProcess->isAlive)
 	{
-		pickedProcess.isAlive = true;
-		createPages(pickedProcess);
+		pickedProcess->isAlive = true;
+		createPages(*pickedProcess);
 	}
 
-	pickedProcess.deathTime = runTime + pickedProcess.lifeTime;
+	pickedProcess->deathTime = runTime + pickedProcess->lifeTime;
 
 	int selectedPage = -1;
 
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS / 2; i++)
 	{
-		selectedPage = pickedProcess.pageIndex[i];
+		selectedPage = pickedProcess->pageIndex[i];
 
 		if (!(backingStore.pages[selectedPage].valid))//bring the selected page into memory if necessary
 		{
@@ -240,12 +240,12 @@ void touchProcess(void)
 
 	if (runTime != 0)
 	{
-		subRoutine = rand() % pickedProcess.subRoutines;
+		subRoutine = rand() % pickedProcess->subRoutines;
 		cout << "running subroutine " << subRoutine << endl;// TODO test output
 
-		int selectedSubRoutine = pickedProcess.pageIndex[2
+		int selectedSubRoutine = pickedProcess->pageIndex[2
 		        * subRoutine + 10];
-		int selectedSubRoutine2 = pickedProcess.pageIndex[2
+		int selectedSubRoutine2 = pickedProcess->pageIndex[2
 		        * subRoutine + 10 + 1];
 
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
@@ -267,9 +267,9 @@ void touchProcess(void)
 		for (int j = 0; j < 5; j++)
 		{
 			subRoutine = j;
-			selectedSubRoutine = pickedProcess.pageIndex[2
+			selectedSubRoutine = pickedProcess->pageIndex[2
 			        * subRoutine + 10];
-			selectedSubRoutine2 = pickedProcess.pageIndex[2
+			selectedSubRoutine2 = pickedProcess->pageIndex[2
 			        * subRoutine + 10 + 1];
 
 			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
@@ -444,7 +444,7 @@ Page::Page(char processName, char suffix, short frameNum, bool valid,
 {
 }
 
-void Page::initialize(char processName, short suffix)
+void Page::initialize(char processName, char suffix)
 {
 	this->processName = processName;
 	this->suffix = suffix;
@@ -491,12 +491,12 @@ void printProcesses(void)
 // TODO test output
 void BackingStore::printPages(void)
 {
-	printf("%5s | %7s | %6s\n", "", "Process", "");
-	printf("%5s | %7s | %6s\n", "Index", "Name", "Suffix");
+	printf("%5s | %7s | %6s | %7s | %6s\n", "", "Process", "", "Frame", "Valid");
+	printf("%5s | %7s | %6s | %7s | %6s\n", "Index", "Name", "Suffix", "Number", "Bit");
 	printf("------+---------+--------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %7c | %6c\n", i, pages[i].processName, pages[i].suffix);
+		printf("%5lu | %7c | %6c | %7i | %6d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, pages[i].valid);
 	}
 }
