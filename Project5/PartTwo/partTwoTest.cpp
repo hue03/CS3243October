@@ -51,7 +51,6 @@ struct Page
 	Page(char processName, char suffix, short frameNum, bool valid,
 	        short refByte, int startTime);
 	void initialize(char processName, short suffix);
-	void print(void);	// TODO test output
 };
 
 struct Process
@@ -84,6 +83,7 @@ struct BackingStore
 
 	BackingStore();
 	int getFreePage();
+	void printPages(void);	// TODO test output
 };
 
 vector<Process> vectOfProcesses;
@@ -115,6 +115,7 @@ int main(void)
 	runTime = 0;
 	createProcesses();
 	printProcesses();	// TODO test output
+	backingStore.printPages();	// TODO test output
 
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
@@ -194,8 +195,6 @@ void createPages(Process &p)
 
 		p.pageIndex[i] = freeIndex;
 		backingStore.pages[freeIndex].initialize(p.name, suffix);
-
-		cout << "creating process loop\ni: " << i << endl;	// TODO test output
 	}
 }
 
@@ -426,14 +425,10 @@ int MainMemory::getFreeFrame()
 	return fifo();	// returns an index value of the recently freed frame
 }
 
-Page::Page()
+Page::Page() :
+		processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(
+		        -1), startTime(-1)
 {
-	suffix = -1;
-	refByte = -1;
-	valid = false;
-	frameNum = -1;
-	processName = EMPTY_PROCESS_NAME;
-	startTime = -1;
 }
 
 Page::Page(char processName, char suffix, short frameNum, bool valid,
@@ -473,7 +468,7 @@ void Process::print(void)
 	printf("}\n");
 }
 
-//TODO test output
+// TODO test output
 void printProcesses(void)
 {
 	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "", "", "Number", "", "");
@@ -484,5 +479,17 @@ void printProcesses(void)
 	for (size_t i = 0; i < vectOfProcesses.size(); ++i)
 	{
 		vectOfProcesses[i].print();
+	}
+}
+
+// TODO test output
+void BackingStore::printPages(void)
+{
+	printf("%5s | %7s | %6s\n", "", "Process", "");
+	printf("%5s | %7s | %6s\n", "Index", "Name", "Suffix");
+
+	for (size_t i = 0; i < MAX_PAGES; ++i)
+	{
+		printf("%5lu | %7c | %6c\n", i, pages[i].processName, pages[i].suffix);
 	}
 }
