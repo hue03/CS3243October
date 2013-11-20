@@ -12,15 +12,16 @@
 #include <vector>
 
 #define MAX_PROCESSES 52	// This will not ever change
-#define PROCESS_COUNT 50	// useful when debugging to limit # of procs
-//#define PROCESS_COUNT 5	// useful when debugging to limit # of procs
+//#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
+#define PROCESS_COUNT 50 // useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
 #define MIN_DEATH_INTERVAL 45
 //#define MAX_DEATH_INTERVAL 300
 #define MAX_DEATH_INTERVAL 49
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
-#define SHIFT_INTERVAL 10
+//#define SHIFT_INTERVAL 10
+#define SHIFT_INTERVAL 2
 //#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
 //#define MAX_QUANTA 50000	// # quanta to run before ending simulation
@@ -139,7 +140,7 @@ int main(void)
 		touchProcess();
 		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
-			backingStore.printPages();
+			//backingStore.printPages();
 			printMemoryMap();
 		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
