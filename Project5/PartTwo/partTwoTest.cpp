@@ -51,7 +51,7 @@ struct Page
 	int startTime;
 
 	Page();
-	Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime);
+	Page(char processName, char suffix, short frameNum, bool valid, short refByte, bool sc, int startTime);
 	void initialize(char processName, char suffix);
 	void removePage();
 };
@@ -105,6 +105,7 @@ int refBitClear;
 int numOfPages;
 //int unloadedProc;
 int deadProc;
+int (*pageReplacement)(void);
 
 void createProcesses(void);
 void createPages(Process &p);
@@ -125,6 +126,17 @@ int main(void)
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
 	//backingStore.printPages();
+	int input;
+	do
+	{
+		printf("Choose a page replacement algorithm:\n");
+		printf("1. FIFO\n2. LRU\n3. Second Chance\n");
+		cin >> input;
+	} while (input < 1 || input > 3);
+
+	pageReplacement = &(input == 1 ? fifo :
+					   (input == 2 ? lru  : secondChance));
+
 	char a;
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
@@ -553,9 +565,9 @@ void printPerProcessPageTables(void)
 	}
 }
 
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1), sc(false) { }
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), sc(false), startTime(-1) { }
 
-Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime), sc(false) { }
+Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, bool sc, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), sc(false), startTime(startTime) { }
 
 void Page::initialize(char processName, char suffix)
 {
@@ -608,7 +620,8 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
-	return fifo();	// returns an index value of the recently freed frame
+	return pageReplacement();
+//	return fifo();	// returns an index value of the recently freed frame
 	//return lru();
 	//return secondChance();
 }
