@@ -13,7 +13,7 @@
 
 #define MAX_PROCESSES 52	// This will not ever change
 //#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
-#define PROCESS_COUNT 50 // useful when debugging to limit # of procs
+#define PROCESS_COUNT 23 // useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
 #define MIN_DEATH_INTERVAL 45
 //#define MAX_DEATH_INTERVAL 300
@@ -94,15 +94,14 @@ BackingStore backingStore;
 Page emptyPage;
 int runTime;
 int usedFrames;
-int pagesLoaded;
-int loadedPages;
+//int pagesLoaded;
 int loadedProc;
 int refBitSet;
 int refBitClear;
-int pagesUnloaded;
-int pagesFree;
+//int pagesUnloaded;
+//int pagesFree;
 int numOfPages;
-int unloadedProc;
+//int unloadedProc;
 int deadProc;
 
 void createProcesses(void);
@@ -226,6 +225,7 @@ void createPages(Process &p)
 
 		p.pageIndex[i] = freeIndex;
 		backingStore.pages[freeIndex].initialize(p.name, suffix);
+		numOfPages++;
 	}
 }
 
@@ -251,10 +251,12 @@ void killProcess(void)
 				}
 				//cout << "hello3" << endl;
 				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
+				numOfPages--;
 				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 				//cout << "hello4" << endl;
 			}
 		}
+		loadedProc--;
 	}
 }
 
@@ -271,6 +273,7 @@ void touchProcess(void)
 	if (!pickedProcess->isAlive)
 	{
 		pickedProcess->isAlive = true;
+		loadedProc++;
 		createPages(*pickedProcess);
 		pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
 	}
@@ -355,6 +358,7 @@ void insertIntoMemory(Page &pg)
 	pageLocation->startTime = runTime;
 	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
+	usedFrames++;
 }
 
 void shiftRefByte(void)
@@ -387,6 +391,7 @@ int fifo(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
+	usedFrames--;
 	return victimIndex;
 }
 
@@ -409,6 +414,7 @@ int lru(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
+	usedFrames--;
 	return victimIndex;
 }
 
@@ -433,17 +439,17 @@ void printMemoryMap(void)
 	int numFreeFrames = MAX_FRAMES - usedFrames;
 	float freeFramesPercentage = 100.0 * numFreeFrames / MAX_FRAMES;
 	float numOfPagesPercentage = 100.0 * numOfPages / MAX_PAGES;
-	float pagesLoadedPercentage = 100.0 * pagesLoaded / MAX_PAGES;
-	float pagesUnloadedPercentage = 100.0 * pagesUnloaded / MAX_PAGES;
-	float pagesFreePercentage = 100.0 * pagesFree / MAX_PAGES;
+	float pagesLoadedPercentage = 100.0 * usedFrames / MAX_PAGES;
+	float pagesUnloadedPercentage = 100.0 * (numOfPages - usedFrames) / MAX_PAGES;
+	float pagesFreePercentage = 100.0 * (MAX_PAGES - numOfPages) / MAX_PAGES;
 	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
-	float unloadedProcPercentage = 100.0 * unloadedProc / PROCESS_COUNT;
+	float unloadedProcPercentage = 100.0 * (PROCESS_COUNT - loadedProc) / PROCESS_COUNT;
 	float deadProcPercentage = 100.0 * deadProc / PROCESS_COUNT;
 
 	printf("QUANTA ELAPSED: %i\n", runTime);
 	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
-	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, pagesLoaded, pagesLoadedPercentage, pagesUnloaded, pagesUnloadedPercentage, pagesFree, pagesFreePercentage);
-	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLODAED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, unloadedProc, unloadedProcPercentage, deadProc, deadProcPercentage);
+	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
+	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
 	printf("        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i\n", 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59);
 	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
