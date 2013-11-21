@@ -66,7 +66,6 @@ struct Process
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int subRoutines);
-	void print(void);	// TODO test output
 };
 
 struct MainMemory
@@ -77,6 +76,7 @@ struct MainMemory
 	MainMemory();
 	void emptyMemory(int p);
 	int getFreeFrame();
+	void print(void);
 };
 
 struct BackingStore
@@ -86,7 +86,7 @@ struct BackingStore
 
 	BackingStore();
 	int getFreePage();
-	void printPages(void);	// TODO test output
+	void print(void);
 };
 
 vector<Process> vectOfProcesses;
@@ -116,8 +116,6 @@ int lru(void);
 int secondChance(void);
 int fifoCheck(int j);
 //void printProcessPageTable(Process p);
-void printMemoryMap(void);
-void printProcesses(void);	// TODO test output
 void printPerProcessPageTables(void);
 
 int main(void)
@@ -125,6 +123,7 @@ int main(void)
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
+	backingStore.print();
 	//backingStore.printPages();
 	char a;
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
@@ -142,7 +141,7 @@ int main(void)
 		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
 			//backingStore.printPages();
-			printMemoryMap();
+			memory.print();
 		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "Running Time: " << runTime << endl;
@@ -517,7 +516,7 @@ int fifoCheck(int j)
 	//cout << "--------------------------------------------------------------------------------" << endl;
 }*/
 
-void printMemoryMap(void)
+void MainMemory::print(void)
 {
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
 	int numFreeFrames = MAX_FRAMES - usedFrames;
@@ -536,25 +535,29 @@ void printMemoryMap(void)
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
 
-	for (size_t i = 4; i < 60; i += 5) printf("        %02lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix); printf("\n");
+	for (size_t i = 0; i < MAX_FRAMES; i += 60)
+	{
+		for (size_t j = 4; j < 60 && i + j < MAX_FRAMES; j += 5)
+		{
+			printf((i < 60 ? "        %02lu" : "%10lu"), i + j);
+		}
 
-	for (size_t i = 64; i < 120; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+		printf("\n");
 
-	for (size_t i = 124; i < 180; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+		for (size_t j = 0; j < 6 && i + 10 * j < MAX_FRAMES; ++j)
+		{
+			printf("--------++--------||");
+		}
 
-	for (size_t i = 184; i < 240; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+		printf("\n");
 
-	for (size_t i = 244; i < 280; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 4; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+		for (size_t j = 0; j < 60 && i + j < MAX_FRAMES; ++j)
+		{
+			printf("%c%c", memory.memArray[i + j]->processName, memory.memArray[i + j]->suffix);
+		}
+
+		printf("\n");
+	}
 }
 
 // TODO insert page function for BackingStore
@@ -641,49 +644,32 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	}
 }
 
-// TODO test output
-void Process::print(void)
+void BackingStore::print(void)
 {
-	string index = "";
+	printf("BACKING STORE (PAGES)\n");
 
-	printf("%4c | %4i | %5i | %11i | %5i | {", name, lifeTime, deathTime, subRoutines, isAlive);
-
- 	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
+	for (size_t i = 0; i < MAX_PAGES; i += 60)
 	{
-		printf("%s%i", (i > 0 ? ", " : ""), pageIndex[i]);
-	}
+		for (size_t j = 4; j < 60 && i + j < MAX_PAGES; j += 5)
+		{
+			printf((i < 60 ? "        %02lu" : "%10lu"), i + j);
+		}
 
-	printf("}\n");
-}
+		printf("\n");
 
-// TODO test output
-void printProcesses(void)
-{
-	printf("Processes\n");
-	printf("-----+------+-------+-------------+-------+-------\n");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "", "", "Number", "", "");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "Life", "Death", "of", "Is", "Page");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "Name", "Time", "Time", "Subroutines", "Alive", "Index");
-	printf("-----+------+-------+-------------+-------+-------\n");
+		for (size_t j = 0; j < 6 && i + 10 * j < MAX_PAGES; ++j)
+		{
+			printf("--------++--------||");
+		}
 
-	for (size_t i = 0; i < vectOfProcesses.size(); ++i)
-	{
-		vectOfProcesses[i].print();
-	}
-}
+		printf("\n");
 
-// TODO test output
-void BackingStore::printPages(void)
-{
-	printf("Backing Store\n");
-	printf("------+------------+--------+--------+-------+-----------+-------\n");
-	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "", "Associated", "", "Frame", "Valid", "Reference", "Start");
-	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Process", "Suffix", "Number", "Bit", "Byte", "Time");
-	printf("------+------------+--------+--------+-------+-----------+-------\n");
+		for (size_t j = 0; j < 60 && i + j < MAX_PAGES; ++j)
+		{
+			printf("%c%c", backingStore.pages[i + j].processName, backingStore.pages[i + j].suffix);
+		}
 
-	for (size_t i = 0; i < MAX_PAGES; ++i)
-	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte, pages[i].startTime);
+		printf("\n");
 	}
 }
 
