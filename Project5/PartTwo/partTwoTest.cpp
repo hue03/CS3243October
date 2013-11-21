@@ -15,7 +15,7 @@
 //#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
 #define PROCESS_COUNT 23 // useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
-#define MIN_DEATH_INTERVAL 95
+#define MIN_DEATH_INTERVAL 50
 //#define MAX_DEATH_INTERVAL 300
 #define MAX_DEATH_INTERVAL 99
 #define MAX_FRAMES 280
@@ -36,6 +36,7 @@
 #define MAX_SUBROUTINES 5
 //#define SEED 1384543729	// bugged seed time for process page creation
 #define SEED time(NULL)
+#define PROCS_PER_LINE 12	// # of processes to show on one line when printing per process page tables
 
 using namespace std;
 
@@ -113,16 +114,19 @@ void shiftRefByte(void);
 int fifo(void);
 int lru(void);
 int secondChance(void);
+int fifoCheck(int j);
 //void printProcessPageTable(Process p);
 void printMemoryMap(void);
 void printProcesses(void);	// TODO test output
+void printPerProcessPageTables(void);
 
 int main(void)
 {
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
-	backingStore.printPages();
+	printPerProcessPageTables();
+	//backingStore.printPages();
 	char a;
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
@@ -134,7 +138,7 @@ int main(void)
 		{
 			shiftRefByte();
 		}
-		
+
 		touchProcess();
 		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
@@ -151,7 +155,7 @@ int main(void)
 		cout << "Press anything to continue" << endl;
 		cin >> a;
 	}
-	
+
 	/*Test refbyte stuff
 	createPages(vectOfProcesses[1]);
 	insertIntoMemory(backingStore.pages[1]);
@@ -182,17 +186,10 @@ void createProcesses(void)
 		switch (name)
 		{
 		case '@':
-			name = '1';
-			break;
-		case '9':
 			name = 'A';
 			break;
 		case 'Z':
 			name = 'a';
-			break;
-		case 'H':
-		case 'k':
-			name += 2;
 			break;
 		default:
 			name += 1;
@@ -244,11 +241,12 @@ void killProcess(void)
 			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)	// go through dying process's pageIndex
 			{
 				//cout << "hello1" << endl;
-
+				
 				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
 				{
 					//cout << "hello2" << endl;
 					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
+					usedFrames--;
 				}
 				//cout << "hello3" << endl;
 				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
@@ -350,7 +348,7 @@ void touchProcess(void)
 			}
 			backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
 			backingStore.pages[selectedSubRoutine].sc = true;
-			
+
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
@@ -438,10 +436,27 @@ int secondChance(void)
 	//TODO from the index check the second chance bit. if 1 set to 0 and run fifo again. if 0 pick that index and break
 	cout << "running second chance" << endl;
 	int victimIndex = -1;
-	for (int j = 0; j < MAX_FRAMES; j++)
+	int startIndex = 20; //give a starting position and increment because the fifocheck was starting at the same spot and removing the page that was just inserted
+						//cannot compare suffix and process name because the incoming pages might be just be subroutine pages.
+	while (true)
+	{
+		victimIndex = fifoCheck(startIndex++ % MAX_FRAMES); //increment after the operation. mod by MAX_FRAMES for wrap around
+		if (memory.memArray[victimIndex]->sc)
+		{
+			memory.memArray[victimIndex]->sc = false;
+			memory.memArray[victimIndex]->startTime = runTime;
+			cout << "give second chance" << endl;
+			//cout << victimIndex << endl;
+		}
+		else
+		{
+			break;
+		}
+	}
+	/*for (int j = 0; j < MAX_FRAMES; j++)
 	{
 		if (memory.memArray[j]->processName != '@')
-		{ 
+		{
 			if (memory.memArray[j]->sc)
 			{
 				memory.memArray[j]->sc = false;
@@ -454,12 +469,12 @@ int secondChance(void)
 			}
 		}
 	}
-	
+
 	if (victimIndex == -1)
 	{
 		victimIndex = fifo();
 		cout << " j: " << victimIndex << endl;
-	}
+	}*/
 	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -467,6 +482,27 @@ int secondChance(void)
 	usedFrames--;
 	return victimIndex;
 }
+
+int fifoCheck(int j)
+{
+	cout << "running fifoCheck" << endl;
+	int victimIndex = -1;
+	int smallestStart = MAX_QUANTA;
+
+	for ( ; j < MAX_FRAMES; j++)
+	{
+		if (memory.memArray[j]->startTime < smallestStart
+		        && memory.memArray[j]->processName != '@')
+		{
+			smallestStart = memory.memArray[j]->startTime;
+			victimIndex = j;
+		}
+	}
+	cout << "start: " << smallestStart << endl;
+	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
+	return victimIndex;
+}
+
 
 /*void printProcessPageTable(Process p)
 {
@@ -501,18 +537,23 @@ void printMemoryMap(void)
 	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
+	
 	for (size_t i = 4; i < 60; i += 5) printf("        %02lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix); printf("\n");
+	
 	for (size_t i = 64; i < 120; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	
 	for (size_t i = 124; i < 180; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+
 	for (size_t i = 184; i < 240; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
+	
 	for (size_t i = 244; i < 280; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 4; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
@@ -609,7 +650,7 @@ void Process::print(void)
 
 	printf("%4c | %4i | %5i | %11i | %5i | {", name, lifeTime, deathTime, subRoutines, isAlive);
 
-	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
+ 	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
 	{
 		printf("%s%i", (i > 0 ? ", " : ""), pageIndex[i]);
 	}
@@ -636,15 +677,6 @@ void printProcesses(void)
 // TODO test output
 void BackingStore::printPages(void)
 {
-	printf("PAGE TABLES\n");
-	printf("%5c", 'A'); for (char i = 'B'; i <= 'K'; ++i) printf("%11c", i);
-//	printf("%5c%11c%11c%11c%11c%11c%11c%11c%11c%11c%11c\n", 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K');
-
-	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
-	{
-		printf("%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x", i);
-	}
-
 	printf("Backing Store\n");
 	printf("------+------------+--------+--------+-------+-----------+-------\n");
 	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "", "Associated", "", "Frame", "Valid", "Reference", "Start");
@@ -654,5 +686,36 @@ void BackingStore::printPages(void)
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
 		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte, pages[i].startTime);
+	}
+}
+
+void printPerProcessPageTables(void)
+{
+	printf("PAGE TABLES\n");
+
+	for (size_t i = 0; i < PROCESS_COUNT - 1; i += PROCS_PER_LINE - 1)
+	{
+		for (size_t j = i; j - i < PROCS_PER_LINE - 1 && j - i < PROCESS_COUNT; ++j)
+		{
+			printf(((j - i) % PROCS_PER_LINE == 0 ? "%5c" : "%11c"), vectOfProcesses[j + 1].name);
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j)
+		{
+			for (size_t k = 0; k < PROCS_PER_LINE - 1 && i + k < PROCESS_COUNT - 1; ++k)
+			{
+				Page p = backingStore.pages[vectOfProcesses[k + 1].pageIndex[j]];
+
+				if (k > 0) printf("|");
+
+				printf("%02lu %03i %c%02x", j, p.frameNum, (p.valid ? 'v' : 'i'), p.refByte);
+			}
+
+			printf("\n");
+		}
+
+		printf("\n");
 	}
 }
