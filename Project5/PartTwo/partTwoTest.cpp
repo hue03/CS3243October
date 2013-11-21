@@ -253,7 +253,7 @@ void killProcess(void)
 				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 				//cout << "hello4" << endl;
 			}
-
+			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
 			deadProc++;
 		}
@@ -481,48 +481,6 @@ int secondChance(void)
 	usedFrames--;
 	return victimIndex;
 }
-
-int fifoCheck(int j)
-{
-	cout << "running fifoCheck" << endl;
-	int victimIndex = -1;
-	int smallestStart = MAX_QUANTA;
-
-	for ( ; j < MAX_FRAMES; j++)
-	{
-		if (memory.memArray[j]->startTime < smallestStart
-		        && memory.memArray[j]->processName != '@')
-		{
-			smallestStart = memory.memArray[j]->startTime;
-			victimIndex = j;
-		}
-	}
-	cout << "start: " << smallestStart << endl;
-	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
-	return victimIndex;
-}
-
-
-int fifoCheck(int j)
-{
-	cout << "running fifoCheck" << endl;
-	int victimIndex = -1;
-	int smallestStart = MAX_QUANTA;
-
-	for ( ; j < MAX_FRAMES; j++)
-	{
-		if (memory.memArray[j]->startTime < smallestStart
-		        && memory.memArray[j]->processName != '@')
-		{
-			smallestStart = memory.memArray[j]->startTime;
-			victimIndex = j;
-		}
-	}
-	cout << "start: " << smallestStart << endl;
-	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
-	return victimIndex;
-}
-
 
 int fifoCheck(int j)
 {
