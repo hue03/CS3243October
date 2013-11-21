@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <cstdlib>
-//#include <deque>
+#include <deque>
 #include <iostream>
 #include <vector>
 
@@ -93,6 +93,7 @@ vector<Process> vectOfProcesses;
 MainMemory memory;
 BackingStore backingStore;
 Page emptyPage;
+deque<int> pageQueue;
 int runTime;
 int usedFrames;
 //int pagesLoaded;
@@ -369,6 +370,10 @@ void insertIntoMemory(Page &pg)
 	pageLocation->startTime = runTime;
 	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
+	if (pageLocation->processName != '@')
+	{
+		pageQueue.push_back(frame);
+	}
 	usedFrames++;
 }
 
@@ -387,7 +392,7 @@ int fifo(void)
 {
 	cout << "running fifo" << endl;
 	int victimIndex = -1;
-	int smallestStart = MAX_QUANTA;
+	/*int smallestStart = MAX_QUANTA;
 
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
@@ -397,7 +402,9 @@ int fifo(void)
 			smallestStart = memory.memArray[j]->startTime;
 			victimIndex = j;
 		}
-	}
+	}*/
+	victimIndex = pageQueue[0];
+	pageQueue.pop_front();
 	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -604,9 +611,9 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
-	//return fifo();	// returns an index value of the recently freed frame
+	return fifo();	// returns an index value of the recently freed frame
 	//return lru();
-	return secondChance();
+	//return secondChance();
 }
 
 Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
