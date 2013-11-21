@@ -49,8 +49,7 @@ struct Page
 	int startTime;
 
 	Page();
-	Page(char processName, char suffix, short frameNum, bool valid,
-	        short refByte, int startTime);
+	Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime);
 	void initialize(char processName, char suffix);
 	void removePage();
 };
@@ -95,7 +94,6 @@ Page emptyPage;
 int runTime;
 int usedFrames;
 int pagesLoaded;
-int loadedPages;
 int loadedProc;
 int refBitSet;
 int refBitClear;
@@ -121,10 +119,7 @@ int main(void)
 {
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
-	runTime = 0;
 	createProcesses();
-	printProcesses();	// TODO test output
-	backingStore.printPages();	// TODO test output
 	char a;
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
@@ -229,22 +224,24 @@ void createPages(Process &p)
 	}
 }
 
+//TODO go through vectofprocess and check deathtime
+//TODO when one needs to die, change its page entries process name to blank and set to invalid
+//TODO go into memory and remove these invalid pages
+//TODO now remove the pages from the backing store
+//TODO make the process's page table have empty pages
 void killProcess(void)
 {
-	//TODO go through vectofprocess and check deathtime
-	//TODO when one needs to die, change its page entries process name to blank and set to invalid
-	//TODO go into memory and remove these invalid pages
-	//TODO now remove the pages from the backing store
-	//TODO make the process's page table have empty pages
 	for (uint i = 0; i < vectOfProcesses.size(); i++)
 	{
 		if (vectOfProcesses[i].deathTime == runTime)
 		{
-			cout << "killing " << vectOfProcesses[i].name << endl;
-			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)//go through dying process's pageIndex
+			cout << "killing " << vectOfProcesses[i].name << endl;	// TODO test output
+
+			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)	// go through dying process's pageIndex
 			{
 				//cout << "hello1" << endl;
-				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid) //if the page is in a frame
+
+				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
 				{
 					//cout << "hello2" << endl;
 					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
@@ -464,8 +461,7 @@ void printMemoryMap(void)
 
 // TODO insert page function for BackingStore
 
-BackingStore::BackingStore() :
-		freeIndex(0)
+BackingStore::BackingStore() : freeIndex(0)
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
@@ -523,8 +519,8 @@ void Page::initialize(char processName, char suffix)
 {
 	this->processName = processName;
 	this->suffix = suffix;
-	this->valid = false;
-	this->refByte = 0;
+	valid = false;
+	refByte = 0;
 }
 
 void Page::removePage()
@@ -563,6 +559,8 @@ void Process::print(void)
 // TODO test output
 void printProcesses(void)
 {
+	printf("Processes\n");
+	printf("-----+------+-------+-------------+-------+-------\n");
 	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "", "", "Number", "", "");
 	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "Life", "Death", "of", "Is", "Page");
 	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "Name", "Time", "Time", "Subroutines", "Alive", "Index");
@@ -577,12 +575,14 @@ void printProcesses(void)
 // TODO test output
 void BackingStore::printPages(void)
 {
-	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "", "Assoc.", "", "Frame", "Valid", "Reference", "Start");
-	printf("%5s | %7s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Process", "Suffix", "Number", "Bit", "Byte", "Time");
-	printf("------+---------+--------+--------+-------+-----------+-------\n");
+	printf("Backing Store\n");
+	printf("------+------------+--------+--------+-------+-----------+-------\n");
+	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "", "Associated", "", "Frame", "Valid", "Reference", "Start");
+	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Process", "Suffix", "Number", "Bit", "Byte", "Time");
+	printf("------+------------+--------+--------+-------+-----------+-------\n");
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %7c | %6c | %6i | %5d | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, pages[i].valid, pages[i].refByte, pages[i].startTime);
+		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte, pages[i].startTime);
 	}
 }
