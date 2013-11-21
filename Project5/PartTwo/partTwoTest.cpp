@@ -15,9 +15,9 @@
 //#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
 #define PROCESS_COUNT 23 // useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
-#define MIN_DEATH_INTERVAL 45
+#define MIN_DEATH_INTERVAL 95
 //#define MAX_DEATH_INTERVAL 300
-#define MAX_DEATH_INTERVAL 49
+#define MAX_DEATH_INTERVAL 99
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 //#define SHIFT_INTERVAL 10
@@ -25,7 +25,7 @@
 //#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
 //#define MAX_QUANTA 50000	// # quanta to run before ending simulation
-#define MAX_QUANTA 50	// # quanta to run before ending simulation
+#define MAX_QUANTA 100	// # quanta to run before ending simulation
 #define SLEEP_LENGTH 250000	// Used with the usleep()to slow down sim between
 							// cycles (makes reading screen in real-time easier!)
 
@@ -46,6 +46,7 @@ struct Page
 	short frameNum;
 	bool valid;
 	short refByte;
+	bool sc;
 	int startTime;
 
 	Page();
@@ -111,6 +112,7 @@ void insertIntoMemory(Page &pg);
 void shiftRefByte(void);
 int fifo(void);
 int lru(void);
+int secondChance(void);
 //void printProcessPageTable(Process p);
 void printMemoryMap(void);
 void printProcesses(void);	// TODO test output
@@ -296,6 +298,7 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
 		backingStore.pages[selectedPage].refByte |= 128; //bit shift the refByte
+		backingStore.pages[selectedPage].sc = true; //set second chance bit to true
 		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
 	}
 
@@ -316,18 +319,20 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte //bit shift the refByte
-
+		backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
+		backingStore.pages[selectedSubRoutine].sc = true; //set second chance bit to true
 
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte //bit shift the refByte
+		backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte
+		backingStore.pages[selectedSubRoutine2].sc = true; //set second chance bit to true
 	}
 	else //run all of the kernel's sub routine pages
 	{
+		cout << backingStore.pages[0].sc << endl;
 		int selectedSubRoutine;
 		int selectedSubRoutine2;
 		for (int j = 0; j < 5; j++)
@@ -344,6 +349,7 @@ void touchProcess(void)
 				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 			}
 			backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
+			backingStore.pages[selectedSubRoutine].sc = true;
 			
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
@@ -351,6 +357,7 @@ void touchProcess(void)
 				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 			}
 			backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte
+			backingStore.pages[selectedSubRoutine2].sc = true;
 		}
 	}
 
@@ -416,6 +423,42 @@ int lru(void)
 			smallestRef = memory.memArray[j]->refByte;
 			victimIndex = j;
 		}
+	}
+	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
+	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->frameNum = -1;
+	memory.emptyMemory(victimIndex);
+	usedFrames--;
+	return victimIndex;
+}
+
+int secondChance(void)
+{
+	//TODO in a loop run fifo to get an index position of the process with the smallest time
+	//TODO from the index check the second chance bit. if 1 set to 0 and run fifo again. if 0 pick that index and break
+	cout << "running second chance" << endl;
+	int victimIndex = -1;
+	for (int j = 0; j < MAX_FRAMES; j++)
+	{
+		if (memory.memArray[j]->processName != '@')
+		{ 
+			if (memory.memArray[j]->sc)
+			{
+				memory.memArray[j]->sc = false;
+				cout << "give second chance" << endl;
+			}
+			else
+			{
+				victimIndex = j;
+				break;
+			}
+		}
+	}
+	
+	if (victimIndex == -1)
+	{
+		victimIndex = fifo();
+		cout << " j: " << victimIndex << endl;
 	}
 	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
@@ -523,8 +566,8 @@ int MainMemory::getFreeFrame()
 	}
 
 	//return fifo();	// returns an index value of the recently freed frame
-	return lru();
-	//return secondChance();
+	//return lru();
+	return secondChance();
 }
 
 Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
@@ -537,6 +580,7 @@ void Page::initialize(char processName, char suffix)
 	this->suffix = suffix;
 	valid = false;
 	refByte = 0;
+	sc = false;
 }
 
 void Page::removePage()
@@ -547,6 +591,7 @@ void Page::removePage()
 	valid = false;
 	refByte = 0;
 	startTime = -1;
+	sc = false;
 }
 
 Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
