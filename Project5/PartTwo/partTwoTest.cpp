@@ -458,20 +458,20 @@ void printMemoryMap(void)
 	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
-	printf("        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i\n", 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59);
-	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
-	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	printf("        %02i        %02i        %02i        %02i        %02i        %02i        %02i        %02i       %3i       %3i       %3i       %3i\n", 64, 69, 74, 79, 84, 89, 94, 99, 104, 109, 114, 119);
-	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 4; i < 60; i += 5) printf("        %02lu", i); printf("\n");
+	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
+	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix); printf("\n");
+	for (size_t i = 64; i < 120; i += 5) printf("%10lu", i); printf("\n");
+	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 124, 129, 134, 139, 144, 149, 154, 159, 164, 169, 174, 179);
-	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 124; i < 180; i += 5) printf("%10lu", i); printf("\n");
+	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 184, 189, 194, 199, 204, 209, 214, 219, 224, 229, 234, 239);
-	printf("--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 184; i < 240; i += 5) printf("%10lu", i); printf("\n");
+	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	printf("       %3i       %3i       %3i       %3i       %3i       %3i       %3i       %3i\n", 244, 249, 254, 259, 264, 269, 274, 279);
-	printf("--------++--------||--------++--------||--------++--------||--------++--------||\n");
+	for (size_t i = 244; i < 280; i += 5) printf("%10lu", i); printf("\n");
+	for (size_t i = 0; i < 4; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
 }
 
@@ -592,7 +592,13 @@ void printProcesses(void)
 void BackingStore::printPages(void)
 {
 	printf("PAGE TABLES\n");
-	printf("%5c%10c%10c%10c%10c%10c%10c%10c%10c%10c%10c", 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K');
+	printf("%5c", 'A'); for (char i = 'B'; i <= 'K'; ++i) printf("%11c", i);
+//	printf("%5c%11c%11c%11c%11c%11c%11c%11c%11c%11c%11c\n", 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K');
+
+	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
+	{
+		printf("%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x|%02i %03i %c%02x", i);
+	}
 
 	printf("Backing Store\n");
 	printf("------+------------+--------+--------+-------+-----------+-------\n");
