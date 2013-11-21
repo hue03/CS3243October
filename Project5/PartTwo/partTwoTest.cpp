@@ -124,7 +124,6 @@ int main(void)
 	srand(SEED);
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
-	backingStore.print();
 	//backingStore.printPages();
 	char a;
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
@@ -619,9 +618,9 @@ int MainMemory::getFreeFrame()
 	//return secondChance();
 }
 
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1), sc(false) { }
 
-Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime) { }
+Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime), sc(false) { }
 
 void Page::initialize(char processName, char suffix)
 {
