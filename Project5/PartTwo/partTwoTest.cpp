@@ -522,6 +522,97 @@ int fifoCheck(int j)
 	//cout << "--------------------------------------------------------------------------------" << endl;
 }*/
 
+void printPerProcessPageTables(void)
+{
+	printf("PAGE TABLES\n");
+
+	for (size_t i = 0; i < PROCESS_COUNT - 1; i += PROCS_PER_LINE - 1)
+	{
+		for (size_t j = i; j - i < PROCS_PER_LINE - 1 && j - i < PROCESS_COUNT; ++j)
+		{
+			printf(((j - i) % PROCS_PER_LINE == 0 ? "%5c" : "%11c"), vectOfProcesses[j + 1].name);
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j)
+		{
+			for (size_t k = 0; k < PROCS_PER_LINE - 1 && i + k < PROCESS_COUNT - 1; ++k)
+			{
+				Page p = backingStore.pages[vectOfProcesses[k + 1].pageIndex[j]];
+
+				if (k > 0) printf("|");
+
+				printf("%02lu %03i %c%02x", j, p.frameNum, (p.valid ? 'v' : 'i'), p.refByte);
+			}
+
+			printf("\n");
+		}
+
+		printf("\n");
+	}
+}
+
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1), sc(false) { }
+
+Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime), sc(false) { }
+
+void Page::initialize(char processName, char suffix)
+{
+	this->processName = processName;
+	this->suffix = suffix;
+	valid = false;
+	refByte = 0;
+	sc = false;
+}
+
+void Page::removePage()
+{
+	processName = EMPTY_PROCESS_NAME;
+	suffix = ' ';
+	frameNum = -1;
+	valid = false;
+	refByte = 0;
+	startTime = -1;
+	sc = false;
+}
+
+Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
+{
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	{
+		pageIndex[i] = -1;
+	}
+}
+
+MainMemory::MainMemory() : freeIndex(0)
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		memArray[i] = &emptyPage;
+	}
+}
+
+void MainMemory::emptyMemory(int p)
+{
+	memArray[p] = &emptyPage;
+}
+
+int MainMemory::getFreeFrame()
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		if (memArray[i]->suffix == ' ')
+		{
+			return i;
+		}
+	}
+
+	return fifo();	// returns an index value of the recently freed frame
+	//return lru();
+	//return secondChance();
+}
+
 void MainMemory::print(void)
 {
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
@@ -590,66 +681,6 @@ int BackingStore::getFreePage()
 	exit(0);
 }
 
-MainMemory::MainMemory() : freeIndex(0)
-{
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		memArray[i] = &emptyPage;
-	}
-}
-
-void MainMemory::emptyMemory(int p)
-{
-	memArray[p] = &emptyPage;
-}
-
-int MainMemory::getFreeFrame()
-{
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		if (memArray[i]->suffix == ' ')
-		{
-			return i;
-		}
-	}
-
-	return fifo();	// returns an index value of the recently freed frame
-	//return lru();
-	//return secondChance();
-}
-
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1), sc(false) { }
-
-Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime), sc(false) { }
-
-void Page::initialize(char processName, char suffix)
-{
-	this->processName = processName;
-	this->suffix = suffix;
-	valid = false;
-	refByte = 0;
-	sc = false;
-}
-
-void Page::removePage()
-{
-	processName = EMPTY_PROCESS_NAME;
-	suffix = ' ';
-	frameNum = -1;
-	valid = false;
-	refByte = 0;
-	startTime = -1;
-	sc = false;
-}
-
-Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
-{
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-	{
-		pageIndex[i] = -1;
-	}
-}
-
 void BackingStore::print(void)
 {
 	printf("BACKING STORE (PAGES)\n");
@@ -673,37 +704,6 @@ void BackingStore::print(void)
 		for (size_t j = 0; j < 60 && i + j < MAX_PAGES; ++j)
 		{
 			printf("%c%c", backingStore.pages[i + j].processName, backingStore.pages[i + j].suffix);
-		}
-
-		printf("\n");
-	}
-}
-
-void printPerProcessPageTables(void)
-{
-	printf("PAGE TABLES\n");
-
-	for (size_t i = 0; i < PROCESS_COUNT - 1; i += PROCS_PER_LINE - 1)
-	{
-		for (size_t j = i; j - i < PROCS_PER_LINE - 1 && j - i < PROCESS_COUNT; ++j)
-		{
-			printf(((j - i) % PROCS_PER_LINE == 0 ? "%5c" : "%11c"), vectOfProcesses[j + 1].name);
-		}
-
-		printf("\n");
-
-		for (size_t j = 0; j < MAX_NUM_PAGES_PER_PROCESS; ++j)
-		{
-			for (size_t k = 0; k < PROCS_PER_LINE - 1 && i + k < PROCESS_COUNT - 1; ++k)
-			{
-				Page p = backingStore.pages[vectOfProcesses[k + 1].pageIndex[j]];
-
-				if (k > 0) printf("|");
-
-				printf("%02lu %03i %c%02x", j, p.frameNum, (p.valid ? 'v' : 'i'), p.refByte);
-			}
-
-			printf("\n");
 		}
 
 		printf("\n");
