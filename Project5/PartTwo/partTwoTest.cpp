@@ -240,7 +240,7 @@ void killProcess(void)
 			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)	// go through dying process's pageIndex
 			{
 				//cout << "hello1" << endl;
-				
+
 				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
 				{
 					//cout << "hello2" << endl;
@@ -502,7 +502,6 @@ int fifoCheck(int j)
 	return victimIndex;
 }
 
-
 /*void printProcessPageTable(Process p)
 {
 	//Page** tempTable = p.pageTable;
@@ -536,15 +535,15 @@ void printMemoryMap(void)
 	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
-	
+
 	for (size_t i = 4; i < 60; i += 5) printf("        %02lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix); printf("\n");
-	
+
 	for (size_t i = 64; i < 120; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	
+
 	for (size_t i = 124; i < 180; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
@@ -552,7 +551,7 @@ void printMemoryMap(void)
 	for (size_t i = 184; i < 240; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-	
+
 	for (size_t i = 244; i < 280; i += 5) printf("%10lu", i); printf("\n");
 	for (size_t i = 0; i < 4; ++i) printf("--------++--------||"); printf("\n");
 	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
