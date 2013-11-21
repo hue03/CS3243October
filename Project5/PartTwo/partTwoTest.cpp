@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <cstdlib>
-//#include <deque>
+#include <deque>
 #include <iostream>
 #include <vector>
 
@@ -93,6 +93,7 @@ vector<Process> vectOfProcesses;
 MainMemory memory;
 BackingStore backingStore;
 Page emptyPage;
+deque<int> pageQueue;
 int runTime;
 int usedFrames;
 //int pagesLoaded;
@@ -252,7 +253,7 @@ void killProcess(void)
 				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 				//cout << "hello4" << endl;
 			}
-
+			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
 			deadProc++;
 		}
@@ -368,6 +369,10 @@ void insertIntoMemory(Page &pg)
 	pageLocation->startTime = runTime;
 	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
+	if (pageLocation->processName != '@')
+	{
+		pageQueue.push_back(frame);
+	}
 	usedFrames++;
 }
 
@@ -386,7 +391,7 @@ int fifo(void)
 {
 	cout << "running fifo" << endl;
 	int victimIndex = -1;
-	int smallestStart = MAX_QUANTA;
+	/*int smallestStart = MAX_QUANTA;
 
 	for (int j = 0; j < MAX_FRAMES; j++)
 	{
@@ -396,7 +401,9 @@ int fifo(void)
 			smallestStart = memory.memArray[j]->startTime;
 			victimIndex = j;
 		}
-	}
+	}*/
+	victimIndex = pageQueue[0];
+	pageQueue.pop_front();
 	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -532,7 +539,7 @@ void MainMemory::print(void)
 	printf("QUANTA ELAPSED: %i\n", runTime);
 	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
 	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
-	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc), unloadedProcPercentage, deadProc, deadProcPercentage);
+	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc - deadProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
 
 	for (size_t i = 0; i < MAX_FRAMES; i += 60)
@@ -607,9 +614,9 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
-	//return fifo();	// returns an index value of the recently freed frame
+	return fifo();	// returns an index value of the recently freed frame
 	//return lru();
-	return secondChance();
+	//return secondChance();
 }
 
 Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
