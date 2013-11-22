@@ -281,9 +281,15 @@ void touchProcess(void)
 		{
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
-		backingStore.pages[selectedPage].refByte |= 128; //set the refByte
-		//backingStore.pages[selectedPage].sc = true; //set second chance bit to true
-		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
+		
+		if (lru == pageReplacement)
+		{
+			backingStore.pages[selectedPage].refByte |= 128; //set the refByte for lru
+		}
+		else if (secondChance == pageReplacement)
+		{
+			backingStore.pages[selectedPage].refByte |= 1; //set the refByte for second chance
+		}
 	}
 
 	int subRoutine = -1;
@@ -303,16 +309,29 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte
-		//backingStore.pages[selectedSubRoutine].sc = true; //set second chance bit to true
+		
+		if (lru == pageReplacement)
+		{
+			backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte for lru
+		}
+		else if (secondChance == pageReplacement)
+		{
+			backingStore.pages[selectedSubRoutine].refByte |= 1; //set the refByte for second chance
+		}
 
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte
-		//backingStore.pages[selectedSubRoutine2].sc = true; //set second chance bit to true
+		if (lru == pageReplacement)
+		{
+			backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte for lru
+		}
+		else if (secondChance == pageReplacement)
+		{
+			backingStore.pages[selectedSubRoutine2].refByte |= 1; //set the refByte for second chance
+		}
 	}
 	else //run all of the kernel's sub routine pages
 	{
@@ -332,16 +351,30 @@ void touchProcess(void)
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 			}
-			backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte 
-			//backingStore.pages[selectedSubRoutine].sc = true;
+			
+			if (lru == pageReplacement)
+			{
+				backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte for lru
+			}
+			else if (secondChance == pageReplacement)
+			{
+				backingStore.pages[selectedSubRoutine].refByte |= 1; //set the refByte for second chance
+			}
 
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 			}
-			backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte
-			//backingStore.pages[selectedSubRoutine2].sc = true;
+			
+			if (lru == pageReplacement)
+			{
+				backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte for lru
+			}
+			else if (secondChance == pageReplacement)
+			{
+				backingStore.pages[selectedSubRoutine2].refByte |= 1; //set the refByte for second chance
+			}
 		}
 	}
 }
