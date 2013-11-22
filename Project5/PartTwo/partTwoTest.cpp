@@ -142,7 +142,7 @@ int main(void)
 		{
 			killProcess();
 		}
-		if (runTime % SHIFT_INTERVAL == 0 && runTime != 0)
+		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
 			shiftRefByte();
 		}
@@ -252,7 +252,6 @@ void killProcess(void)
 				//cout << "hello1" << endl;
 				if (vectOfProcesses[i].pageIndex[j] != -1)
 				{
-
 					if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
 					{
 						//cout << "hello2" << endl;
