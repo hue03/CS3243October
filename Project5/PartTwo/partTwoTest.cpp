@@ -86,6 +86,7 @@ struct BackingStore
 
 	BackingStore();
 	int getFreePage();
+	void removePage(int index);
 	void print(void);
 };
 
@@ -240,8 +241,7 @@ void killProcess(void)
 						memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
 					}
 					//cout << "hello3" << endl;
-					backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
-					numOfPages--;
+					backingStore.removePage(vectOfProcesses[i].pageIndex[j]);	// remove the process's page from the backing store
 					vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 					//cout << "hello4" << endl;
 				}
@@ -588,16 +588,6 @@ void Page::initialize(char processName, char suffix)
 	refByte = 0;
 }
 
-void Page::removePage()
-{
-	processName = EMPTY_PROCESS_NAME;
-	suffix = ' ';
-	frameNum = -1;
-	valid = false;
-	refByte = 0;
-	//startTime = -1;
-}
-
 void MainMemory::print(void)
 {
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
@@ -664,6 +654,19 @@ int BackingStore::getFreePage()
 
 	fprintf(stderr, "The Backing Store is Full!");
 	exit(0);
+}
+
+void BackingStore::removePage(int index)
+{
+	Page *page = &pages[index];
+
+	page->processName = EMPTY_PROCESS_NAME;
+	page->suffix = ' ';
+	page->frameNum = -1;
+	page->valid = false;
+	page->refByte = 0;
+
+	numOfPages--;
 }
 
 void BackingStore::print(void)
