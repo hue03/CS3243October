@@ -70,8 +70,8 @@ struct Process
 
 struct MainMemory
 {
-	int freeIndex;
 	Page* memArray[MAX_FRAMES];
+	int usedFrames;
 
 	MainMemory();
 	void emptyMemory(int p);
@@ -95,7 +95,6 @@ BackingStore backingStore;
 Page emptyPage;
 deque<int> pageQueue;
 int runTime;
-int usedFrames;
 //int pagesLoaded;
 int loadedProc;
 int refBitSet;
@@ -253,11 +252,12 @@ void killProcess(void)
 				//cout << "hello1" << endl;
 				if (vectOfProcesses[i].pageIndex[j] != -1)
 				{
+
 					if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
 					{
 						//cout << "hello2" << endl;
 						memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-						usedFrames--;
+						memory.usedFrames--;
 					}
 					//cout << "hello3" << endl;
 					backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
@@ -265,10 +265,11 @@ void killProcess(void)
 					vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 					//cout << "hello4" << endl;
 				}
-			}
+
 			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
 			deadProc++;
+			}
 		}
 	}
 }
@@ -370,7 +371,6 @@ void touchProcess(void)
 			//backingStore.pages[selectedSubRoutine2].sc = true;
 		}
 	}
-
 }
 
 void insertIntoMemory(Page &pg)
@@ -386,7 +386,7 @@ void insertIntoMemory(Page &pg)
 	{
 		pageQueue.push_back(frame);
 	}
-	usedFrames++;
+	memory.usedFrames++;
 }
 
 void shiftRefByte(void)
@@ -421,7 +421,7 @@ int fifo(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -444,7 +444,7 @@ int lru(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -492,7 +492,7 @@ int secondChance(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -570,7 +570,7 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	}
 }
 
-MainMemory::MainMemory() : freeIndex(0)
+MainMemory::MainMemory() : usedFrames(0)
 {
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
