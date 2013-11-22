@@ -66,7 +66,6 @@ struct Process
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int subRoutines);
-	void print(void);	// TODO test output
 };
 
 struct MainMemory
@@ -77,6 +76,7 @@ struct MainMemory
 	MainMemory();
 	void emptyMemory(int p);
 	int getFreeFrame();
+	void print(void);
 };
 
 struct BackingStore
@@ -86,7 +86,7 @@ struct BackingStore
 
 	BackingStore();
 	int getFreePage();
-	void printPages(void);	// TODO test output
+	void print(void);
 };
 
 vector<Process> vectOfProcesses;
@@ -105,6 +105,7 @@ int refBitClear;
 int numOfPages;
 //int unloadedProc;
 int deadProc;
+int (*pageReplacement)(void);
 
 void createProcesses(void);
 void createPages(Process &p);
@@ -117,8 +118,6 @@ int lru(void);
 int secondChance(void);
 int fifoCheck(int j);
 //void printProcessPageTable(Process p);
-void printMemoryMap(void);
-void printProcesses(void);	// TODO test output
 void printPerProcessPageTables(void);
 
 int main(void)
@@ -127,7 +126,17 @@ int main(void)
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
 	//backingStore.printPages();
-	printPerProcessPageTables();
+	int input = 0;
+	do
+	{
+		printf("Choose a page replacement algorithm:\n");
+		printf("1. FIFO\n2. LRU\n3. Second Chance\n");
+		cin >> input;
+	} while (input < 1 || input > 3);
+
+	pageReplacement = &(input == 1 ? fifo :
+					   (input == 2 ? lru  : secondChance));
+
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		if (runTime != 0)
@@ -144,7 +153,7 @@ int main(void)
 			cout << "--------------------------------------------" << endl;
 			//backingStore.printPages();
 			printPerProcessPageTables();
-			printMemoryMap();
+			memory.print();
 		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "Running Time: " << runTime << endl;
@@ -522,174 +531,6 @@ int fifoCheck(int j)
 	//cout << "--------------------------------------------------------------------------------" << endl;
 }*/
 
-void printMemoryMap(void)
-{
-	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
-	int numFreeFrames = MAX_FRAMES - usedFrames;
-	float freeFramesPercentage = 100.0 * numFreeFrames / MAX_FRAMES;
-	float numOfPagesPercentage = 100.0 * numOfPages / MAX_PAGES;
-	float pagesLoadedPercentage = 100.0 * usedFrames / MAX_PAGES;
-	float pagesUnloadedPercentage = 100.0 * (numOfPages - usedFrames) / MAX_PAGES;
-	float pagesFreePercentage = 100.0 * (MAX_PAGES - numOfPages) / MAX_PAGES;
-	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
-	float unloadedProcPercentage = 100.0 * (PROCESS_COUNT - loadedProc) / PROCESS_COUNT;
-	float deadProcPercentage = 100.0 * deadProc / PROCESS_COUNT;
-
-	printf("QUANTA ELAPSED: %i\n", runTime);
-	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
-	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
-	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc - deadProc), unloadedProcPercentage, deadProc, deadProcPercentage);
-	printf("\nPHYSICAL MEMORY (FRAMES)\n");
-
-	for (size_t i = 4; i < 60; i += 5) printf("        %02lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 0; i < 60; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix); printf("\n");
-
-	for (size_t i = 64; i < 120; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 60; i < 120; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-
-	for (size_t i = 124; i < 180; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 120; i < 180; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-
-	for (size_t i = 184; i < 240; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 6; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 180; i < 240; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-
-	for (size_t i = 244; i < 280; i += 5) printf("%10lu", i); printf("\n");
-	for (size_t i = 0; i < 4; ++i) printf("--------++--------||"); printf("\n");
-	for (size_t i = 240; i < 280; ++i) printf("%c%c", memory.memArray[i]->processName, memory.memArray[i]->suffix);	printf("\n");
-}
-
-// TODO insert page function for BackingStore
-
-BackingStore::BackingStore() : freeIndex(0)
-{
-	for (size_t i = 0; i < MAX_PAGES; ++i)
-	{
-		pages[i] = Page();
-	}
-}
-
-int BackingStore::getFreePage()
-{
-	for (size_t i = 0; i < MAX_PAGES; ++i)
-	{
-		if (' ' == pages[i].suffix)
-		{
-			return i;
-		}
-	}
-
-	fprintf(stderr, "The Backing Store is Full!");
-	exit(0);
-}
-
-MainMemory::MainMemory() : freeIndex(0)
-{
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		memArray[i] = &emptyPage;
-	}
-}
-
-void MainMemory::emptyMemory(int p)
-{
-	memArray[p] = &emptyPage;
-}
-
-int MainMemory::getFreeFrame()
-{
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		if (memArray[i]->suffix == ' ')
-		{
-			return i;
-		}
-	}
-
-	//return fifo();	// returns an index value of the recently freed frame
-	return lru();
-	//return secondChance();
-}
-
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0)/*, startTime(-1) */{ }
-
-Page::Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte)/*, startTime(startTime) */{ }
-
-void Page::initialize(char processName, char suffix)
-{
-	this->processName = processName;
-	this->suffix = suffix;
-	valid = false;
-	refByte = 0;
-}
-
-void Page::removePage()
-{
-	processName = EMPTY_PROCESS_NAME;
-	suffix = ' ';
-	frameNum = -1;
-	valid = false;
-	refByte = 0;
-	//startTime = -1;
-}
-
-Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
-{
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-	{
-		pageIndex[i] = -1;
-	}
-}
-
-// TODO test output
-void Process::print(void)
-{
-	string index = "";
-
-	printf("%4c | %4i | %5i | %11i | %5i | {", name, lifeTime, deathTime, subRoutines, isAlive);
-
- 	for (size_t i = 0; i < MAX_NUM_PAGES_PER_PROCESS; ++i)
-	{
-		printf("%s%i", (i > 0 ? ", " : ""), pageIndex[i]);
-	}
-
-	printf("}\n");
-}
-
-// TODO test output
-void printProcesses(void)
-{
-	printf("Processes\n");
-	printf("-----+------+-------+-------------+-------+-------\n");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "", "", "Number", "", "");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "", "Life", "Death", "of", "Is", "Page");
-	printf("%4s | %4s | %5s | %11s | %5s | %5s\n", "Name", "Time", "Time", "Subroutines", "Alive", "Index");
-	printf("-----+------+-------+-------------+-------+-------\n");
-
-	for (size_t i = 0; i < vectOfProcesses.size(); ++i)
-	{
-		vectOfProcesses[i].print();
-	}
-}
-
-// TODO test output
-void BackingStore::printPages(void)
-{
-	printf("Backing Store\n");
-	printf("------+------------+--------+--------+-------+-----------+-------\n");
-	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "", "Associated", "", "Frame", "Valid", "Reference", "Start");
-	printf("%5s | %10s | %6s | %6s | %5s | %9s | %5s\n", "Index", "Process", "Suffix", "Number", "Bit", "Byte", "Time");
-	printf("------+------------+--------+--------+-------+-----------+-------\n");
-
-	for (size_t i = 0; i < MAX_PAGES; ++i)
-	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
-	}
-}
-
 void printPerProcessPageTables(void)
 {
 	printf("PAGE TABLES\n");
@@ -715,6 +556,160 @@ void printPerProcessPageTables(void)
 			}
 
 			printf("\n");
+		}
+
+		printf("\n");
+	}
+}
+
+Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
+{
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
+	{
+		pageIndex[i] = -1;
+	}
+}
+
+MainMemory::MainMemory() : freeIndex(0)
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		memArray[i] = &emptyPage;
+	}
+}
+
+void MainMemory::emptyMemory(int p)
+{
+	memArray[p] = &emptyPage;
+}
+
+int MainMemory::getFreeFrame()
+{
+	for (int i = 0; i < MAX_FRAMES; i++)
+	{
+		if (memArray[i]->suffix == ' ')
+		{
+			return i;
+		}
+	}
+
+	return pageReplacement();
+}
+
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0)/*, startTime(-1) */{ }
+
+Page::Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte)/*, startTime(startTime) */{ }
+
+void Page::initialize(char processName, char suffix)
+{
+	this->processName = processName;
+	this->suffix = suffix;
+	valid = false;
+	refByte = 0;
+}
+
+void Page::removePage()
+{
+	processName = EMPTY_PROCESS_NAME;
+	suffix = ' ';
+	frameNum = -1;
+	valid = false;
+	refByte = 0;
+	//startTime = -1;
+}
+
+void MainMemory::print(void)
+{
+	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
+	int numFreeFrames = MAX_FRAMES - usedFrames;
+	float freeFramesPercentage = 100.0 * numFreeFrames / MAX_FRAMES;
+	float numOfPagesPercentage = 100.0 * numOfPages / MAX_PAGES;
+	float pagesLoadedPercentage = 100.0 * usedFrames / MAX_PAGES;
+	float pagesUnloadedPercentage = 100.0 * (numOfPages - usedFrames) / MAX_PAGES;
+	float pagesFreePercentage = 100.0 * (MAX_PAGES - numOfPages) / MAX_PAGES;
+	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
+	float unloadedProcPercentage = 100.0 * (PROCESS_COUNT - loadedProc) / PROCESS_COUNT;
+	float deadProcPercentage = 100.0 * deadProc / PROCESS_COUNT;
+
+	printf("QUANTA ELAPSED: %i\n", runTime);
+	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
+	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
+	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc - deadProc), unloadedProcPercentage, deadProc, deadProcPercentage);
+	printf("\nPHYSICAL MEMORY (FRAMES)\n");
+
+	for (size_t i = 0; i < MAX_FRAMES; i += 60)
+	{
+		for (size_t j = 4; j < 60 && i + j < MAX_FRAMES; j += 5)
+		{
+			printf((i < 60 ? "        %02lu" : "%10lu"), i + j);
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < 6 && i + 10 * j < MAX_FRAMES; ++j)
+		{
+			printf("--------++--------||");
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < 60 && i + j < MAX_FRAMES; ++j)
+		{
+			printf("%c%c", memory.memArray[i + j]->processName, memory.memArray[i + j]->suffix);
+		}
+
+		printf("\n");
+	}
+}
+
+// TODO insert page function for BackingStore
+
+BackingStore::BackingStore() : freeIndex(0)
+{
+	for (size_t i = 0; i < MAX_PAGES; ++i)
+	{
+		pages[i] = Page();
+	}
+}
+
+int BackingStore::getFreePage()
+{
+	for (size_t i = 0; i < MAX_PAGES; ++i)
+	{
+		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
+		if (' ' == pages[i].suffix)
+		{
+			return i;
+		}
+	}
+
+	fprintf(stderr, "The Backing Store is Full!");
+	exit(0);
+}
+
+void BackingStore::print(void)
+{
+	printf("BACKING STORE (PAGES)\n");
+
+	for (size_t i = 0; i < MAX_PAGES; i += 60)
+	{
+		for (size_t j = 4; j < 60 && i + j < MAX_PAGES; j += 5)
+		{
+			printf((i < 60 ? "        %02lu" : "%10lu"), i + j);
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < 6 && i + 10 * j < MAX_PAGES; ++j)
+		{
+			printf("--------++--------||");
+		}
+
+		printf("\n");
+
+		for (size_t j = 0; j < 60 && i + j < MAX_PAGES; ++j)
+		{
+			printf("%c%c", backingStore.pages[i + j].processName, backingStore.pages[i + j].suffix);
 		}
 
 		printf("\n");
