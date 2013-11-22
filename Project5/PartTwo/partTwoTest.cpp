@@ -40,18 +40,18 @@
 
 using namespace std;
 
+typedef unsigned char byte;
 struct Page
 {
 	char processName;
 	char suffix;
 	short frameNum;
 	bool valid;
-	short refByte;
-	bool sc;
-	int startTime;
+	byte refByte;
+	//int startTime;
 
 	Page();
-	Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime);
+	Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/);
 	void initialize(char processName, char suffix);
 	void removePage();
 };
@@ -127,7 +127,7 @@ int main(void)
 	cout << SEED << endl;	// TODO test output
 	createProcesses();
 	//backingStore.printPages();
-	char a;
+	printPerProcessPageTables();
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		if (runTime != 0)
@@ -143,6 +143,7 @@ int main(void)
 		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
 			//backingStore.printPages();
+			printPerProcessPageTables();
 			printMemoryMap();
 		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
@@ -153,7 +154,7 @@ int main(void)
 			usleep(SLEEP_LENGTH);
 		}*/
 		cout << "Press anything to continue" << endl;
-		cin >> a;
+		cin.ignore();
 	}
 
 	/*Test refbyte stuff
@@ -241,18 +242,20 @@ void killProcess(void)
 			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)	// go through dying process's pageIndex
 			{
 				//cout << "hello1" << endl;
-
-				if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
+				if (vectOfProcesses[i].pageIndex[j] != -1)
 				{
-					//cout << "hello2" << endl;
-					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-					usedFrames--;
+					if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
+					{
+						//cout << "hello2" << endl;
+						memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
+						usedFrames--;
+					}
+					//cout << "hello3" << endl;
+					backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
+					numOfPages--;
+					vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
+					//cout << "hello4" << endl;
 				}
-				//cout << "hello3" << endl;
-				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
-				numOfPages--;
-				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
-				//cout << "hello4" << endl;
 			}
 			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
@@ -295,8 +298,8 @@ void touchProcess(void)
 		{
 			insertIntoMemory(backingStore.pages[selectedPage]);
 		}
-		backingStore.pages[selectedPage].refByte |= 128; //bit shift the refByte
-		backingStore.pages[selectedPage].sc = true; //set second chance bit to true
+		backingStore.pages[selectedPage].refByte |= 128; //set the refByte
+		//backingStore.pages[selectedPage].sc = true; //set second chance bit to true
 		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
 	}
 
@@ -317,20 +320,20 @@ void touchProcess(void)
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
-		backingStore.pages[selectedSubRoutine].sc = true; //set second chance bit to true
+		backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte
+		//backingStore.pages[selectedSubRoutine].sc = true; //set second chance bit to true
 
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 		}
-		backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte
-		backingStore.pages[selectedSubRoutine2].sc = true; //set second chance bit to true
+		backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte
+		//backingStore.pages[selectedSubRoutine2].sc = true; //set second chance bit to true
 	}
 	else //run all of the kernel's sub routine pages
 	{
-		cout << backingStore.pages[0].sc << endl;
+		//cout << backingStore.pages[0].sc << endl;
 		int selectedSubRoutine;
 		int selectedSubRoutine2;
 		for (int j = 0; j < 5; j++)
@@ -346,16 +349,16 @@ void touchProcess(void)
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 			}
-			backingStore.pages[selectedSubRoutine].refByte |= 128; //bit shift the refByte
-			backingStore.pages[selectedSubRoutine].sc = true;
+			backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte 
+			//backingStore.pages[selectedSubRoutine].sc = true;
 
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
 				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
 			}
-			backingStore.pages[selectedSubRoutine2].refByte |= 128; //bit shift the refByte
-			backingStore.pages[selectedSubRoutine2].sc = true;
+			backingStore.pages[selectedSubRoutine2].refByte |= 128; //set the refByte
+			//backingStore.pages[selectedSubRoutine2].sc = true;
 		}
 	}
 
@@ -367,7 +370,7 @@ void insertIntoMemory(Page &pg)
 	int frame = memory.getFreeFrame();
 	pageLocation->valid = true;
 	pageLocation->frameNum = frame;
-	pageLocation->startTime = runTime;
+	//pageLocation->startTime = runTime;
 	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
 	if (pageLocation->processName != '@')
@@ -403,7 +406,7 @@ int fifo(void)
 			victimIndex = j;
 		}
 	}*/
-	victimIndex = pageQueue[0];
+	victimIndex = pageQueue.front();
 	pageQueue.pop_front();
 	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
@@ -442,9 +445,26 @@ int secondChance(void)
 	//TODO from the index check the second chance bit. if 1 set to 0 and run fifo again. if 0 pick that index and break
 	cout << "running second chance" << endl;
 	int victimIndex = -1;
-	int startIndex = 20; //give a starting position and increment because the fifocheck was starting at the same spot and removing the page that was just inserted
-						//cannot compare suffix and process name because the incoming pages might be just be subroutine pages.
 	while (true)
+	{
+		victimIndex = pageQueue.front();
+		if (memory.memArray[victimIndex]->refByte) //if not 0 or >0 do this
+		{
+			memory.memArray[victimIndex]->refByte &= 0;
+			pageQueue.push_back(victimIndex);
+			pageQueue.pop_front();
+			cout << "give second chance" << endl;  
+		}
+		else
+		{
+			pageQueue.pop_front();
+			break;
+		}
+	}
+	
+	//int startIndex = 20; //give a starting position and increment because the fifocheck was starting at the same spot and removing the page that was just inserted
+						//cannot compare suffix and process name because the incoming pages might be just be subroutine pages
+	/*while (true)
 	{
 		victimIndex = fifoCheck(startIndex++ % MAX_FRAMES); //increment after the operation. mod by MAX_FRAMES for wrap around
 		if (memory.memArray[victimIndex]->sc)
@@ -458,28 +478,6 @@ int secondChance(void)
 		{
 			break;
 		}
-	}
-	/*for (int j = 0; j < MAX_FRAMES; j++)
-	{
-		if (memory.memArray[j]->processName != '@')
-		{
-			if (memory.memArray[j]->sc)
-			{
-				memory.memArray[j]->sc = false;
-				cout << "give second chance" << endl;
-			}
-			else
-			{
-				victimIndex = j;
-				break;
-			}
-		}
-	}
-
-	if (victimIndex == -1)
-	{
-		victimIndex = fifo();
-		cout << " j: " << victimIndex << endl;
 	}*/
 	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
@@ -493,9 +491,9 @@ int fifoCheck(int j)
 {
 	cout << "running fifoCheck" << endl;
 	int victimIndex = -1;
-	int smallestStart = MAX_QUANTA;
+	/*int smallestStart = MAX_QUANTA;
 
-	for ( ; j < MAX_FRAMES; j++)
+	for (int j = 0; j < MAX_FRAMES; j++)
 	{
 		if (memory.memArray[j]->startTime < smallestStart
 		        && memory.memArray[j]->processName != '@')
@@ -503,8 +501,8 @@ int fifoCheck(int j)
 			smallestStart = memory.memArray[j]->startTime;
 			victimIndex = j;
 		}
-	}
-	cout << "start: " << smallestStart << endl;
+	}*/
+	victimIndex = pageQueue.front();
 	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	return victimIndex;
 }
@@ -611,14 +609,14 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
-	return fifo();	// returns an index value of the recently freed frame
-	//return lru();
+	//return fifo();	// returns an index value of the recently freed frame
+	return lru();
 	//return secondChance();
 }
 
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0), startTime(-1) { }
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0)/*, startTime(-1) */{ }
 
-Page::Page(char processName, char suffix, short frameNum, bool valid, short refByte, int startTime) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte), startTime(startTime) { }
+Page::Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte)/*, startTime(startTime) */{ }
 
 void Page::initialize(char processName, char suffix)
 {
@@ -626,7 +624,6 @@ void Page::initialize(char processName, char suffix)
 	this->suffix = suffix;
 	valid = false;
 	refByte = 0;
-	sc = false;
 }
 
 void Page::removePage()
@@ -636,8 +633,7 @@ void Page::removePage()
 	frameNum = -1;
 	valid = false;
 	refByte = 0;
-	startTime = -1;
-	sc = false;
+	//startTime = -1;
 }
 
 Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTime(lifeTime), deathTime(0), subRoutines(subRoutines), isAlive(false)
@@ -690,7 +686,7 @@ void BackingStore::printPages(void)
 
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte, pages[i].startTime);
+		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
 	}
 }
 
