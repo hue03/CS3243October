@@ -165,7 +165,7 @@ int main(void)
 			usleep(SLEEP_LENGTH);
 		}*/
 		cout << "Press anything to continue" << endl;
-		cin.ignore();
+//		cin.ignore();
 	}
 }
 
@@ -235,7 +235,7 @@ void touchProcess(void)
 
 		// bring the selected page into memory if necessary
 		if (!(backingStore.pages[selectedPage].valid)) insertIntoMemory(backingStore.pages[selectedPage]);
-		backingStore.print();
+
 		backingStore.pages[selectedPage].refByte |= 128; //set the refByte
 		//backingStore.pages[selectedPage].sc = true; //set second chance bit to true
 		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
@@ -299,6 +299,8 @@ void touchProcess(void)
 			//backingStore.pages[selectedSubRoutine2].sc = true;
 		}
 	}
+
+	printPerProcessPageTables();
 }
 
 void insertIntoMemory(Page &pg)
@@ -472,7 +474,7 @@ void printPerProcessPageTables(void)
 		{
 			for (size_t k = 0; k < PROCS_PER_LINE - 1 && i + k < PROCESS_COUNT - 1; ++k)
 			{
-				Page p = backingStore.pages[vectOfProcesses[k + 1].pageIndex[j]];
+				Page p = backingStore.pages[vectOfProcesses[i + k + 1].pageIndex[j]];
 
 				if (k > 0) printf("|");
 
