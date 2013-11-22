@@ -144,14 +144,14 @@ int main(void)
 		}
 		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
-			shiftRefByte();
+			//shiftRefByte();
 		}
 
 		touchProcess();
 		cout << "Running Time: " << runTime << endl;
 			cout << "--------------------------------------------" << endl;
 			//backingStore.printPages();
-			printPerProcessPageTables();
+			//printPerProcessPageTables();
 			memory.print();
 		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
 		{
@@ -164,24 +164,6 @@ int main(void)
 		cout << "Press anything to continue" << endl;
 		cin.ignore();
 	}
-
-	/*Test refbyte stuff
-	createPages(vectOfProcesses[1]);
-	insertIntoMemory(backingStore.pages[1]);
-	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
-	backingStore.pages[1].refByte |= 128;
-	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
-	backingStore.pages[1].refByte >>= 1;
-	cout << "ref: " << dec << backingStore.pages[1].refByte << endl;
-	cout << "ref: " << hex << backingStore.pages[1].refByte << endl;
-	printMemoryMap();
-	cout << "valid " << backingStore.pages[1].valid << endl;
-	lru();
-	cout << "valid " << backingStore.pages[1].valid << endl;
-	printMemoryMap();
-	*/
 }
 
 void createProcesses(void)
@@ -264,7 +246,6 @@ void killProcess(void)
 					vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 					//cout << "hello4" << endl;
 				}
-
 			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
 			deadProc++;
@@ -675,7 +656,7 @@ int BackingStore::getFreePage()
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5d\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
+		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5x\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
 		if (' ' == pages[i].suffix)
 		{
 			return i;
