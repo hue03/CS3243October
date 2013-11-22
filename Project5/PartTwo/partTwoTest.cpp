@@ -67,6 +67,8 @@ struct Process
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int subRoutines);
+	void initialize();
+	void createPages();
 	void die(void);
 };
 
@@ -111,7 +113,6 @@ int deadProc;
 int (*pageReplacement)(void);
 
 void createProcesses(void);
-void createPages(Process &p);
 void killProcess(void);
 void touchProcess(void);
 void insertIntoMemory(Page &pg);
@@ -142,10 +143,8 @@ int main(void)
 
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
-		if (runTime != 0)
-		{
-			killProcess();
-		}
+		if (runTime != 0) killProcess();
+
 		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
 			//shiftRefByte();
@@ -198,28 +197,6 @@ void createProcesses(void)
 	}
 }
 
-void createPages(Process &p)
-{
-	for (int i = 0; i < DEFAULT_NUM_PAGES_PER_PROCESS + 2 * p.subRoutines; i++)
-	{
-		// Set suffix of page based on the page index i
-		char suffix = ('@' == p.name ? '@' :
-							 (i <  2 ? '0' :
-							 (i <  5 ? '1' :
-							 (i < 10 ? '2' :
-							 (i < 12 ? '3' :
-							 (i < 14 ? '4' :
-							 (i < 16 ? '5' :
-							 (i < 18 ? '6' : '7'))))))));
-
-		int freeIndex = backingStore.getFreePage();
-
-		p.pageIndex[i] = freeIndex;
-		backingStore.pages[freeIndex].initialize(p.name, suffix);
-		backingStore.numOfPages++;
-	}
-}
-
 //TODO go through vectofprocess and check deathtime
 //TODO when one needs to die, change its page entries process name to blank and set to invalid
 //TODO go into memory and remove these invalid pages
@@ -248,19 +225,7 @@ void touchProcess(void)
 	cout << "Touching process at index " << processIndex << endl;	// TODO test output
 	cout << "Touching process " << pickedProcess->name << endl;	// TODO test output
 
-	if (!pickedProcess->isAlive)
-	{
-		// if deathTime > 0, then we're touching a dead process
-		if (pickedProcess->deathTime > 0)
-		{
-			deadProc--;
-		}
-
-		pickedProcess->isAlive = true;
-		loadedProc++;
-		createPages(*pickedProcess);
-		pickedProcess->deathTime = runTime + pickedProcess->lifeTime;//should death time keep changing everytime it is touched?
-	}
+	if (!vectOfProcesses[processIndex].isAlive) vectOfProcesses[processIndex].initialize();
 
 	int selectedPage = -1;
 
@@ -268,10 +233,9 @@ void touchProcess(void)
 	{
 		selectedPage = pickedProcess->pageIndex[i];
 
-		if (!(backingStore.pages[selectedPage].valid))//bring the selected page into memory if necessary
-		{
-			insertIntoMemory(backingStore.pages[selectedPage]);
-		}
+		// bring the selected page into memory if necessary
+		if (!(backingStore.pages[selectedPage].valid)) insertIntoMemory(backingStore.pages[selectedPage]);
+		backingStore.print();
 		backingStore.pages[selectedPage].refByte |= 128; //set the refByte
 		//backingStore.pages[selectedPage].sc = true; //set second chance bit to true
 		//cout << "ref shift " << backingStore.pages[selectedPage].refByte << endl;
@@ -346,10 +310,8 @@ void insertIntoMemory(Page &pg)
 	//pageLocation->startTime = runTime;
 	//pageLocation->refByte = 128;
 	memory.memArray[frame] = pageLocation;
-	if (pageLocation->processName != '@')
-	{
-		pageQueue.push_back(frame);
-	}
+	if (pageLocation->processName != '@') pageQueue.push_back(frame);
+
 	memory.usedFrames++;
 }
 
@@ -357,10 +319,8 @@ void shiftRefByte(void)
 {
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
-		if (memory.memArray[i]->processName != '@')
-		{
-			memory.memArray[i]->refByte >>= 1; //bit shift right
-		}
+		// bit shift right
+		if (memory.memArray[i]->processName != '@') memory.memArray[i]->refByte >>= 1;
 	}
 }
 
@@ -531,6 +491,42 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
+	}
+}
+
+void Process::initialize(void)
+{
+	// if deathTime > 0, then we're touching a dead process
+	if (deathTime > 0)
+	{
+		deadProc--;
+	}
+
+	isAlive = true;
+	loadedProc++;
+	createPages();
+	deathTime = runTime + lifeTime;//should death time keep changing everytime it is touched?
+}
+
+void Process::createPages()
+{
+	for (int i = 0; i < DEFAULT_NUM_PAGES_PER_PROCESS + 2 * subRoutines; i++)
+	{
+		// Set suffix of page based on the page index i
+		char suffix = ('@' == name ? '@' :
+						   (i <  2 ? '0' :
+						   (i <  5 ? '1' :
+						   (i < 10 ? '2' :
+						   (i < 12 ? '3' :
+						   (i < 14 ? '4' :
+						   (i < 16 ? '5' :
+						   (i < 18 ? '6' : '7'))))))));
+
+		int freeIndex = backingStore.getFreePage();
+
+		pageIndex[i] = freeIndex;
+		backingStore.pages[freeIndex].initialize(name, suffix);
+		backingStore.numOfPages++;
 	}
 }
 
