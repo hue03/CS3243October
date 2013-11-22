@@ -16,13 +16,13 @@
 #define PROCESS_COUNT 60
 #define MIN_BURST 10
 #define MAX_BURST 200
-#define MIN_MEMORY_PER_PROC 4
-#define MAX_MEMORY_PER_PROC 160
+#define MIN_MEMORY_PER_PROC 10
+#define MAX_MEMORY_PER_PROC 250
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.50
-#define PRINT_INTERVAL 500
+#define PRINT_INTERVAL 5000
 #define MAX_QUANTA 50000
-#define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
+#define ENABLE_COMPACTION false //flags whether the program will run the compaction algorithm
 #define SEED time(NULL)
 #define EMPTY_PROCESS_NAME ' '
 #define LOWBYTE_PERCENT 50 //percent of how many processes' size are low
@@ -81,6 +81,7 @@ int main()
 	zeroFillMemory(0, MAX_MEMORY);
 	void (*fit)(void);
 	int input;
+	//double totalratio = 0;
 	do
 	{
 		cout << "Choose a swapping method: " << endl;
@@ -146,8 +147,11 @@ int main()
 		}
 		cout << "Runtime: " << runTime << endl;
 		cout << "--------------------------------------------------------------------------------" << endl;
-		usleep(SLEEPTIME);
+		//usleep(SLEEPTIME);
+		//cout << "ratio: " << 1.0 * freeBlocks / loadedProc << endl; for answering questions
+		//totalratio += 1.0 * freeBlocks / loadedProc;
 	}
+	//cout << totalratio << endl;
 }
 
 void createProcesses(void)
@@ -311,8 +315,8 @@ void firstFit()
 		}
 
 		freeBlock best(-1, 0);
-		cout << "First Fit Start" << endl;
-		printMemoryMap();
+		//cout << "First Fit Start" << endl;
+		//printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
 			if (vectOfFreeSpace[i].size >= process->size)
@@ -332,8 +336,8 @@ void firstFit()
 				loadedProc++;
 				readyQueue.pop_front();
 				findFreeBlocks();
-				cout << "Name: " << process->name << endl;
-				printMemoryMap();
+				//cout << "Name: " << process->name << endl;
+				//printMemoryMap();
 				break;
 			}
 		}
@@ -356,8 +360,8 @@ void worstFit()
 		}
 
 		freeBlock largest(-1, 0);
-		cout << "Worst Fit Start" << endl;
-		printMemoryMap();
+		//cout << "Worst Fit Start" << endl;
+		//printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
 			if (vectOfFreeSpace[i].size == largestFreeBlock)
@@ -378,8 +382,8 @@ void worstFit()
 				loadedProc++;
 				readyQueue.pop_front();
 				findFreeBlocks();
-				cout << "Name: " << process->name << endl;
-				printMemoryMap();
+				//cout << "Name: " << process->name << endl;
+				//printMemoryMap();
 				break;
 			}
 		}
@@ -404,8 +408,8 @@ void bestFit()
 		}
 
 		freeBlock smallest(-1, MAX_MEMORY + 1);
-		cout << "Best Fit Start" << endl;
-		printMemoryMap();
+		//cout << "Best Fit Start" << endl;
+		//printMemoryMap();
 		for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 		{
 			int freeSize = vectOfFreeSpace[i].size;
@@ -443,8 +447,8 @@ void bestFit()
 			loadedProc++;
 			readyQueue.pop_front();
 			findFreeBlocks();
-			cout << "Name: " << process->name << endl;
-			printMemoryMap();
+			//cout << "Name: " << process->name << endl;
+			//printMemoryMap();
 		}
 	}
 }
