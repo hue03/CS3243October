@@ -1,0 +1,26 @@
+3. Of the three paging algorithms in Part Two – FIFO, LRU, and Second Chance –
+   which one results in the lowest number of page faults in your simulation?
+   What are the average page fault rates for each of the three?
+   
+   Given a random seed (1385127952), the number of page faults for each
+   page-replacement algorithm are as follows:
+   
+   Page-Replacement Algorithm | # of Page Faults
+   ---------------------------+------------------
+   FIFO                       | 213468
+   LRU                        | 222380
+   Second Chance              | 217578
+   
+   For this particular instance, FIFO runs with the lowest number of page
+   faults, followed by Second Chance, and then LRU.
+   
+   This, of course, only pertains to a particular case.  The average number of
+   page faults are as follows:
+   
+   Page-Replacement Algorithm | Avg # of Page Faults
+   ---------------------------+----------------------
+   FIFO                       | 
+   LRU                        | 
+   Second Chance              | 
+   
+   
