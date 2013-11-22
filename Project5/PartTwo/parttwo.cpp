@@ -23,19 +23,19 @@
 #define SLEEP_LENGTH 250000
 
 #define EMPTY_PROCESS_NAME ' '
-#define DEFAULT_NUM_PAGES_PER_PROCESS 10
-#define MAX_NUM_PAGES_PER_PROCESS 20
-#define MIN_SUBROUTINES 1
-#define MAX_SUBROUTINES 5
+#define DEFAULT_NUM_PAGES_PER_PROCESS 10 //The number of code, stack and heap pages combined
+#define MAX_NUM_PAGES_PER_PROCESS 20 //The number of code, stack, heap and subroutine pages combined
+#define MIN_SUBROUTINES 1 //min number of subroutines a process has
+#define MAX_SUBROUTINES 5 //max number of subroutines a process has
 #define SEED time(NULL)
-#define PROCS_PER_LINE 12	// # of processes to show on one line when printing per process page tables
+#define PROCS_PER_LINE 12	//# of processes to show on one line when printing per process page tables
 using namespace std;
 
 typedef unsigned char byte;
 
 struct Page
 {
-	char processName;
+	char processName; //the name of the process that the page belongs to
 	char suffix;
 	short frameNum;
 	bool valid;
@@ -49,11 +49,11 @@ struct Page
 struct Process
 {
 	char name;
-	int lifeTime;
-	int deathTime;
-	int subRoutines;
+	int lifeTime; //random time of how much time the process has to live
+	int deathTime; //time the process dies
+	int subRoutines; //num of sub routines a process has
 	bool isAlive;
-	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
+	int pageIndex[MAX_NUM_PAGES_PER_PROCESS]; //array of int that tells the process where its pages are at in the backing store
 
 	Process(char name, int lifeTime, int subRoutines);
 	void initialize();
@@ -63,7 +63,7 @@ struct Process
 
 struct MainMemory
 {
-	Page* memArray[MAX_FRAMES];
+	Page* memArray[MAX_FRAMES]; //array of pointers to pages in the backing store. this has the frames
 	int usedFrames;
 
 	MainMemory();
@@ -74,7 +74,7 @@ struct MainMemory
 
 struct BackingStore
 {
-	Page pages[MAX_PAGES];
+	Page pages[MAX_PAGES]; //array of physical pages belonging to a process
 	int freeIndex;
 	int numOfPages;
 
@@ -87,8 +87,8 @@ struct BackingStore
 vector<Process> vectOfProcesses;
 MainMemory memory;
 BackingStore backingStore;
-Page emptyPage;
-deque<int> pageQueue;
+Page emptyPage; //an empty page object that gets filled into the empty elements in the backing store. frames point to this object initially to indicate that they are empty
+deque<int> pageQueue; //a queue of ints that are frame numbers that will be used to determine the order in which a page entered a frame
 int runTime;
 int loadedProc;
 int refBitSet;
@@ -180,7 +180,6 @@ void killProcess(void)
 		if (vectOfProcesses[i].deathTime == runTime)
 		{
 			cout << "killing " << vectOfProcesses[i].name << endl;	// TODO test output
-
 			vectOfProcesses[i].die();
 		}
 	}
@@ -223,12 +222,12 @@ void touchProcess(void)
 
 	if (runTime != 0)
 	{
-		subRoutine = rand() % pickedProcess->subRoutines;
+		subRoutine = rand() % pickedProcess->subRoutines; //randomly pick a sub routine of the process from 0 - 4 (sub routine 1 - 5)
 		cout << "running subroutine " << subRoutine << endl;// TODO test output
 
-		int selectedSubRoutine = pickedProcess->pageIndex[2
+		int selectedSubRoutine = pickedProcess->pageIndex[2 //first page of the sub routine
 		        * subRoutine + 10];
-		int selectedSubRoutine2 = pickedProcess->pageIndex[2
+		int selectedSubRoutine2 = pickedProcess->pageIndex[2 //second page of the same same routine
 		        * subRoutine + 10 + 1];
 
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
@@ -312,7 +311,7 @@ void insertIntoMemory(Page &pg)
 	int frame = memory.getFreeFrame();
 	pageLocation->valid = true;
 	pageLocation->frameNum = frame;
-	memory.memArray[frame] = pageLocation;
+	memory.memArray[frame] = pageLocation; //pointer to the inserted page in the backing store
 	if (pageLocation->processName != '@') pageQueue.push_back(frame);
 
 	memory.usedFrames++;
@@ -351,7 +350,7 @@ int lru(void)
 	for (int j = victimIndex + 1; j < MAX_FRAMES; j++)
 	{
 		if (memory.memArray[j]->refByte < smallestRef
-		        && memory.memArray[j]->processName != '@')
+		        && memory.memArray[j]->processName != '@') //find the page with the smallest refByte value since that is the least recently used
 		{
 			smallestRef = memory.memArray[j]->refByte;
 			victimIndex = j;
@@ -373,11 +372,11 @@ int secondChance(void)
 	while (true)
 	{
 		victimIndex = pageQueue.front(); //get the first page that entered into a frame
-		if (memory.memArray[victimIndex]->refByte) //if not 0 or >0 do this
+		if (memory.memArray[victimIndex]->refByte) //if not 0 or > 0
 		{
-			memory.memArray[victimIndex]->refByte &= 0;
-			pageQueue.push_back(victimIndex);
-			pageQueue.pop_front();
+			memory.memArray[victimIndex]->refByte &= 0; //reset the refByte to 0
+			pageQueue.push_back(victimIndex); //insert the frame index to the back of the queue
+			pageQueue.pop_front(); //remove the checked index from the front of the queue
 			cout << "give second chance" << endl;
 		}
 		else
@@ -430,13 +429,13 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 {
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
-		pageIndex[i] = -1;
+		pageIndex[i] = -1; //initialize the process's page index values to -1 as a way for saying its pages are not in the backing store
 	}
 }
 
 void Process::initialize(void)
 {
-	// if deathTime > 0, then we're touching a dead process
+	// if deathTime > 0, then touching a dead process
 	if (deathTime > 0)
 	{
 		deadProc--;
@@ -464,8 +463,8 @@ void Process::createPages()
 
 		int freeIndex = backingStore.getFreePage();
 
-		pageIndex[i] = freeIndex;
-		backingStore.pages[freeIndex].initialize(name, suffix);
+		pageIndex[i] = freeIndex; //update the process's page index with the index position of where the page is at in the backing store
+		backingStore.pages[freeIndex].initialize(name, suffix); //the backing store has an "empty" page in it so change that empty page's attributes to the selected process's name and suffix
 		backingStore.numOfPages++;
 	}
 }
@@ -474,7 +473,7 @@ void Process::die(void)
 {
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)	// go through dying process's pageIndex
 	{
-		if (pageIndex[i] != -1)
+		if (pageIndex[i] != -1) //skip the the pages not in the backing store (-1)
 		{
 			backingStore.removePage(pageIndex[i]);	// remove the process's page from the backing store
 			pageIndex[i] = -1; //clear the process's page index at i
@@ -491,13 +490,13 @@ MainMemory::MainMemory() : usedFrames(0)
 {
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
-		memArray[i] = &emptyPage;
+		memArray[i] = &emptyPage; //have each frame in memory point to the empty page object to indicate that the frame is empty
 	}
 }
 
 void MainMemory::emptyMemory(int p)
 {
-	memArray[p] = &emptyPage;
+	memArray[p] = &emptyPage; //the selected frame index is emptied by pointing to the empty page object
 	usedFrames--;
 }
 
@@ -507,11 +506,11 @@ int MainMemory::getFreeFrame()
 	{
 		if (memArray[i]->suffix == ' ')
 		{
-			return i;
+			return i; //if a free frame is already available return the index position
 		}
 	}
 
-	return pageReplacement();
+	return pageReplacement(); //if reached here there are no free frames available so a page replacement algorithm is executed
 }
 
 void MainMemory::print(void)
@@ -572,7 +571,7 @@ BackingStore::BackingStore() : freeIndex(0)
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		pages[i] = Page();
+		pages[i] = Page(); //fill the backing store with default/empty pages
 	}
 }
 
@@ -599,7 +598,7 @@ void BackingStore::removePage(int index)
 
 	if (page->valid)	// if the page is in a frame
 	{
-		memory.emptyMemory(page->frameNum); //from the index, access the backing store to find the frame that the page resides in
+		memory.emptyMemory(page->frameNum); //from the index, remove the page from the frame
 	}
 
 	page->processName = EMPTY_PROCESS_NAME;
