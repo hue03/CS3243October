@@ -540,12 +540,6 @@ void Process::die(void)
 		//cout << "hello1" << endl;
 		if (pageIndex[i] != -1)
 		{
-			if (backingStore.pages[pageIndex[i]].valid)	// if the page is in a frame
-			{
-				//cout << "hello2" << endl;
-				memory.emptyMemory(backingStore.pages[pageIndex[i]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-			}
-
 			//cout << "hello3" << endl;
 			backingStore.removePage(pageIndex[i]);	// remove the process's page from the backing store
 			pageIndex[i] = -1; //clear the process's page index at i
@@ -668,6 +662,12 @@ int BackingStore::getFreePage()
 void BackingStore::removePage(int index)
 {
 	Page *page = &pages[index];
+
+	if (page->valid)	// if the page is in a frame
+	{
+		//cout << "hello2" << endl;
+		memory.emptyMemory(page->frameNum); //from the index, access the backing store to find the frame that the page resides in
+	}
 
 	page->processName = EMPTY_PROCESS_NAME;
 	page->suffix = ' ';
