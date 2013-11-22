@@ -152,7 +152,7 @@ int main(void)
 		memory.print();
 		backingStore.print();
 		printPerProcessPageTables();
-		usleep(SLEEP_LENGTH);
+		//usleep(SLEEP_LENGTH);
 
 		cout << "Press anything to continue" << endl;
 		cin.ignore();
