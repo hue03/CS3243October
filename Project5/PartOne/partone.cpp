@@ -13,26 +13,23 @@
 #include <deque>  
 
 #define MAX_PROCESSES 60
-#define PROCESS_COUNT 50
-#define MIN_BURST 5
-#define MAX_BURST 15
+#define PROCESS_COUNT 60
+#define MIN_BURST 10
+#define MAX_BURST 200
 #define MIN_MEMORY_PER_PROC 4
 #define MAX_MEMORY_PER_PROC 160
 #define MAX_MEMORY 1040
-#define MAX_BLOCK_PROC_RATIO 0.30
-#define PRINT_INTERVAL 5
-#define MAX_QUANTA 50
+#define MAX_BLOCK_PROC_RATIO 0.50
+#define PRINT_INTERVAL 500
+#define MAX_QUANTA 50000
 #define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
-//#define SEED 1384393582 //seed for error in 1st part compact
-//#define SEED 1384394623 //seed for error in 2nd part compact
 #define SEED time(NULL)
-#define EMPTY_PROCESS_NAME 32 //need ascii value. could use chars.
-#define LOWBYTE_PERCENT 50
-#define MEDBYTE_PERCENT 45
-//#define HIGHBYTE_PERCENT 5
+#define EMPTY_PROCESS_NAME ' '
+#define LOWBYTE_PERCENT 50 //percent of how many processes' size are low
+#define MEDBYTE_PERCENT 45 //percent of how many processes' size are med
 #define LOWBYTE_SIZE_INTERVAL_PERCENT 5 //computes the upper range of the size for the low byte interval
 #define MEDBYTE_SIZE_INTERVAL_PERCENT 57 //computes the upper range of the size for the med byte interval based on the upper range of the low byte size
-#define SLEEPTIME 250000
+#define SLEEPTIME 500000
 using namespace std;
 
 struct Process {
@@ -130,7 +127,7 @@ int main()
 			printMemoryMap();
 		}
 		removeIdle();
-		findFreeBlocks(); //need this to update the block status
+		findFreeBlocks(); //update the amount of free blocks
 		if (runTime % PRINT_INTERVAL == 0)
 		{
 			cout << "AFTER REMOVAL" << endl;
@@ -226,7 +223,7 @@ void zeroFillMemory(int start, int size)
 	Process *p = &myProcess;
 	for (int i = 0; i < size; i++)
 	{
-		mainMemory[start + i] = p;
+		mainMemory[start + i] = p; //empty memory points to the empty process object
 	}
 }
 
@@ -457,7 +454,7 @@ void compaction()
 	int oldVectFreeSize = vectOfFreeSpace.size();
 	int startBlock = vectOfFreeSpace.size() - 1; //element/position number to indicate which free block to fill
 	int lastIndex = vectOfFreeSpace[startBlock].start - 1; //the starting index position where the loops will start from. subtract by 1 to move off of the free process.
-	while (startBlock > -1) //begin first part of compaction. move smallest things to the end free block.
+	while (startBlock > -1) //begin first part of compaction. move smallest things to the end of the free block.
 	{
 		//cout << "Inside while" << endl;
 		freeBlock targetBlock = vectOfFreeSpace[startBlock];
@@ -485,7 +482,7 @@ void compaction()
 				i -= mainMemory[i]->size + 1; //offset by 1 because of double increment
 			}
 		}
-		cout << "Finished for" << endl;
+		//cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
 		{
 			cout << "moving " << targetProcess->name << endl;
