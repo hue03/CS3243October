@@ -85,6 +85,7 @@ struct BackingStore
 {
 	Page pages[MAX_PAGES];
 	int freeIndex;
+	int numOfPages;
 
 	BackingStore();
 	int getFreePage();
@@ -104,7 +105,7 @@ int refBitSet;
 int refBitClear;
 //int pagesUnloaded;
 //int pagesFree;
-int numOfPages;
+//int numOfPages;
 //int unloadedProc;
 int deadProc;
 int (*pageReplacement)(void);
@@ -215,7 +216,7 @@ void createPages(Process &p)
 
 		p.pageIndex[i] = freeIndex;
 		backingStore.pages[freeIndex].initialize(p.name, suffix);
-		numOfPages++;
+		backingStore.numOfPages++;
 	}
 }
 
@@ -596,17 +597,17 @@ void MainMemory::print(void)
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
 	int numFreeFrames = MAX_FRAMES - usedFrames;
 	float freeFramesPercentage = 100.0 * numFreeFrames / MAX_FRAMES;
-	float numOfPagesPercentage = 100.0 * numOfPages / MAX_PAGES;
+	float numOfPagesPercentage = 100.0 * backingStore.numOfPages / MAX_PAGES;
 	float pagesLoadedPercentage = 100.0 * usedFrames / MAX_PAGES;
-	float pagesUnloadedPercentage = 100.0 * (numOfPages - usedFrames) / MAX_PAGES;
-	float pagesFreePercentage = 100.0 * (MAX_PAGES - numOfPages) / MAX_PAGES;
+	float pagesUnloadedPercentage = 100.0 * (backingStore.numOfPages - usedFrames) / MAX_PAGES;
+	float pagesFreePercentage = 100.0 * (MAX_PAGES - backingStore.numOfPages) / MAX_PAGES;
 	float loadedProcPercentage = 100.0 * loadedProc / PROCESS_COUNT;
 	float unloadedProcPercentage = 100.0 * (PROCESS_COUNT - loadedProc) / PROCESS_COUNT;
 	float deadProcPercentage = 100.0 * deadProc / PROCESS_COUNT;
 
 	printf("QUANTA ELAPSED: %i\n", runTime);
 	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
-	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - numOfPages), pagesFreePercentage);
+	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, backingStore.numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (backingStore.numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - backingStore.numOfPages), pagesFreePercentage);
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc - deadProc), unloadedProcPercentage, deadProc, deadProcPercentage);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
 
