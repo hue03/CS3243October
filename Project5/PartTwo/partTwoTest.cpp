@@ -115,8 +115,6 @@ void shiftRefByte(void);
 int fifo(void);
 int lru(void);
 int secondChance(void);
-int fifoCheck(int j);
-//void printProcessPageTable(Process p);
 void printPerProcessPageTables(void);
 
 int main(void)
@@ -144,23 +142,18 @@ int main(void)
 		}
 		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
-			//shiftRefByte();
+			shiftRefByte();
+			cout << "Bit shifted right" << endl;
 		}
 
 		touchProcess();
 		cout << "Running Time: " << runTime << endl;
-			cout << "--------------------------------------------" << endl;
-			//backingStore.printPages();
-			//printPerProcessPageTables();
-			memory.print();
-		/*if (0 == runTime || runTime % PRINT_INTERVAL == 0)
-		{
-			cout << "Running Time: " << runTime << endl;
-			cout << "--------------------------------------------" << endl;
-			backingStore.printPages();
-			printMemoryMap();
-			usleep(SLEEP_LENGTH);
-		}*/
+		cout << "--------------------------------------------" << endl;
+		memory.print();
+		backingStore.print();
+		printPerProcessPageTables();
+		usleep(SLEEP_LENGTH);
+
 		cout << "Press anything to continue" << endl;
 		cin.ignore();
 	}
@@ -476,41 +469,6 @@ int secondChance(void)
 	return victimIndex;
 }
 
-int fifoCheck(int j)
-{
-	cout << "running fifoCheck" << endl;
-	int victimIndex = -1;
-	/*int smallestStart = MAX_QUANTA;
-
-	for (int j = 0; j < MAX_FRAMES; j++)
-	{
-		if (memory.memArray[j]->startTime < smallestStart
-		        && memory.memArray[j]->processName != '@')
-		{
-			smallestStart = memory.memArray[j]->startTime;
-			victimIndex = j;
-		}
-	}*/
-	victimIndex = pageQueue.front();
-	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
-	return victimIndex;
-}
-
-/*void printProcessPageTable(Process p)
-{
-	//Page** tempTable = p.pageTable;
-	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
-	{
-		cout << p.name << "temp2 " << p.pageIndex[i] << endl;
-	}
-	//cout << "Process: " << tempTable[i]->processName << endl;
-	//cout << "Suffix: " << tempTable[i]->suffix << endl;
-	//cout << "Ref: " << tempTable[i]->refByte << endl;
-	//cout << "Valid: " << tempTable[i]->valid << endl;
-	//cout << "Frame: " << tempTable[i]->frameNum << endl;
-	//cout << "--------------------------------------------------------------------------------" << endl;
-}*/
-
 void printPerProcessPageTables(void)
 {
 	printf("PAGE TABLES\n");
@@ -656,7 +614,7 @@ int BackingStore::getFreePage()
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5x\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
+		//printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5x\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
 		if (' ' == pages[i].suffix)
 		{
 			return i;
@@ -664,6 +622,8 @@ int BackingStore::getFreePage()
 	}
 
 	fprintf(stderr, "The Backing Store is Full!");
+	cout << "Press any key to proceed with terminating the program to prevent overflow." << endl;
+	cin.ignore();
 	exit(0);
 }
 
