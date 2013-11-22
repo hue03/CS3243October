@@ -13,15 +13,15 @@
 
 #define MAX_PROCESSES 52	// This will not ever change
 //#define PROCESS_COUNT 23	// useful when debugging to limit # of procs
-#define PROCESS_COUNT 23 // useful when debugging to limit # of procs
+#define PROCESS_COUNT 50 // useful when debugging to limit # of procs
 //#define MIN_DEATH_INTERVAL 20
-#define MIN_DEATH_INTERVAL 50
+#define MIN_DEATH_INTERVAL 30
 //#define MAX_DEATH_INTERVAL 300
 #define MAX_DEATH_INTERVAL 99
 #define MAX_FRAMES 280
 #define MAX_PAGES 720
 //#define SHIFT_INTERVAL 10
-#define SHIFT_INTERVAL 2
+#define SHIFT_INTERVAL 5
 //#define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define PRINT_INTERVAL 5	// # of cpu quanta between memory map printouts
 //#define MAX_QUANTA 50000	// # quanta to run before ending simulation
@@ -158,7 +158,7 @@ int main(void)
 		//usleep(SLEEP_LENGTH);
 
 		cout << "Press anything to continue" << endl;
-//		cin.ignore();
+		cin.ignore();
 	}
 }
 
@@ -327,7 +327,7 @@ void touchProcess(void)
 		}
 	}
 
-	printPerProcessPageTables();
+	//printPerProcessPageTables();
 }
 
 void insertIntoMemory(Page &pg)
@@ -372,6 +372,7 @@ int fifo(void)
 	pageQueue.pop_front();
 	//cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
 	memory.usedFrames--;
@@ -381,10 +382,10 @@ int fifo(void)
 int lru(void)
 {
 	cout << "running lru" << endl;
-	int victimIndex = -1;
-	int smallestRef = 256; //biggest number that the refByte can be is 255 (1111 1111)
+	int victimIndex = 20; //start at frame 20 to skip the kernel
+	byte smallestRef = memory.memArray[victimIndex]->refByte; //biggest number that the refByte can be is 255 (1111 1111). set to the page in the 20th frame
 
-	for (int j = 0; j < MAX_FRAMES; j++)
+	for (int j = victimIndex + 1; j < MAX_FRAMES; j++)
 	{
 		if (memory.memArray[j]->refByte < smallestRef
 		        && memory.memArray[j]->processName != '@')
@@ -395,6 +396,7 @@ int lru(void)
 	}
 	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
 	memory.usedFrames--;
@@ -443,6 +445,7 @@ int secondChance(void)
 	}*/
 	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
 	memory.memArray[victimIndex]->valid = false;
+	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
 	memory.usedFrames--;
@@ -499,7 +502,7 @@ void Process::initialize(void)
 	isAlive = true;
 	loadedProc++;
 	createPages();
-	deathTime = runTime + lifeTime;//should death time keep changing everytime it is touched?
+	deathTime = runTime + lifeTime;
 }
 
 void Process::createPages()
@@ -571,18 +574,6 @@ int MainMemory::getFreeFrame()
 	return pageReplacement();
 }
 
-Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0)/*, startTime(-1) */{ }
-
-Page::Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte)/*, startTime(startTime) */{ }
-
-void Page::initialize(char processName, char suffix)
-{
-	this->processName = processName;
-	this->suffix = suffix;
-	valid = false;
-	refByte = 0;
-}
-
 void MainMemory::print(void)
 {
 	float usedFramesPercentage = 100.0 * usedFrames / MAX_FRAMES;
@@ -627,7 +618,17 @@ void MainMemory::print(void)
 	}
 }
 
-// TODO insert page function for BackingStore
+Page::Page() : processName(EMPTY_PROCESS_NAME), suffix(' '), frameNum(-1), valid(false), refByte(0)/*, startTime(-1) */{ }
+
+Page::Page(char processName, char suffix, short frameNum, bool valid, byte refByte/*, int startTime*/) : processName(processName), suffix(suffix), frameNum(frameNum), valid(valid), refByte(refByte)/*, startTime(startTime) */{ }
+
+void Page::initialize(char processName, char suffix)
+{
+	this->processName = processName;
+	this->suffix = suffix;
+	valid = false;
+	refByte = 0;
+}
 
 BackingStore::BackingStore() : freeIndex(0)
 {
