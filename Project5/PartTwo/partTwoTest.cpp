@@ -41,6 +41,7 @@
 using namespace std;
 
 typedef unsigned char byte;
+
 struct Page
 {
 	char processName;
@@ -66,6 +67,7 @@ struct Process
 	int pageIndex[MAX_NUM_PAGES_PER_PROCESS];
 
 	Process(char name, int lifeTime, int subRoutines);
+	void die(void);
 };
 
 struct MainMemory
@@ -230,25 +232,7 @@ void killProcess(void)
 		{
 			cout << "killing " << vectOfProcesses[i].name << endl;	// TODO test output
 
-			for (int j = 0; j < MAX_NUM_PAGES_PER_PROCESS; j++)	// go through dying process's pageIndex
-			{
-				//cout << "hello1" << endl;
-				if (vectOfProcesses[i].pageIndex[j] != -1)
-				{
-					if (backingStore.pages[vectOfProcesses[i].pageIndex[j]].valid)	// if the page is in a frame
-					{
-						//cout << "hello2" << endl;
-						memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-					}
-					//cout << "hello3" << endl;
-					backingStore.removePage(vectOfProcesses[i].pageIndex[j]);	// remove the process's page from the backing store
-					vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
-					//cout << "hello4" << endl;
-				}
-			vectOfProcesses[i].isAlive = false;
-			loadedProc--;
-			deadProc++;
-			}
+			vectOfProcesses[i].die();
 		}
 	}
 }
@@ -546,6 +530,31 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)
 	{
 		pageIndex[i] = -1;
+	}
+}
+
+void Process::die(void)
+{
+	for (int i = 0; i < MAX_NUM_PAGES_PER_PROCESS; i++)	// go through dying process's pageIndex
+	{
+		//cout << "hello1" << endl;
+		if (pageIndex[i] != -1)
+		{
+			if (backingStore.pages[pageIndex[i]].valid)	// if the page is in a frame
+			{
+				//cout << "hello2" << endl;
+				memory.emptyMemory(backingStore.pages[pageIndex[i]].frameNum); //from the index, access the backing store to find the frame that the page resides in
+			}
+
+			//cout << "hello3" << endl;
+			backingStore.removePage(pageIndex[i]);	// remove the process's page from the backing store
+			pageIndex[i] = -1; //clear the process's page index at i
+			//cout << "hello4" << endl;
+		}
+
+		isAlive = false;
+		loadedProc--;
+		deadProc++;
 	}
 }
 
