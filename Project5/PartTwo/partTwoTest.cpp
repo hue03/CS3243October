@@ -70,8 +70,8 @@ struct Process
 
 struct MainMemory
 {
-	int freeIndex;
 	Page* memArray[MAX_FRAMES];
+	int usedFrames;
 
 	MainMemory();
 	void emptyMemory(int p);
@@ -95,7 +95,6 @@ BackingStore backingStore;
 Page emptyPage;
 deque<int> pageQueue;
 int runTime;
-int usedFrames;
 //int pagesLoaded;
 int loadedProc;
 int refBitSet;
@@ -127,6 +126,7 @@ int main(void)
 	createProcesses();
 	//backingStore.printPages();
 	int input;
+
 	do
 	{
 		printf("Choose a page replacement algorithm:\n");
@@ -138,6 +138,7 @@ int main(void)
 					   (input == 2 ? lru  : secondChance));
 
 	char a;
+
 	for (runTime = 0; runTime < MAX_QUANTA; runTime++)
 	{
 		if (runTime != 0)
@@ -256,14 +257,16 @@ void killProcess(void)
 				{
 					//cout << "hello2" << endl;
 					memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-					usedFrames--;
+					memory.usedFrames--;
 				}
+
 				//cout << "hello3" << endl;
 				backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
 				numOfPages--;
 				vectOfProcesses[i].pageIndex[j] = -1; //clear the process's page index at j
 				//cout << "hello4" << endl;
 			}
+
 			vectOfProcesses[i].isAlive = false;
 			loadedProc--;
 			deadProc++;
@@ -384,7 +387,7 @@ void insertIntoMemory(Page &pg)
 	{
 		pageQueue.push_back(frame);
 	}
-	usedFrames++;
+	memory.usedFrames++;
 }
 
 void shiftRefByte(void)
@@ -419,7 +422,7 @@ int fifo(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -442,7 +445,7 @@ int lru(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -495,7 +498,7 @@ int secondChance(void)
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->frameNum = -1;
 	memory.emptyMemory(victimIndex);
-	usedFrames--;
+	memory.usedFrames--;
 	return victimIndex;
 }
 
@@ -597,7 +600,7 @@ Process::Process(char name, int lifeTime, int subRoutines) : name(name), lifeTim
 	}
 }
 
-MainMemory::MainMemory() : freeIndex(0)
+MainMemory::MainMemory() : usedFrames(0)
 {
 	for (int i = 0; i < MAX_FRAMES; i++)
 	{
