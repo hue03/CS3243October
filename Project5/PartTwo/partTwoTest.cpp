@@ -238,7 +238,6 @@ void killProcess(void)
 					{
 						//cout << "hello2" << endl;
 						memory.emptyMemory(backingStore.pages[vectOfProcesses[i].pageIndex[j]].frameNum); //from the index, access the backing store to find the frame that the page resides in
-						memory.usedFrames--;
 					}
 					//cout << "hello3" << endl;
 					backingStore.pages[vectOfProcesses[i].pageIndex[j]].removePage(); //remove the process's page from the backing store
@@ -339,7 +338,7 @@ void touchProcess(void)
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
 				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
 			}
-			backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte 
+			backingStore.pages[selectedSubRoutine].refByte |= 128; //set the refByte
 			//backingStore.pages[selectedSubRoutine].sc = true;
 
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
@@ -442,7 +441,7 @@ int secondChance(void)
 			memory.memArray[victimIndex]->refByte &= 0;
 			pageQueue.push_back(victimIndex);
 			pageQueue.pop_front();
-			cout << "give second chance" << endl;  
+			cout << "give second chance" << endl;
 		}
 		else
 		{
@@ -450,7 +449,7 @@ int secondChance(void)
 			break;
 		}
 	}
-	
+
 	//int startIndex = 20; //give a starting position and increment because the fifocheck was starting at the same spot and removing the page that was just inserted
 						//cannot compare suffix and process name because the incoming pages might be just be subroutine pages
 	/*while (true)
@@ -561,6 +560,7 @@ MainMemory::MainMemory() : usedFrames(0)
 void MainMemory::emptyMemory(int p)
 {
 	memArray[p] = &emptyPage;
+	usedFrames--;
 }
 
 int MainMemory::getFreeFrame()
@@ -656,7 +656,6 @@ int BackingStore::getFreePage()
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5x\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
 		if (' ' == pages[i].suffix)
 		{
 			return i;
