@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <vector>
-#include <deque>  
+#include <deque>
 
 #define MAX_PROCESSES 60
 #define PROCESS_COUNT 60
@@ -99,7 +99,7 @@ int main()
 				break;
 		}
 	} while (input < 1 || input > 3);
-	
+
 	for (runTime = 0; runTime <= MAX_QUANTA; ++runTime)
 	{
 		findFreeBlocks();
@@ -147,7 +147,7 @@ int main()
 		}
 		//cout << "Runtime: " << runTime << endl;
 		//cout << "--------------------------------------------------------------------------------" << endl;
-		//usleep(SLEEPTIME);
+		usleep(SLEEPTIME);
 		//cout << "ratio: " << 1.0 * freeBlocks / loadedProc << endl; for answering questions
 		//totalratio += 1.0 * freeBlocks / loadedProc;
 	}
@@ -162,7 +162,7 @@ void createProcesses(void)
 	int lowByteSizeRange = (int)(memoryPerProcSizeRange * (LOWBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	int medByteSizeRange = (int)(memoryPerProcSizeRange * (MEDBYTE_SIZE_INTERVAL_PERCENT * 0.01));
 	int highByteSizeRange = (int)(memoryPerProcSizeRange - medByteSizeRange - lowByteSizeRange);
-	
+
 	int burstRange = MAX_BURST - MIN_BURST + 1;
 
 	char name = '?';
@@ -253,7 +253,7 @@ void removeIdle()
 		if (tempSize > 0) //careful, may cause out of bounds/seg fault. i is incremented twice from here and the loop itself
 		{				  //using a condition to try and correct this. trying to start where the process starts
 			i += tempSize - 1; //could possibly shift i to the start of the process at the beginning of the for loop instead of this if condition
-		} 
+		}
 	}
 }
 
@@ -274,7 +274,7 @@ void findFreeBlocks()
 		{
 			int size = i - start;
 
-			if (MAX_MEMORY - 1 == i) { 
+			if (MAX_MEMORY - 1 == i) {
 				++size; //at the end of memory. increment by 1 before the loop terminates
 			}
 

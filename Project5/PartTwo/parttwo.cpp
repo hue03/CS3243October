@@ -21,7 +21,7 @@
 #define SHIFT_INTERVAL 10
 #define PRINT_INTERVAL 500	// # of cpu quanta between memory map printouts
 #define MAX_QUANTA 50000	// # quanta to run before ending simulation
-#define SLEEP_LENGTH 250000
+#define SLEEP_LENGTH 500000
 
 #define EMPTY_PROCESS_NAME ' '
 #define DEFAULT_NUM_PAGES_PER_PROCESS 10 //The number of code, stack and heap pages combined
