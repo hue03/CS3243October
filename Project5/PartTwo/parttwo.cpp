@@ -130,7 +130,7 @@ int main(void)
 		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
 			shiftRefByte();
-			cout << "Bit shifted right" << endl;
+			cout << "Bit shifted right" << endl;	// TODO test output
 		}
 
 		if (runTime % PRINT_INTERVAL == 0)
@@ -143,15 +143,15 @@ int main(void)
 		}
 
 		touchProcess();
-		cout << "Running Time: " << runTime << endl;
-		cout << "--------------------------------------------" << endl;
+		cout << "Running Time: " << runTime << endl;	// TODO test output
+		cout << "--------------------------------------------" << endl;	// TODO test output
 		memory.print();
 		backingStore.print();
 		printPerProcessPageTables();
 		//usleep(SLEEP_LENGTH);
 
-		cout << "Press anything to continue" << endl; //uncomment these to step through the outputs
-		cin.ignore();
+		cout << "Press anything to continue" << endl; // TODO uncomment these to step through the outputs
+		cin.ignore();	// TODO test output
 	}
 }
 
@@ -243,7 +243,7 @@ void touchProcess(void)
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
-			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
+			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;	// TODO test output
 		}
 
 		if (lru == pageReplacement)
@@ -258,7 +258,7 @@ void touchProcess(void)
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
-			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
+			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;	// TODO test output
 		}
 		if (lru == pageReplacement)
 		{
@@ -271,7 +271,7 @@ void touchProcess(void)
 	}
 	else //run all of the kernel's sub routine pages
 	{
-		//cout << backingStore.pages[0].sc << endl;
+		//cout << backingStore.pages[0].sc << endl;	// TODO test output
 		int selectedSubRoutine;
 		int selectedSubRoutine2;
 		for (int j = 0; j < 5; j++)
@@ -285,7 +285,7 @@ void touchProcess(void)
 			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
-				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;
+				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;	// TODO test output
 			}
 
 			if (lru == pageReplacement)
@@ -300,7 +300,7 @@ void touchProcess(void)
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
-				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;
+				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;	// TODO test output
 			}
 
 			if (lru == pageReplacement)
@@ -338,11 +338,11 @@ void shiftRefByte(void)
 
 int fifo(void)
 {
-	cout << "running fifo" << endl;
+	cout << "running fifo" << endl;	// TODO test output
 	int victimIndex = -1;
 	victimIndex = pageQueue.front();
 	pageQueue.pop_front();
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
+	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -353,7 +353,7 @@ int fifo(void)
 
 int lru(void)
 {
-	cout << "running lru" << endl;
+	cout << "running lru" << endl;	// TODO test output
 	int victimIndex = 20; //start at frame 20 to skip the kernel
 	byte smallestRef = memory.memArray[victimIndex]->refByte; //biggest number that the refByte can be is 255 (1111 1111). set to the page in the 20th frame
 
@@ -366,7 +366,7 @@ int lru(void)
 			victimIndex = j;
 		}
 	}
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
+	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -377,7 +377,7 @@ int lru(void)
 
 int secondChance(void)
 {
-	cout << "running second chance" << endl;
+	cout << "running second chance" << endl;	// TODO test output
 	int victimIndex = -1;
 	while (true)
 	{
@@ -387,7 +387,7 @@ int secondChance(void)
 			memory.memArray[victimIndex]->refByte &= 0; //reset the refByte to 0
 			pageQueue.push_back(victimIndex); //insert the frame index to the back of the queue
 			pageQueue.pop_front(); //remove the checked index from the front of the queue
-			cout << "give second chance" << endl;
+			cout << "give second chance" << endl;	// TODO test output
 		}
 		else
 		{
@@ -395,7 +395,7 @@ int secondChance(void)
 			break;
 		}
 	}
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;
+	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -599,8 +599,8 @@ int BackingStore::getFreePage()
 	}
 
 	fprintf(stderr, "The Backing Store is Full!");
-	cout << "Press any key to proceed with terminating the program to prevent overflow." << endl;
-	cin.ignore();
+	cout << "Press any key to proceed with terminating the program to prevent overflow." << endl;	// TODO test output
+	cin.ignore();	// TODO test output
 	exit(0);
 }
 
