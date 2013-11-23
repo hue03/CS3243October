@@ -20,9 +20,9 @@
 #define MAX_MEMORY_PER_PROC 250
 #define MAX_MEMORY 1040
 #define MAX_BLOCK_PROC_RATIO 0.50
-#define PRINT_INTERVAL 5000
+#define PRINT_INTERVAL 500
 #define MAX_QUANTA 50000
-#define ENABLE_COMPACTION false //flags whether the program will run the compaction algorithm
+#define ENABLE_COMPACTION true //flags whether the program will run the compaction algorithm
 #define SEED time(NULL)
 #define EMPTY_PROCESS_NAME ' '
 #define LOWBYTE_PERCENT 50 //percent of how many processes' size are low
@@ -145,8 +145,8 @@ int main()
 			//print mainMemory
 			printMemoryMap();
 		}
-		cout << "Runtime: " << runTime << endl;
-		cout << "--------------------------------------------------------------------------------" << endl;
+		//cout << "Runtime: " << runTime << endl;
+		//cout << "--------------------------------------------------------------------------------" << endl;
 		//usleep(SLEEPTIME);
 		//cout << "ratio: " << 1.0 * freeBlocks / loadedProc << endl; for answering questions
 		//totalratio += 1.0 * freeBlocks / loadedProc;
@@ -489,16 +489,16 @@ void compaction()
 		//cout << "Finished for" << endl;
 		if (targetProcess->size != MAX_MEMORY)
 		{
-			cout << "moving " << targetProcess->name << endl;
+			//cout << "moving " << targetProcess->name << endl;
 			zeroFillMemory(targetProcess->start, targetProcess->size);
 			//targetProcess->start = targetBlock.start;
-			cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
+			//cout <<"Target " << targetBlock.size - 1 << " " << targetBlock.start << endl;
 			int fillStart = targetBlock.start + targetBlock.size - 1;
 			targetProcess->start = fillStart - targetProcess->size + 1;
-			cout << targetProcess->start << endl;
+			//cout << targetProcess->start << endl;
 			for (int j = fillStart; j > (fillStart - targetProcess->size); j--)
 			{
-				cout << "j: " << j << endl;
+				//cout << "j: " << j << endl;
 				mainMemory[j] = targetProcess;
 			}
 			findFreeBlocks();
@@ -520,11 +520,12 @@ void compaction()
 		{
 			startBlock--; //if nothing can be moved go down to the next free block to start from
 			lastIndex = vectOfFreeSpace[startBlock].start - 1; //subtracted to move off of the empty block
-			cout << "start from " << lastIndex << endl;
+			//cout << "start from " << lastIndex << endl;
 		}
-		cout << "Num of blocks: " << freeBlocks << endl;
-		printMemoryMap();
+		//cout << "Num of blocks: " << freeBlocks << endl;
+		//printMemoryMap();
 	}
+	cout << "End of first phase of compaction." << endl;
 	printMemoryMap();
 	findFreeBlocks();
 	freeBlock targetBlock = vectOfFreeSpace[0];
@@ -534,17 +535,17 @@ void compaction()
 		//freeBlock targetBlock = vectOfFreeSpace[0];
 		for (int m = (targetBlock.start + targetBlock.size); m < MAX_MEMORY; m++)
 		{
-			cout << m << endl;
+			//cout << m << endl;
 			if (mainMemory[m]->size > 0)
 			{
-				cout << "found " << mainMemory[m]->name << endl;
+				//cout << "found " << mainMemory[m]->name << endl;
 				//Process* targetProcess = mainMemory[m];
 				int start = mainMemory[m]->start; //saving the start location to use for deletion. the start is going to change in the else clause
 				//if (targetProcess->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
-					cout << "Unload here: " << mainMemory[m]->name << endl;
+					cout << "Unload here: Process " << mainMemory[m]->name << " was forecfully removed to finish compaction." << endl;
 					readyQueue.push_front(mainMemory[m]);
 					zeroFillMemory(start, mainMemory[m]->size);
 					findFreeBlocks();
@@ -554,25 +555,25 @@ void compaction()
 					//for (int n = targetBlock.start; n < (targetBlock.start + targetProcess->size); n++) //begin moving into the frontmost empty block
 					for (int n = targetBlock.start; n < (targetBlock.start + mainMemory[m]->size); n++) //begin moving into the frontmost empty block
 					{
-						cout << "insert " << n << endl;
+						//cout << "insert " << n << endl;
 						//mainMemory[n] = targetProcess;
 						mainMemory[n] = mainMemory[m];
-						cout << mainMemory[n]->name << endl;
+						//cout << mainMemory[n]->name << endl;
 						mainMemory[n]->start = targetBlock.start;
 					}
-					cout << "main " << start << " " << mainMemory[m]->size << endl;
+					//cout << "main " << start << " " << mainMemory[m]->size << endl;
 					zeroFillMemory(start, mainMemory[m]->size);
 					findFreeBlocks();
 				}
-				printMemoryMap();
-				for (uint i = 0; i < vectOfFreeSpace.size(); i++)
+				//printMemoryMap();
+				/*for (uint i = 0; i < vectOfFreeSpace.size(); i++)
 				{
 					cout << "Block: " << vectOfFreeSpace[i].start << " " << vectOfFreeSpace[i].size << endl;
-				}
+				}*/
 				targetBlock = vectOfFreeSpace[0];
-				cout << "start " << targetBlock.start << endl;
-				cout << "Num of blocks: " << freeBlocks << endl;
-				printMemoryMap();
+				//cout << "start " << targetBlock.start << endl;
+				//cout << "Num of blocks: " << freeBlocks << endl;
+				//printMemoryMap();
 				break;
 			}
 		}
@@ -580,7 +581,7 @@ void compaction()
 	if (unload > 0) //begin third optional part. bring the removed process back into memory at the end of all the processes
 	{
 		cout << "Special case: removed " << unload << " process/es from memory." << endl;
-		cout << "List of processes in the readyQueue:" << endl;
+		/*cout << "List of processes in the readyQueue:" << endl;
 		for (uint i = 0; i < readyQueue.size(); i++)
 		{
 			cout << readyQueue[i]->name << ":";
@@ -590,9 +591,9 @@ void compaction()
 			cout << "Idle at: " <<  readyQueue[i]->idleAt;
 			cout << endl;
 		}
-		cout << "--------------------------------------------------------------------------------" << endl;
+		cout << "--------------------------------------------------------------------------------" << endl;*/
 		recoverToMemory(unload);
-		cout << "List of processes in the readyQueue:" << endl;
+		/*cout << "List of processes in the readyQueue:" << endl;
 		for (uint i = 0; i < readyQueue.size(); i++)
 		{
 			cout << readyQueue[i]->name << ":";
@@ -602,8 +603,8 @@ void compaction()
 			cout << "Idle at: " <<  readyQueue[i]->idleAt;
 			cout << endl;
 		}
-		cout << "--------------------------------------------------------------------------------" << endl;
-		printMemoryMap();
+		cout << "--------------------------------------------------------------------------------" << endl;*/
+		//printMemoryMap();
 		findFreeBlocks();
 	}
 	cout << "End of code " << targetBlock.start + targetBlock.size << endl;
@@ -618,7 +619,7 @@ void recoverToMemory(int end)
 		{
 			mainMemory[vectOfFreeSpace[0].start + j] = readyQueue[0]; //careful here vectOfFreeSpace[0] might not exist
 		}
-		printMemoryMap();
+		//printMemoryMap();
 		findFreeBlocks();
 		readyQueue.pop_front();
 		end--;
