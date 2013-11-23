@@ -77,6 +77,7 @@ struct BackingStore
 	Page pages[MAX_PAGES]; //array of physical pages belonging to a process
 	int freeIndex;
 	int numOfPages;
+	int numOfPageFaults;
 
 	BackingStore();
 	int getFreePage();
@@ -130,6 +131,15 @@ int main(void)
 		{
 			shiftRefByte();
 			cout << "Bit shifted right" << endl;
+		}
+
+		if (runTime % PRINT_INTERVAL == 0)
+		{
+			memory.print();
+			puts("\n");
+			printPerProcessPageTables();
+			puts("\n");
+			backingStore.print();
 		}
 
 		touchProcess();
@@ -478,10 +488,9 @@ void Process::die(void)
 			backingStore.removePage(pageIndex[i]);	// remove the process's page from the backing store
 			pageIndex[i] = -1; //clear the process's page index at i
 		}
-
-		isAlive = false;
 	}
 
+	isAlive = false;
 	loadedProc--;
 	deadProc++;
 }
@@ -510,6 +519,8 @@ int MainMemory::getFreeFrame()
 		}
 	}
 
+	backingStore.numOfPageFaults++;
+
 	return pageReplacement(); //if reached here there are no free frames available so a page replacement algorithm is executed
 }
 
@@ -530,6 +541,7 @@ void MainMemory::print(void)
 	printf("FRAMES:%8if     USED:%5if (%5.1f%%)   FREE:%7if (%5.1f%%)\n", MAX_FRAMES, usedFrames, usedFramesPercentage, numFreeFrames, freeFramesPercentage);
 	printf("SWAP SPACE:%4ip     PAGES:%4ip (%5.1f%%)   LOADED:%5ip (%5.1f%%)  UNLOADED:%4ip (%5.1f%%)   FREE:%4ip (%5.1f%%)\n", MAX_PAGES, backingStore.numOfPages, numOfPagesPercentage, usedFrames, pagesLoadedPercentage, (backingStore.numOfPages - usedFrames), pagesUnloadedPercentage, (MAX_PAGES - backingStore.numOfPages), pagesFreePercentage);
 	printf("PROCESSES:%5i      LOADED:%3i  (%5.1f%%)   UNLOADED:%3i  (%5.1f%%)  DEAD:%8i  (%5.1f%%)\n", PROCESS_COUNT, loadedProc, loadedProcPercentage, (PROCESS_COUNT - loadedProc - deadProc), unloadedProcPercentage, deadProc, deadProcPercentage);
+	printf("PAGE FAULTS:%4i", backingStore.numOfPageFaults);
 	printf("\nPHYSICAL MEMORY (FRAMES)\n");
 
 	for (size_t i = 0; i < MAX_FRAMES; i += 60)
@@ -567,7 +579,7 @@ void Page::initialize(char processName, char suffix)
 	refByte = 0;
 }
 
-BackingStore::BackingStore() : freeIndex(0)
+BackingStore::BackingStore() : freeIndex(0), numOfPages(0), numOfPageFaults(0)
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
