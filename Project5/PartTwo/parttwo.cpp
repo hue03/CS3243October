@@ -6,6 +6,7 @@
 // File: parttwo.cpp
 
 #include <stdio.h>
+#include <unistd.h>
 #include <cstdlib>
 #include <deque>
 #include <iostream>
@@ -110,7 +111,7 @@ void printPerProcessPageTables(void);
 int main(void)
 {
 	srand(SEED);
-	cout << SEED << endl;	// TODO test output
+//	cout << SEED << endl;
 	createProcesses();
 	int input = 0;
 	do
@@ -130,7 +131,6 @@ int main(void)
 		if (lru == pageReplacement && runTime % SHIFT_INTERVAL == 0 && runTime != 0)
 		{
 			shiftRefByte();
-			cout << "Bit shifted right" << endl;	// TODO test output
 		}
 
 		if (runTime % PRINT_INTERVAL == 0)
@@ -143,15 +143,12 @@ int main(void)
 		}
 
 		touchProcess();
-		cout << "Running Time: " << runTime << endl;	// TODO test output
-		cout << "--------------------------------------------" << endl;	// TODO test output
 		memory.print();
-		backingStore.print();
 		printPerProcessPageTables();
-		//usleep(SLEEP_LENGTH);
+		backingStore.print();
+		usleep(SLEEP_LENGTH);
 
-		cout << "Press anything to continue" << endl; // TODO uncomment these to step through the outputs
-		cin.ignore();	// TODO test output
+//		cout << "Press any key to continue" << endl; cin.ignore(); // uncomment these to step through the outputs
 	}
 }
 
@@ -189,7 +186,7 @@ void killProcess(void)
 	{
 		if (vectOfProcesses[i].deathTime == runTime)
 		{
-			cout << "killing " << vectOfProcesses[i].name << endl;	// TODO test output
+			cout << "Killing " << vectOfProcesses[i].name << endl;
 			vectOfProcesses[i].die();
 		}
 	}
@@ -202,8 +199,7 @@ void touchProcess(void)
 	int processIndex = (runTime == 0 ? 0 : rand() % vectOfProcesses.size());
 	Process *pickedProcess = &vectOfProcesses[processIndex];
 
-	cout << "Touching process at index " << processIndex << endl;	// TODO test output
-	cout << "Touching process " << pickedProcess->name << endl;	// TODO test output
+	cout << "Touching process " << pickedProcess->name << endl;
 
 	if (!vectOfProcesses[processIndex].isAlive) vectOfProcesses[processIndex].initialize();
 
@@ -233,17 +229,17 @@ void touchProcess(void)
 	if (runTime != 0)
 	{
 		subRoutine = rand() % pickedProcess->subRoutines; //randomly pick a sub routine of the process from 0 - 4 (sub routine 1 - 5)
-		cout << "running subroutine " << subRoutine << endl;// TODO test output
 
 		int selectedSubRoutine = pickedProcess->pageIndex[2 //first page of the sub routine
 		        * subRoutine + 10];
 		int selectedSubRoutine2 = pickedProcess->pageIndex[2 //second page of the same same routine
 		        * subRoutine + 10 + 1];
 
+		printf("Running subroutine pages %c%c\n", pickedProcess->name, backingStore.pages[selectedSubRoutine].suffix);
+
 		if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine]);
-			//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;	// TODO test output
 		}
 
 		if (lru == pageReplacement)
@@ -258,7 +254,6 @@ void touchProcess(void)
 		if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 		{
 			insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
-			//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;	// TODO test output
 		}
 		if (lru == pageReplacement)
 		{
@@ -271,7 +266,6 @@ void touchProcess(void)
 	}
 	else //run all of the kernel's sub routine pages
 	{
-		//cout << backingStore.pages[0].sc << endl;	// TODO test output
 		int selectedSubRoutine;
 		int selectedSubRoutine2;
 		for (int j = 0; j < 5; j++)
@@ -285,7 +279,6 @@ void touchProcess(void)
 			if (!(backingStore.pages[selectedSubRoutine].valid)) //bring the first subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine]);
-				//cout << backingStore.pages[selectedSubRoutine].frameNum << endl;	// TODO test output
 			}
 
 			if (lru == pageReplacement)
@@ -300,7 +293,6 @@ void touchProcess(void)
 			if (!(backingStore.pages[selectedSubRoutine2].valid)) //bring the second subroutine page into memory if needed
 			{
 				insertIntoMemory(backingStore.pages[selectedSubRoutine2]);
-				//cout << backingStore.pages[selectedSubRoutine2].frameNum << endl;	// TODO test output
 			}
 
 			if (lru == pageReplacement)
@@ -338,11 +330,11 @@ void shiftRefByte(void)
 
 int fifo(void)
 {
-	cout << "running fifo" << endl;	// TODO test output
+//	cout << "running fifo" << endl;
 	int victimIndex = -1;
 	victimIndex = pageQueue.front();
 	pageQueue.pop_front();
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
+	printf("Removing %c%c from frame %i.\n", memory.memArray[victimIndex]->processName, memory.memArray[victimIndex]->suffix, victimIndex);
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -353,7 +345,7 @@ int fifo(void)
 
 int lru(void)
 {
-	cout << "running lru" << endl;	// TODO test output
+//	cout << "running lru" << endl;
 	int victimIndex = 20; //start at frame 20 to skip the kernel
 	byte smallestRef = memory.memArray[victimIndex]->refByte; //biggest number that the refByte can be is 255 (1111 1111). set to the page in the 20th frame
 
@@ -366,7 +358,7 @@ int lru(void)
 			victimIndex = j;
 		}
 	}
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
+	printf("Removing %c%c from frame %i.\n", memory.memArray[victimIndex]->processName, memory.memArray[victimIndex]->suffix, victimIndex);
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -377,7 +369,7 @@ int lru(void)
 
 int secondChance(void)
 {
-	cout << "running second chance" << endl;	// TODO test output
+//	cout << "running second chance" << endl;
 	int victimIndex = -1;
 	while (true)
 	{
@@ -387,7 +379,7 @@ int secondChance(void)
 			memory.memArray[victimIndex]->refByte &= 0; //reset the refByte to 0
 			pageQueue.push_back(victimIndex); //insert the frame index to the back of the queue
 			pageQueue.pop_front(); //remove the checked index from the front of the queue
-			cout << "give second chance" << endl;	// TODO test output
+//			cout << "give second chance" << endl;
 		}
 		else
 		{
@@ -395,7 +387,7 @@ int secondChance(void)
 			break;
 		}
 	}
-	cout << "removing " << memory.memArray[victimIndex]->processName << memory.memArray[victimIndex]->suffix << " j: " << victimIndex << endl;	// TODO test output
+	printf("Removing %c%c from frame %i.\n", memory.memArray[victimIndex]->processName, memory.memArray[victimIndex]->suffix, victimIndex);
 	memory.memArray[victimIndex]->valid = false;
 	memory.memArray[victimIndex]->refByte = 0;
 	memory.memArray[victimIndex]->frameNum = -1;
@@ -591,16 +583,16 @@ int BackingStore::getFreePage()
 {
 	for (size_t i = 0; i < MAX_PAGES; ++i)
 	{
-		//printf("%5lu | %10c | %6c | %6i | %5c | %9x | %5x\n", i, pages[i].processName, pages[i].suffix, pages[i].frameNum, (pages[i].valid ? 'v' : 'i'), pages[i].refByte/*, pages[i].startTime*/);
 		if (' ' == pages[i].suffix)
 		{
 			return i;
 		}
 	}
 
+	// We decided to halt the program the backing store is full.
 	fprintf(stderr, "The Backing Store is Full!");
-	cout << "Press any key to proceed with terminating the program to prevent overflow." << endl;	// TODO test output
-	cin.ignore();	// TODO test output
+	cout << "Press any key to proceed with terminating the program to prevent overflow." << endl;
+	cin.ignore();
 	exit(0);
 }
 
