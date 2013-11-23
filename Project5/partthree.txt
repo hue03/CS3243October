@@ -97,4 +97,3 @@ Worst Fit: Max - BLOCK/PROC RATIO = 1; t = 282 & t = 1659
    Second Chance              | 199080.48
    
    On average over 100 runs, the order of lowest number of page faults is preserved (that is, FIFO, then Second Chance, then LRU).
-      
