@@ -42,6 +42,7 @@ Again using the given settings but adjusting the threshold for compaction:
        1118           1180          1204
      -------------------------------------
       1061.33        1102.33       1183.67
+      
 50%: First Fit      Best Fit      Worst Fit
        464            494            612
        370            483            484
