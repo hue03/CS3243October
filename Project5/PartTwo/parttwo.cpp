@@ -143,9 +143,6 @@ int main(void)
 		}
 
 		touchProcess();
-		memory.print();
-		printPerProcessPageTables();
-		backingStore.print();
 		usleep(SLEEP_LENGTH);
 
 //		cout << "Press any key to continue" << endl; cin.ignore(); // uncomment these to step through the outputs
