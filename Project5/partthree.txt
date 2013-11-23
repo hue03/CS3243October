@@ -37,7 +37,7 @@ From all of this, the percentage of external fragmentation is about even amongst
 
 Again using the given settings but adjusting the threshold for compaction:
 35%: First Fit      Best Fit     Worst Fit
-       985            1141	    1124
+       985            1141          1124
        1081           986           1223
        1118           1180          1204
      -------------------------------------
