@@ -1,0 +1,51 @@
+// CS3242 Operating Systems
+// Fall 2013
+// Project 5: Swapping and Paging, Part 3
+// Steven Ng and Hue Moua
+// Date: 11/22/2013
+// File: partthree.txt
+
+1. For part 1 of the project, we are using the suggested settings given in the project description, but compaction is turned off, to answer these questions.
+The average is computed by adding all the block/process ratios during the time interval 0 - MAX_QUANTA(50000) then divide the sum by the MAX_QUANTA(50000).
+The max and min were determined by looking at the block/process ratio in the first 5000 time quanta and not taking into account the first starting quantas because process are just starting to get loaded into memory.
+First Fit: Max - BLOCK/PROC RATIO = 1; t = 812
+		   Min - BLOCK/PROC RATIO = 0.1333; t = 4257
+		   Avg - TOTAL 1: 20522.6 / MAX_QUANTA = 0.410452
+		   TOTAL 2: 21667.9 / MAX_QUANTA = 0.433358
+		   0.410452 + 0.433358 = 0.84381
+		   0.84381 / 2 = 0.421905
+		   
+Best Fit:  Max - BLOCK/PROC RATIO = 1; t = 972 & t = 4188
+		   Min - BLOCK/PROC RATIO = 0.0952381; t = 3721
+		   Avg - TOTAL 1: 21125.5 / MAX_QUANTA = 0.42251
+		   TOTAL 2: 21002.3 / MAX_QUANTA = 0.420046
+		   0.42251 + 0.420046 = 0.842556
+		   0.842556 / 2 = 0.421278
+		   
+Worst Fit: Max - BLOCK/PROC RATIO = 1; t = 282 & t = 1659
+		   Min - BLOCK/PROC RATIO = 0.08333; t = 512
+		   Avg - TOTAL 1: 20563.4 / MAX_QUANTA = 0.411268
+		   TOTAL 2: 20511.7 / MAX_QUANTA = 0.410234
+		   0.411268 + 0.410234 = 0.821502
+		   0.821502 / 2 = 0.410751
+		   
+2. Again using the given settings but adjusting the threshold for compaction:
+35%: First Fit	  Best Fit	  Worst Fit
+		985			1141		1124
+		1081		986			1223
+		1118		1180		1204
+	-----------------------------------
+		1061.33		1102.33		1183.67
+50%: First Fit	  Best Fit	  Worst Fit
+		464			494			612
+		370			483			484
+		546			672			474
+	-----------------------------------
+		460			549.67		523.33
+
+75%: First Fit	  Best Fit	  Worst Fit
+		84			128			83
+		109			120			68
+		71			138			78
+	-----------------------------------
+		88			128.67		76.33
