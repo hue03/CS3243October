@@ -36,12 +36,13 @@ From all of this, the percentage of external fragmentation is about even amongst
 2.When memory compactio  is enabled, how often does compaction occur with an activation threshold of 0.35, 0.5, and 0.75 for each of the three memory allocation methods?
 
 Again using the given settings but adjusting the threshold for compaction:
-35%: First Fit	    Best Fit	  Worst Fit
+35%: First Fit      Best Fit     Worst Fit
        985            1141	    1124
        1081           986           1223
        1118           1180          1204
      -------------------------------------
       1061.33        1102.33       1183.67
+      
 50%: First Fit      Best Fit      Worst Fit
        464            494            612
        370            483            484
@@ -49,7 +50,7 @@ Again using the given settings but adjusting the threshold for compaction:
      -------------------------------------
        460           549.67        523.33
 
-75%: First Fit	    Best Fit	  Worst Fit
+75%: First Fit      Best Fit      Worst Fit
         84            128            83
         109           120            68
         71            138            78
