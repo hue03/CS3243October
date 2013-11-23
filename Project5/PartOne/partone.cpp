@@ -545,7 +545,7 @@ void compaction()
 				if (mainMemory[m]->size > targetBlock.size) //if a process cannot move it is removed from memory because it will not be able to move anywhere and full compaction is not possible
 				{
 					unload++;
-					cout << "Unload here: Process " << mainMemory[m]->name << " was forecfully removed to finish compaction." << endl;
+					cout << "Unload here: Process " << mainMemory[m]->name << " was forcefully removed to finish compaction." << endl;
 					readyQueue.push_front(mainMemory[m]);
 					zeroFillMemory(start, mainMemory[m]->size);
 					findFreeBlocks();
